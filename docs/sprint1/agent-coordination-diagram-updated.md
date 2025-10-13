@@ -115,9 +115,9 @@ sequenceDiagram
 
 ### 1. Business Analyst → Solutions Architect
 **Artifacts Passed:**
-- Requirements Analysis Document (`docs/requirements-analysis.md`)
-- User Stories Collection (`docs/user-stories.md`)
-- Functional Requirements Specification (`docs/functional-requirements.md`)
+- Requirements Analysis Document (`.context/ba/requirements/`)
+- User Stories Collection (`.context/ba/user-stories/`)
+- Functional Requirements Specification (`.context/ba/requirements/`)
 
 **Handoff Protocol:**
 ```markdown
@@ -131,10 +131,10 @@ sequenceDiagram
 
 ### 2. Solutions Architect → Development Agents
 **Artifacts Passed:**
-- Architecture Decision Records (`docs/adrs/`)
-- API Specifications (`docs/api-contracts/`)
-- Data Models & Database Schemas (`docs/data-models/`)
-- Technical Specifications (`docs/technical-specs/`)
+- Architecture Decision Records (`.context/sa/adrs/`)
+- API Specifications (`.context/sa/api-specs/`)
+- Data Models & Database Schemas (`.context/sa/data-models/`)
+- Technical Specifications (`.context/sa/technical-specs/`)
 
 **Handoff Protocol:**
 ```markdown
@@ -148,10 +148,9 @@ sequenceDiagram
 
 ### 3. Development Agents → QA Engineer
 **Artifacts Passed:**
-- Flutter Implementation (`mobile_app/lib/`)
-- Backend Services (`backend/`)
-- API Documentation (`docs/backend-services.md`)
-- Implementation Summaries
+- Mobile Implementation Plans (`.context/md/`)
+- Backend Service Documentation (`.context/bd/`)
+- Implementation Summaries (`.context/md/` and `.context/bd/`)
 
 **Handoff Protocol:**
 ```markdown
@@ -165,10 +164,10 @@ sequenceDiagram
 
 ### 4. QA Engineer → Solutions Architect (Feedback Loop)
 **Artifacts Passed:**
-- Test Reports (`docs/test-reports/`)
-- Performance Metrics (`docs/performance-reports/`)
-- Bug Reports (`docs/bug-reports/`)
-- Quality Metrics (`docs/quality-metrics.md`)
+- Test Reports (`.context/qa/test-reports/`)
+- Performance Metrics (`.context/qa/performance-reports/`)
+- Bug Reports (`.context/qa/bug-reports/`)
+- Quality Metrics (`.context/qa/quality-metrics/`)
 
 **Handoff Protocol:**
 ```markdown
@@ -242,12 +241,12 @@ stateDiagram-v2
 ## Agent Communication Channels
 
 ### Primary Communication: Context Documents
-- **Requirements**: `docs/requirements-analysis.md`
-- **Architecture**: `docs/adrs/` directory
-- **Implementation**: Code repositories with documentation
-- **Testing**: `docs/test-reports/` directory
+- **Requirements**: `.context/ba/requirements/`
+- **Architecture**: `.context/sa/adrs/` directory
+- **Implementation**: `.context/md/` and `.context/bd/` directories
+- **Testing**: `.context/qa/test-reports/` directory
 
-### Coordination Log: `docs/ai-coordination-log.md`
+### Coordination Log: `.context/ai-coordination-log.md`
 ```markdown
 ## Interaction Log Entry Template
 **Date**: [timestamp]

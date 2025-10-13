@@ -1,0 +1,133 @@
+@startuml AI-Orchestrator-Components
+!theme plain
+title AI Orchestrator - 5-Stage Pipeline Components
+
+package "AI Orchestrator" {
+  [Pipeline Controller] as Controller
+  
+  package "Stage 1" {
+    [Job Analyzer] as Stage1
+    [Job Parser] as JobParser
+    [Requirements Extractor] as ReqExtractor
+    [Keyword Analyzer] as KeywordAnalyzer
+  }
+  
+  package "Stage 2" {
+    [Profile Compiler] as Stage2
+    [Relevance Scorer] as RelevanceScorer
+    [Content Ranker] as ContentRanker
+    [Match Calculator] as MatchCalculator
+  }
+  
+  package "Stage 3" {
+    [Document Generator] as Stage3
+    [Content Rewriter] as ContentRewriter
+    [Template Engine] as TemplateEngine
+    [Bullet Point Generator] as BulletGenerator
+  }
+  
+  package "Stage 4" {
+    [Quality Validator] as Stage4
+    [ATS Checker] as ATSChecker
+    [Grammar Validator] as GrammarValidator
+    [Consistency Checker] as ConsistencyChecker
+  }
+  
+  package "Stage 5" {
+    [PDF Exporter] as Stage5
+    [Template Formatter] as Formatter
+    [PDF Generator] as PDFGen
+    [Multi-Format Output] as MultiFormat
+  }
+}
+
+package "External Dependencies" {
+  [LLM Client] as LLMClient
+  [Token Manager] as TokenManager
+  [Cache Manager] as CacheManager
+  [Error Handler] as ErrorHandler
+}
+
+' Flow between stages
+Controller --> Stage1 : Job Description
+Stage1 --> Stage2 : Job Analysis
+Stage2 --> Stage3 : Scored Profile
+Stage3 --> Stage4 : Generated Content
+Stage4 --> Stage5 : Validated Content
+Stage5 --> Controller : PDF Output
+
+' Internal stage components
+Stage1 --> JobParser
+Stage1 --> ReqExtractor
+Stage1 --> KeywordAnalyzer
+
+Stage2 --> RelevanceScorer
+Stage2 --> ContentRanker
+Stage2 --> MatchCalculator
+
+Stage3 --> ContentRewriter
+Stage3 --> TemplateEngine
+Stage3 --> BulletGenerator
+
+Stage4 --> ATSChecker
+Stage4 --> GrammarValidator
+Stage4 --> ConsistencyChecker
+
+Stage5 --> Formatter
+Stage5 --> PDFGen
+Stage5 --> MultiFormat
+
+' External dependencies
+Stage1 --> LLMClient : Analyze (1500 tokens)
+Stage2 --> LLMClient : Score (2000 tokens)
+Stage3 --> LLMClient : Generate (3000 tokens)
+Stage4 --> LLMClient : Validate (1500 tokens)
+
+Controller --> TokenManager : Track Usage
+Controller --> CacheManager : Store/Retrieve
+Controller --> ErrorHandler : Handle Failures
+
+' Add detailed notes
+note right of Stage1
+  Extracts:
+  - Required skills
+  - Experience level
+  - Key responsibilities
+  - Company culture
+  - ATS keywords
+end note
+
+note right of Stage2
+  Scoring Algorithm:
+  - Keyword matching (40%)
+  - Skills alignment (30%)
+  - Experience relevance (20%)
+  - Industry/role fit (10%)
+end note
+
+note right of Stage3
+  Generates:
+  - Tailored summary
+  - Rewritten experience bullets
+  - Optimized skills section
+  - Quantified achievements
+end note
+
+note right of Stage4
+  Validates:
+  - ATS compatibility
+  - Grammar/spelling
+  - Date consistency
+  - Length requirements
+  - Section completeness
+end note
+
+note right of Stage5
+  Outputs:
+  - ATS-optimized PDF
+  - Visual-enhanced PDF
+  - Plain text version
+  - Metadata report
+end note
+
+@enduml
