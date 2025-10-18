@@ -1,65 +1,25 @@
-Feature: JobWise MVP – AI-powered job application assistant
+Feature: JobWise – AI-powered job application assistant (comprehensive)
   As a job seeker using a mobile app
   I want to manage a master resume, discover jobs, and generate tailored resumes/cover letters
   So that I can apply faster with professional, ATS-compatible documents
 
+  # Scope: Entire project (prototype → production). Business-facing, testable scenarios only.
   # Traceability
   # SRS refs: FR-3.1.x (Master Resume), FR-3.2.x (Jobs), FR-3.3.x (AI Generation), FR-3.4.x (Documents), NFR-5.x
   # MoSCoW tags: @must, @should, @could, @wont
+  # Priority scheme: @rank1 (highest), @rank2, @rank3. AI-tailored resume generation is @rank1.
+  # Weighting: @w100 (highest), @w60 (medium), @w30 (low).
 
   Background:
     Given a registered user on a supported mobile device
     And the device may be online or offline
     And a clean app install with no existing profiles
 
-  @must @profile @FR-3.1.1
-  Scenario: Create a new master resume profile
-    When the user creates a new profile with required fields
-      | field        | value                    |
-      | name         | Alex Doe                 |
-      | email        | alex@example.com         |
-      | phone        | +1-555-555-5555          |
-      | location     | Seattle, WA              |
-    And the user adds at least one work experience with dates and achievements
-    And the user adds at least one education entry
-    And the user categorizes at least 3 skills (technical/soft)
-    Then the profile is saved locally with a unique id
-    And required fields validation passes with no errors
+  # ---------------------------------------------------------------
+  # Epic: AI Tailoring Pipeline (Rank 1)
+  # ---------------------------------------------------------------
 
-  @must @profile @FR-3.1.2
-  Scenario: Edit and version a profile
-    Given an existing profile with experiences, skills, and education
-    When the user updates the job title and adds a quantified bullet
-    Then the app auto-saves the change locally
-    And a new profile version is created with a timestamp
-    And the user can view prior versions and restore a previous one
-
-  @must @offline @sync @FR-3.1.3
-  Scenario: Offline editing with sync and conflict policy
-    Given the user is offline
-    And the user updates the profile summary and skills
-    When the device reconnects to the internet
-    Then the profile syncs to the backend successfully
-    And if a server-side change occurred more recently
-    Then last-write-wins is applied and the final profile reflects the latest timestamp
-
-  @should @jobs @FR-3.2.1
-  Scenario: Browse and search job postings
-    Given a seeded catalog of static job postings is available locally
-    When the user opens the Jobs tab
-    Then a list of job cards is shown with title, company, location, date
-    When the user searches for "Software Engineer" in "Seattle"
-    Then results include only matching jobs within 3 seconds
-
-  @should @jobs @FR-3.2.2
-  Scenario: Save a job and track application status
-    Given a job detail is opened
-    When the user taps Save
-    Then the job appears in Saved Jobs with status "interested"
-    When the user updates the status to "applied"
-    Then the dashboard reflects the new status persistently
-
-  @must @ai @pipeline @FR-3.3.1
+  @must @rank1 @w100 @ai @pipeline @FR-3.3.1 @epic-ai-generation
   Scenario Outline: Generate a tailored resume via 5-stage pipeline
     Given a master profile exists with experiences, skills, and education
     And a job description is provided for generation
@@ -76,63 +36,239 @@ Feature: JobWise MVP – AI-powered job application assistant
       | ATS      | one-page |
       | Visual   | two-page |
 
-  @must @ai @keywords @FR-3.3.2 @FR-3.3.4
+  @must @rank1 @w100 @ai @content @FR-3.3.4 @epic-ai-generation
+  Scenario: Generate a tailored cover letter
+    Given a master profile exists and a saved job has a description
+    When the user requests a tailored cover letter
+    Then the system generates a letter with sections Intro, 2-3 Body paragraphs, and Closing
+    And tone is professional and aligned to the job
+    And the letter references only content supported by the master profile
+
+  @must @rank1 @w100 @ai @keywords @FR-3.3.2 @FR-3.3.4 @epic-ai-generation
   Scenario: ATS keyword coverage meets threshold
     Given Stage 1 produced a list of required and preferred keywords
     When the generated resume is validated in Stage 4
     Then at least 90% of required keywords appear naturally in the content
     And zero keyword stuffing is detected (no more than 2 repeats within a bullet)
 
-  @must @ai @match-score @FR-3.3.3
+  @must @rank1 @w100 @ai @match-score @FR-3.3.3 @epic-ai-generation
   Scenario: Profile-job match score is calculated
     Given the profile and job are analyzed
     When scoring completes
     Then an overall match percentage between 0 and 100 is displayed
-    And top 3 emphasis recommendations are shown to the user
+    And the top 3 emphasis recommendations are shown to the user
 
-  @should @docs @FR-3.4.1 @FR-3.4.3
+  @must @rank1 @w100 @ai @validation @FR-3.3.5 @epic-ai-generation
+  Scenario: Factuality validation and controlled regeneration
+    Given the generated resume contains statements not traceable to the master profile
+    When the Quality Validator flags a factuality violation
+    Then the system performs one stricter regeneration attempt
+    And if still non-compliant, the document is marked "Needs Review" with guidance
+
+  @should @rank1 @w60 @ai @queue @NFR-5.1 @epic-ai-generation
+  Scenario: Generation progress and status updates
+    Given a generation is in progress
+    When the user opens the job’s generation status
+    Then the app shows stage-level progress (analysis, scoring, drafting, validation, export)
+    And the status updates from "Pending" → "Generating" → "Generated" (or "Needs Review"/"Failed")
+
+  @could @rank2 @w30 @ai @batch @epic-ai-generation
+  Scenario: Batch generation for multiple saved jobs (post-MVP)
+    Given the user selects multiple saved jobs
+    When the user taps "Generate for selected"
+    Then the system enqueues generation tasks per job with rate limiting
+    And progress is tracked per job without blocking the UI
+
+  # ---------------------------------------------------------------
+  # Epic: Master Resume Management
+  # ---------------------------------------------------------------
+
+  @must @profile @FR-3.1.1 @epic-profile
+  Scenario: Create a new master resume profile
+    When the user creates a new profile with required fields
+      | field    | value            |
+      | name     | Alex Doe         |
+      | email    | alex@example.com |
+      | phone    | +1-555-555-5555  |
+      | location | Seattle, WA      |
+    And the user adds at least one work experience with dates and achievements
+    And the user adds at least one education entry
+    And the user categorizes at least 3 skills (technical/soft)
+    Then the profile is saved locally with a unique id
+    And required fields validation passes with no errors
+
+  @must @profile @FR-3.1.2 @epic-profile
+  Scenario: Edit and version a profile
+    Given an existing profile with experiences, skills, and education
+    When the user updates the job title and adds a quantified bullet
+    Then the app auto-saves the change locally
+    And a new profile version is created with a timestamp
+    And the user can view prior versions and restore a previous one
+
+  @must @offline @sync @FR-3.1.3 @epic-profile
+  Scenario: Offline editing with sync and conflict policy
+    Given the user is offline
+    And the user updates the profile summary and skills
+    When the device reconnects to the internet
+    Then the profile syncs to the backend successfully
+    And if a server-side change occurred more recently
+    Then last-write-wins is applied and the final profile reflects the latest timestamp
+
+  # ---------------------------------------------------------------
+  # Epic: Job Discovery & Management
+  # ---------------------------------------------------------------
+
+  @should @jobs @FR-3.2.1 @epic-jobs
+  Scenario: Browse and search job postings
+    Given a seeded catalog of static job postings is available locally
+    When the user opens the Jobs tab
+    Then a list of job cards is shown with title, company, location, date
+    When the user searches for "Software Engineer" in "Seattle"
+    Then results include only matching jobs within 3 seconds
+
+  @should @jobs @filters @FR-3.2.1 @epic-jobs
+  Scenario: Filter job postings
+    Given the user opened the filter panel
+    When the user applies filters for job type "full-time" and experience level "entry"
+    Then the list updates and shows only matching postings
+    And the user can Clear all filters in one action
+
+  @should @jobs @FR-3.2.2 @epic-jobs
+  Scenario: Save a job and track application status
+    Given a job detail is opened
+    When the user taps Save
+    Then the job appears in Saved Jobs with status "interested"
+    When the user updates the status to "applied"
+    Then the dashboard reflects the new status persistently
+    And status options include "interested", "applied", "interviewing", and "closed"
+
+  @could @jobs @notes @FR-3.2.2 @epic-jobs
+  Scenario: Add notes to a saved job
+    Given a job is saved
+    When the user adds a note "Follow up next week"
+    Then the note is saved with a timestamp and appears in job details
+
+  # ---------------------------------------------------------------
+  # Epic: Document Management
+  # ---------------------------------------------------------------
+
+  @should @docs @FR-3.4.1 @FR-3.4.3 @epic-docs
   Scenario: Document history and version control
     Given at least two generations were produced for the same job
     When the user opens the document history
     Then the app shows all versions with timestamps and parameters
     And the user can compare two versions and restore a prior version
 
-  @should @pdf @FR-3.4.2
+  @should @pdf @FR-3.4.2 @epic-docs
   Scenario: View and share generated PDF
     Given a generated PDF exists
     When the user opens the document viewer
     Then the PDF renders within the app
     And the user can share the PDF via installed apps
 
-  @must @nfr @performance @NFR-5.1
+  @could @docs @search @FR-3.4.1 @epic-docs
+  Scenario: Search and filter generated documents
+    Given multiple generated resumes and cover letters exist
+    When the user searches for "Tech Corp" and filters by type "resume"
+    Then only matching documents are listed with their ATS score and date
+
+  @could @docs @export @wont @epic-docs
+  Scenario: Export DOCX format (post-MVP)
+    Given a generated resume exists
+    When the user selects the DOCX export option
+    Then the system generates a DOCX file preserving structure and content
+
+  # ---------------------------------------------------------------
+  # Non-Functional Requirements (cross-cutting)
+  # ---------------------------------------------------------------
+
+  @must @nfr @performance @NFR-5.1 @epic-nfr
   Scenario: Resume generation performance targets
     Given the device is online and the backend is healthy
     When a generation request is submitted
     Then median end-to-end generation time is under 30 seconds
     And 95th percentile is under 60 seconds
 
-  @must @nfr @reliability @NFR-5.2
+  @should @nfr @performance @NFR-5.1 @epic-nfr
+  Scenario: Job search performance targets
+    Given a typical network connection and ≤ 500 local job postings
+    When the user searches for a keyword and applies filters
+    Then the results render within 3 seconds
+
+  @should @nfr @performance @NFR-5.1 @epic-nfr
+  Scenario: PDF generation performance targets
+    Given a validated resume or cover letter is ready for export
+    When the user taps Export
+    Then the PDF is generated within 5 seconds in the selected template
+    And the file is available for viewing or sharing
+
+  @must @nfr @reliability @NFR-5.2 @epic-nfr
   Scenario: Retry and graceful degradation on transient failures
     Given the AI provider returns a transient error
     When the backend retries with exponential backoff up to 3 attempts
     Then the request succeeds or a clear error is returned
     And the mobile app preserves user inputs and offers retry
 
-  @must @nfr @data-integrity @NFR-5.2.3
+  @must @nfr @data-integrity @NFR-5.2.3 @epic-nfr
   Scenario: Data validation and ACID for critical operations
     Given a profile update or document save is initiated
     When the backend processes the transaction
     Then inputs are validated server-side
     And the operation is committed atomically or rolled back on failure
 
-  @should @security @privacy
+  @should @security @privacy @FR-3.4.1 @epic-nfr
   Scenario: Basic privacy and data retention
     Given a user deletes a generated document
     When the deletion is confirmed
     Then the document becomes inaccessible in the app immediately
     And the backend flags the document for deletion in archival storage within 24 hours
 
-  @could @future @integration
+  @must @nfr @offline @epic-nfr
+  Scenario: Offline job browsing and queued save
+    Given the device is offline and a cached job list exists
+    When the user opens Jobs and taps Save on a job
+    Then the job saves locally with status "interested" and a queued sync marker
+    And when the device reconnects, the save is synced within 5 seconds
+
+  @should @nfr @accessibility @epic-nfr
+  Scenario: Accessibility basics
+    Given the user increases the system font size
+    When the app renders job lists and document previews
+    Then text scales appropriately and maintains sufficient contrast
+    And interactive elements remain reachable and labeled for screen readers
+
+  @should @nfr @observability @epic-nfr
+  Scenario: Privacy-aware event logging
+    Given generation and export events occur
+    When logs are recorded
+    Then no PII is stored in logs
+    And events include anonymized IDs and timestamps for diagnostics
+
+  # ---------------------------------------------------------------
+  # Epic: Settings & Preferences
+  # ---------------------------------------------------------------
+
+  @could @settings @preferences @epic-settings
+  Scenario: Set default template and length
+    Given the user opens Settings
+    When the user selects default template "ATS" and length "one-page"
+    Then future generations use these defaults unless overridden
+
+  # ---------------------------------------------------------------
+  # Epic: Authentication & Authorization (Production scope)
+  # ---------------------------------------------------------------
+
+  @could @future @auth @epic-auth
+  Scenario: Sign in to sync data across devices
+    Given the production backend uses JWT authentication
+    When the user signs in with valid credentials
+    Then profile and documents sync to the account and remain available across sessions
+
+  # ---------------------------------------------------------------
+  # Epic: External Job APIs (Post-MVP)
+  # ---------------------------------------------------------------
+
+  @could @future @integration @epic-integration
   Scenario: External job API integration (post-MVP)
     Given valid API credentials
     When the system refreshes job listings from an external provider

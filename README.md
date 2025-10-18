@@ -372,6 +372,7 @@ python backend/tests/test_ats_compliance.py
 
 Comprehensive documentation is maintained in the `docs/` folder:
 
+- **`docs/requirements/user-stories.feature`**: Comprehensive user stories and acceptance (MVP + future), prioritized with Rank 1 focus on AI-tailored resume generation
 - **`docs/project-proposal.md`**: Complete system design, agent specifications, context management strategy (lines 360-410)
 - **`docs/architecture-diagram.md`**: System architecture with service boundaries and dev/prod mappings
 - **`docs/agent-coordination-diagram.md`**: Multi-agent workflow visualization and handoff patterns
