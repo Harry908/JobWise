@@ -1,0 +1,108 @@
+@startuml System Architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title JobWise Backend System Architecture (Clean Architecture)
+
+Person(user, "Job Seeker", "Mobile app user seeking job opportunities")
+
+System_Boundary(jobwise, "JobWise System") {
+    Container(mobile_app, "Flutter Mobile App", "Flutter/Dart", "User interface for job search and resume generation")
+    
+    Container_Boundary(backend, "FastAPI Backend") {
+        Container(api_gateway, "API Gateway", "FastAPI Router", "Routes requests, handles CORS, rate limiting")
+        
+        Container_Boundary(presentation, "Presentation Layer") {
+            Container(auth_controller, "Auth Controller", "FastAPI Router", "Authentication endpoints")
+            Container(profile_controller, "Profile Controller", "FastAPI Router", "Master resume management")
+            Container(job_controller, "Job Controller", "FastAPI Router", "Job discovery and management")
+            Container(generation_controller, "Generation Controller", "FastAPI Router", "AI resume generation")
+            Container(document_controller, "Document Controller", "FastAPI Router", "Document management")
+        }
+        
+        Container_Boundary(application, "Application Layer") {
+            Container(profile_service, "Profile Service", "Python", "Profile business logic")
+            Container(job_service, "Job Service", "Python", "Job search and management")
+            Container(generation_service, "Generation Service", "Python", "AI generation orchestration")
+            Container(document_service, "Document Service", "Python", "Document lifecycle management")
+            Container(ai_orchestrator, "AI Orchestrator", "Python", "5-stage AI pipeline coordination")
+        }
+        
+        Container_Boundary(domain, "Domain Layer") {
+            Container(profile_entity, "Profile Entity", "Python", "Master resume domain model")
+            Container(job_entity, "Job Entity", "Python", "Job posting domain model") 
+            Container(document_entity, "Document Entity", "Python", "Generated document model")
+            Container(generation_entity, "Generation Entity", "Python", "AI generation process model")
+        }
+        
+        Container_Boundary(infrastructure, "Infrastructure Layer") {
+            Container(profile_repo, "Profile Repository", "SQLAlchemy", "Profile data persistence")
+            Container(job_repo, "Job Repository", "SQLAlchemy", "Job data persistence")
+            Container(document_repo, "Document Repository", "SQLAlchemy", "Document storage")
+            Container(llm_adapter, "LLM Adapter", "OpenAI SDK", "AI service integration")
+            Container(pdf_adapter, "PDF Adapter", "ReportLab/WeasyPrint", "PDF generation")
+            Container(cache_adapter, "Cache Adapter", "Redis/Memory", "Performance caching")
+        }
+    }
+    
+    ContainerDb(database, "Database", "SQLite/PostgreSQL", "Persistent data storage")
+    Container(redis_cache, "Redis Cache", "Redis", "Distributed caching")
+}
+
+System_Ext(openai_api, "OpenAI API", "GPT-3.5/GPT-4 for content generation")
+System_Ext(job_apis, "Job APIs", "Indeed/LinkedIn APIs for job listings")
+System_Ext(pdf_service, "PDF Service", "External PDF generation service")
+
+' Relationships
+Rel(user, mobile_app, "Uses", "HTTPS")
+Rel(mobile_app, api_gateway, "API calls", "REST/HTTPS")
+
+Rel(api_gateway, auth_controller, "Routes auth")
+Rel(api_gateway, profile_controller, "Routes profiles")
+Rel(api_gateway, job_controller, "Routes jobs")
+Rel(api_gateway, generation_controller, "Routes generation")
+Rel(api_gateway, document_controller, "Routes documents")
+
+Rel(profile_controller, profile_service, "Uses")
+Rel(job_controller, job_service, "Uses")
+Rel(generation_controller, generation_service, "Uses")
+Rel(document_controller, document_service, "Uses")
+
+Rel(generation_service, ai_orchestrator, "Orchestrates")
+
+Rel(profile_service, profile_entity, "Works with")
+Rel(job_service, job_entity, "Works with")
+Rel(generation_service, generation_entity, "Works with")
+Rel(document_service, document_entity, "Works with")
+
+Rel(profile_service, profile_repo, "Uses")
+Rel(job_service, job_repo, "Uses")
+Rel(document_service, document_repo, "Uses")
+Rel(ai_orchestrator, llm_adapter, "Uses")
+Rel(document_service, pdf_adapter, "Uses")
+Rel(generation_service, cache_adapter, "Uses")
+
+Rel(profile_repo, database, "Persists to")
+Rel(job_repo, database, "Persists to")
+Rel(document_repo, database, "Persists to")
+Rel(cache_adapter, redis_cache, "Caches to")
+
+Rel(llm_adapter, openai_api, "Calls", "HTTPS")
+Rel(job_repo, job_apis, "Fetches from", "HTTPS")
+Rel(pdf_adapter, pdf_service, "Generates via", "HTTPS")
+
+note right of ai_orchestrator
+  5-Stage AI Pipeline:
+  1. Job Analyzer
+  2. Profile Compiler  
+  3. Document Generator
+  4. Quality Validator
+  5. PDF Exporter
+end note
+
+note left of database
+  Environment Strategy:
+  - Prototype: SQLite
+  - Production: PostgreSQL
+end note
+
+@enduml

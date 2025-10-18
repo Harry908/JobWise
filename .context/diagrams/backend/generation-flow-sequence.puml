@@ -1,0 +1,148 @@
+@startuml Data Flow Sequence
+!theme plain
+
+title JobWise AI Resume Generation - Data Flow Sequence
+
+actor "User" as user
+participant "Flutter App" as app
+participant "API Gateway" as gateway
+participant "Generation Controller" as controller
+participant "Generation Service" as service
+participant "AI Orchestrator" as orchestrator
+participant "Job Analyzer" as stage1
+participant "Profile Compiler" as stage2  
+participant "Document Generator" as stage3
+participant "Quality Validator" as stage4
+participant "PDF Exporter" as stage5
+participant "LLM Service" as llm
+participant "Profile Repository" as profile_repo
+participant "Job Repository" as job_repo
+participant "Document Repository" as doc_repo
+database "Database" as db
+
+== Resume Generation Request ==
+
+user -> app: Request resume generation\nfor saved job
+app -> gateway: POST /api/v1/generations/resume
+gateway -> controller: Route to generation endpoint
+controller -> service: generate_resume(request)
+
+service -> profile_repo: get_profile(profile_id)
+profile_repo -> db: SELECT profile data
+profile_repo <-- db: Profile entity
+service <-- profile_repo: MasterProfile
+
+service -> job_repo: get_job(job_id)
+job_repo -> db: SELECT job data
+job_repo <-- db: Job entity  
+service <-- job_repo: JobPosting
+
+service -> orchestrator: execute_pipeline(profile, job, options)
+
+== Stage 1: Job Analysis ==
+
+orchestrator -> stage1: execute(JobAnalysisInput)
+stage1 -> llm: analyze_job_requirements(job_description)
+note right: Prompt: Extract ATS keywords,\nrequirements, seniority level
+stage1 <-- llm: Analysis result (1500 tokens)
+orchestrator <-- stage1: JobAnalysisResult
+note right: Keywords, requirements,\nskills categories
+
+== Stage 2: Profile Compilation ==
+
+orchestrator -> stage2: execute(ProfileCompilationInput) 
+stage2 -> llm: score_profile_relevance(profile, job_analysis)
+note right: Prompt: Score experiences\nand skills by relevance (0-100)
+stage2 <-- llm: Scoring result (2000 tokens)
+orchestrator <-- stage2: ProfileCompilationResult
+note right: Scored experiences,\nranked skills, match %
+
+== Stage 3: Document Generation ==
+
+orchestrator -> stage3: execute(DocumentGenerationInput)
+stage3 -> llm: generate_tailored_resume(scored_profile, job_reqs)
+note right: Prompt: Generate resume\nfocusing on top-scored content
+stage3 <-- llm: Generated content (3000 tokens)
+orchestrator <-- stage3: DocumentGenerationResult
+note right: Resume content,\ncover letter content
+
+== Stage 4: Quality Validation ==
+
+orchestrator -> stage4: execute(ValidationInput)
+stage4 -> llm: validate_quality(generated_content, job_analysis)
+note right: Prompt: Check ATS compliance,\nfactuality, keyword coverage
+stage4 <-- llm: Validation result (1500 tokens)
+orchestrator <-- stage4: ValidationResult
+note right: ATS score, issues,\nkeyword coverage %
+
+alt Quality validation passes
+    == Stage 5: PDF Export ==
+    
+    orchestrator -> stage5: execute(PDFExportInput)
+    stage5 -> stage5: generate_pdf(content, template)
+    note right: No LLM tokens used,\nlocal PDF generation
+    orchestrator <-- stage5: PDFExportResult
+    note right: PDF bytes, metadata,\nfile URL
+
+else Quality validation fails
+    
+    orchestrator -> stage3: regenerate_with_stricter_prompts()
+    stage3 -> llm: regenerate_resume(feedback, constraints)
+    stage3 <-- llm: Regenerated content
+    orchestrator -> stage4: validate_again()
+    
+    alt Still fails after retry
+        orchestrator -> orchestrator: mark_as_needs_review()
+    end
+end
+
+service <-- orchestrator: PipelineResult
+
+== Save Results ==
+
+service -> doc_repo: save_document(generated_document)
+doc_repo -> db: INSERT document, metadata
+service <-- doc_repo: Document entity
+
+controller <-- service: GenerationResponse
+gateway <-- controller: HTTP 201 Created
+app <-- gateway: Generation result with status
+user <-- app: Show generation complete\nwith download link
+
+== Real-time Status Updates (Optional) ==
+
+loop Every 5 seconds during generation
+    user -> app: Check generation status
+    app -> gateway: GET /api/v1/generations/{id}/status
+    gateway -> controller: Route status request
+    controller -> service: get_generation_status(id)
+    controller <-- service: Current stage and progress
+    gateway <-- controller: Status response
+    app <-- gateway: Progress update
+    user <-- app: Show progress (e.g., "Stage 2/5: Compiling Profile")
+end
+
+note over orchestrator
+Total Token Budget: 8000 tokens
+Stage 1: 1500 tokens (Job Analysis)
+Stage 2: 2000 tokens (Profile Compilation) 
+Stage 3: 3000 tokens (Document Generation)
+Stage 4: 1500 tokens (Quality Validation)
+Stage 5: 0 tokens (PDF Export)
+
+Performance Target: <30s (p50), <60s (p95)
+end note
+
+note over llm
+Rate Limiting Handling:
+- Exponential backoff on 429 errors
+- Circuit breaker on repeated failures
+- Fallback to alternative models if configured
+
+Error Recovery:
+- Retry failed stages up to 3 times
+- Preserve pipeline state for resumption
+- Graceful degradation on non-critical failures
+end note
+
+@enduml

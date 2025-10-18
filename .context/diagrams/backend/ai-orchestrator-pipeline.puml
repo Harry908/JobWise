@@ -1,0 +1,289 @@
+@startuml AI Orchestrator Pipeline
+!define RECTANGLE class
+
+title JobWise AI Generation Pipeline - 5 Stage Orchestration
+
+package "AI Orchestrator Domain" {
+    
+    RECTANGLE AIOrchestrator {
+        -execution_id: UUID
+        -profile: MasterProfile
+        -job: JobPosting
+        -options: GenerationOptions
+        -pipeline_state: PipelineState
+        -token_budget: TokenBudget
+        --
+        +execute_pipeline(): PipelineResult
+        +get_status(): PipelineStatus
+        +cancel_execution(): void
+        +retry_stage(stage: int): StageResult
+        +estimate_tokens(): TokenEstimate
+    }
+    
+    RECTANGLE PipelineState {
+        -current_stage: int
+        -stage_results: List[StageResult]
+        -start_time: datetime
+        -total_tokens: int
+        -status: ExecutionStatus
+        --
+        +advance_stage(): void
+        +rollback_stage(): void
+        +get_progress(): float
+        +is_complete(): bool
+    }
+    
+    enum ExecutionStatus {
+        PENDING
+        RUNNING
+        COMPLETED
+        FAILED
+        CANCELLED
+    }
+}
+
+package "Pipeline Stages" {
+    
+    abstract class PipelineStage {
+        #stage_name: str
+        #max_tokens: int
+        #timeout: int
+        #retry_count: int
+        --
+        +{abstract} execute(input: StageInput): StageResult
+        +validate_input(input: StageInput): bool
+        +handle_error(error: Exception): StageResult
+        #log_metrics(result: StageResult): void
+    }
+    
+    RECTANGLE JobAnalyzer {
+        -keywords_extractor: KeywordExtractor
+        -requirements_parser: RequirementsParser
+        --
+        +execute(input: JobAnalysisInput): JobAnalysisResult
+        -extract_ats_keywords(): List[Keyword]
+        -parse_requirements(): List[Requirement]
+        -categorize_skills(): Dict[str, List[str]]
+        -assess_seniority_level(): SeniorityLevel
+    }
+    
+    RECTANGLE ProfileCompiler {
+        -relevance_scorer: RelevanceScorer
+        -content_ranker: ContentRanker
+        --
+        +execute(input: ProfileCompilationInput): ProfileCompilationResult
+        -score_experiences(job_reqs: List[Requirement]): List[ScoredExperience]
+        -rank_skills(keywords: List[Keyword]): List[RankedSkill]
+        -select_education(): List[Education]
+        -calculate_match_score(): float
+    }
+    
+    RECTANGLE DocumentGenerator {
+        -template_engine: TemplateEngine
+        -content_optimizer: ContentOptimizer
+        --
+        +execute(input: DocumentGenerationInput): DocumentGenerationResult
+        -generate_summary(): str
+        -format_experiences(): List[str]
+        -optimize_bullet_points(): List[str]
+        -apply_template(template: Template): str
+    }
+    
+    RECTANGLE QualityValidator {
+        -ats_checker: ATSChecker
+        -factuality_validator: FactualityValidator
+        -grammar_checker: GrammarChecker
+        --
+        +execute(input: ValidationInput): ValidationResult
+        -check_ats_compliance(): ATSScore
+        -validate_factuality(): FactualityResult
+        -check_grammar(): GrammarResult
+        -verify_keyword_coverage(): float
+    }
+    
+    RECTANGLE PDFExporter {
+        -pdf_generator: PDFGenerator
+        -template_selector: TemplateSelector
+        --
+        +execute(input: PDFExportInput): PDFExportResult
+        -select_template(preferences: UserPreferences): PDFTemplate
+        -generate_pdf(content: str, template: PDFTemplate): bytes
+        -optimize_layout(): LayoutResult
+        -add_metadata(): PDFMetadata
+    }
+}
+
+package "Stage Models" {
+    
+    RECTANGLE StageResult {
+        -stage_name: str
+        -status: StageStatus
+        -output_data: Dict
+        -tokens_used: int
+        -execution_time: float
+        -error_message: str
+        --
+        +is_success(): bool
+        +get_output[T](key: str): T
+        +add_metric(name: str, value: Any): void
+    }
+    
+    enum StageStatus {
+        SUCCESS
+        FAILED
+        RETRY_NEEDED
+        TIMEOUT
+    }
+    
+    RECTANGLE JobAnalysisResult {
+        -required_keywords: List[Keyword]
+        -preferred_keywords: List[Keyword]
+        -technical_requirements: List[TechnicalRequirement]
+        -soft_skills: List[SoftSkill]
+        -experience_level: ExperienceLevel
+        -company_culture: CompanyCulture
+        --
+        +get_all_keywords(): List[Keyword]
+        +get_priority_requirements(): List[Requirement]
+    }
+    
+    RECTANGLE ProfileCompilationResult {
+        -scored_experiences: List[ScoredExperience]
+        -ranked_skills: List[RankedSkill] 
+        -selected_education: List[Education]
+        -match_percentage: float
+        -emphasis_recommendations: List[str]
+        --
+        +get_top_experiences(n: int): List[Experience]
+        +get_relevant_skills(threshold: float): List[Skill]
+    }
+    
+    RECTANGLE DocumentGenerationResult {
+        -resume_content: str
+        -cover_letter_content: str
+        -formatting_metadata: Dict
+        -content_statistics: ContentStats
+        --
+        +get_content(doc_type: DocumentType): str
+        +get_word_count(): int
+    }
+    
+    RECTANGLE ValidationResult {
+        -ats_score: float
+        -factuality_issues: List[FactualityIssue]
+        -grammar_issues: List[GrammarIssue]
+        -keyword_coverage: float
+        -overall_quality: QualityScore
+        -needs_regeneration: bool
+        --
+        +is_valid(): bool
+        +get_improvement_suggestions(): List[str]
+    }
+    
+    RECTANGLE PDFExportResult {
+        -pdf_bytes: bytes
+        -pdf_url: str
+        -metadata: PDFMetadata
+        -file_size: int
+        -page_count: int
+        --
+        +save_to_storage(storage: StorageAdapter): str
+        +get_shareable_url(): str
+    }
+}
+
+package "Supporting Services" {
+    
+    RECTANGLE LLMService {
+        -client: OpenAIClient
+        -token_manager: TokenManager
+        -retry_handler: RetryHandler
+        --
+        +generate_completion(prompt: str, model: str): str
+        +estimate_tokens(text: str): int
+        +check_rate_limits(): RateLimitStatus
+    }
+    
+    RECTANGLE PromptManager {
+        -templates: Dict[str, PromptTemplate]
+        -version_manager: VersionManager
+        --
+        +get_prompt(stage: str, version: str): PromptTemplate
+        +render_prompt(template: PromptTemplate, context: Dict): str
+        +validate_prompt(prompt: str): bool
+    }
+    
+    RECTANGLE TokenBudget {
+        -stage_limits: Dict[str, int]
+        -total_budget: int
+        -used_tokens: int
+        --
+        +allocate_tokens(stage: str): int
+        +consume_tokens(stage: str, amount: int): void
+        +get_remaining(): int
+        +can_execute_stage(stage: str): bool
+    }
+    
+    RECTANGLE ErrorHandler {
+        -retry_strategies: Dict[Exception, RetryStrategy]
+        -fallback_handlers: Dict[str, FallbackHandler]
+        --
+        +handle_error(error: Exception, context: ErrorContext): HandleResult
+        +should_retry(error: Exception, attempt: int): bool
+        +get_fallback(error: Exception): FallbackHandler
+    }
+}
+
+' Inheritance
+PipelineStage <|-- JobAnalyzer
+PipelineStage <|-- ProfileCompiler
+PipelineStage <|-- DocumentGenerator
+PipelineStage <|-- QualityValidator
+PipelineStage <|-- PDFExporter
+
+' Composition
+AIOrchestrator *-- PipelineState
+AIOrchestrator *-- TokenBudget
+PipelineState *-- StageResult
+
+' Dependencies
+AIOrchestrator --> JobAnalyzer : stage1
+AIOrchestrator --> ProfileCompiler : stage2
+AIOrchestrator --> DocumentGenerator : stage3
+AIOrchestrator --> QualityValidator : stage4
+AIOrchestrator --> PDFExporter : stage5
+
+JobAnalyzer --> LLMService
+ProfileCompiler --> LLMService
+DocumentGenerator --> LLMService
+QualityValidator --> LLMService
+
+AIOrchestrator --> PromptManager
+AIOrchestrator --> ErrorHandler
+
+JobAnalyzer ..> JobAnalysisResult : creates
+ProfileCompiler ..> ProfileCompilationResult : creates
+DocumentGenerator ..> DocumentGenerationResult : creates
+QualityValidator ..> ValidationResult : creates
+PDFExporter ..> PDFExportResult : creates
+
+note top of AIOrchestrator
+Pipeline Execution Flow:
+1. Job Analysis (1500 tokens max)
+2. Profile Compilation (2000 tokens max)
+3. Document Generation (3000 tokens max)
+4. Quality Validation (1500 tokens max)
+5. PDF Export (0 tokens)
+
+Total Budget: 8000 tokens per generation
+end note
+
+note bottom of ErrorHandler
+Error Handling Strategy:
+- Exponential backoff for rate limits
+- Circuit breaker for service failures
+- Graceful degradation for non-critical errors
+- Rollback capability for data consistency
+end note
+
+@enduml
