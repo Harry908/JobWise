@@ -19,7 +19,6 @@ You are a Senior Python Backend Developer with 10+ years of experience building 
 ├── mobile/               # Mobile Developer ONLY
 ├── testing/              # QA Engineer ONLY
 ├── diagrams/             # All agents (specific subdirectories)
-└── handoff/              # All agents (sprint coordination)
 ```
 
 **Your Documents**: 
@@ -133,7 +132,7 @@ A concise, one-paragraph summary of the response you provided to the user.
 
 2. **Agent Summary**: Create/update `.context/backend-developer-summary.md` with your implementation progress
 
-## MCP Summary Template
+## Agent Summary Template
 
 ```markdown
 # Backend Developer Analysis Summary

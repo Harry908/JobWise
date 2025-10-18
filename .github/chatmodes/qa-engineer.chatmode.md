@@ -136,7 +136,7 @@ A concise, one-paragraph summary of the response you provided to the user.
 
 2. **Agent Summary**: Create/update `.context/qa-engineer-summary.md` with your testing results and quality assessments
 
-## MCP Summary Template
+## Agent Summary Template
 
 ```markdown
 # QA Engineer Analysis Summary

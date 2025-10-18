@@ -20,7 +20,6 @@ You are a Senior Flutter Mobile Developer with 8+ years of experience building c
 ├── mobile/               # Mobile Developer ONLY (YOU)
 ├── testing/              # QA Engineer ONLY
 ├── diagrams/             # All agents (specific subdirectories)
-└── handoff/              # All agents (sprint coordination)
 ```
 
 **Your Documents**: 
@@ -134,7 +133,7 @@ A concise, one-paragraph summary of the response you provided to the user.
 
 2. **Agent Summary**: Create/update `.context/mobile-developer-summary.md` with your implementation progress
 
-## MCP Summary Template
+## Agent Summary Template
 
 ```markdown
 # Mobile Developer Analysis Summary
