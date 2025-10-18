@@ -1,0 +1,218 @@
+@startuml Clean-Architecture-Data-Flow
+!theme plain
+title Resume Generation - Clean Architecture Data Flow
+
+actor "Job Seeker" as User
+box "Presentation Layer" #LightBlue
+  participant "Generation UI" as UI
+  participant "State Provider" as StateProvider
+end box
+
+box "Application Layer" #LightGreen
+  participant "Generate Resume\nUse Case" as GenerateUseCase
+  participant "Get Generation Status\nUse Case" as StatusUseCase
+end box
+
+box "Domain Layer" #LightYellow
+  participant "AI Orchestrator\n(Domain Service)" as AIOrchestrator
+  participant "Master Profile\n(Entity)" as ProfileEntity
+  participant "Job\n(Entity)" as JobEntity
+end box
+
+box "Infrastructure Layer" #LightCoral
+  participant "Profile Repository\nImplementation" as ProfileRepo
+  participant "Job Repository\nImplementation" as JobRepo
+  participant "Document Repository\nImplementation" as DocumentRepo
+  participant "LLM Service Adapter" as LLMAdapter
+  participant "PDF Service Adapter" as PDFAdapter
+end box
+
+box "External Services" #LightGray
+  participant "FastAPI Backend" as Backend
+  participant "OpenAI API" as OpenAI
+  participant "Database\n(SQLite/PostgreSQL)" as Database
+  participant "File Storage\n(Local/S3)" as Storage
+end box
+
+== User Initiates Resume Generation ==
+User -> UI: Select job + profile for resume
+activate UI
+
+UI -> StateProvider: Trigger generation command
+activate StateProvider
+
+StateProvider -> GenerateUseCase: Execute(GenerateResumeCommand)
+activate GenerateUseCase
+
+== Application Layer Orchestrates Domain Logic ==
+GenerateUseCase -> ProfileRepo: GetProfile(profileId)
+activate ProfileRepo
+ProfileRepo -> Database: SELECT profile data
+Database --> ProfileRepo: Profile data
+ProfileRepo --> GenerateUseCase: ProfileEntity
+deactivate ProfileRepo
+
+GenerateUseCase -> JobRepo: GetJob(jobId)
+activate JobRepo  
+JobRepo -> Database: SELECT job data
+Database --> JobRepo: Job data
+JobRepo --> GenerateUseCase: JobEntity
+deactivate JobRepo
+
+GenerateUseCase -> AIOrchestrator: GenerateResume(profile, job, options)
+activate AIOrchestrator
+
+== Domain Service Executes Pure Business Logic ==
+note over AIOrchestrator
+**5-Stage Pipeline (Domain Service)**
+- Zero external dependencies
+- Uses repository interfaces only
+- Implements core business rules
+end note
+
+AIOrchestrator -> LLMAdapter: AnalyzeJob(jobDescription)
+activate LLMAdapter
+LLMAdapter -> Backend: POST /ai/analyze
+Backend -> OpenAI: Job analysis request (1500 tokens)
+OpenAI --> Backend: Job requirements
+Backend --> LLMAdapter: Structured analysis
+LLMAdapter --> AIOrchestrator: JobAnalysisResult (Value Object)
+deactivate LLMAdapter
+
+AIOrchestrator -> LLMAdapter: CompileProfile(profile, jobAnalysis) 
+activate LLMAdapter
+LLMAdapter -> Backend: POST /ai/compile
+Backend -> OpenAI: Profile scoring request (2000 tokens)
+OpenAI --> Backend: Relevance scores
+Backend --> LLMAdapter: Scored content
+LLMAdapter --> AIOrchestrator: ProfileCompilerResult (Value Object)
+deactivate LLMAdapter
+
+AIOrchestrator -> LLMAdapter: GenerateContent(compilation)
+activate LLMAdapter
+LLMAdapter -> Backend: POST /ai/generate
+Backend -> OpenAI: Content generation request (3000 tokens)
+OpenAI --> Backend: Generated resume content
+Backend --> LLMAdapter: Tailored content
+LLMAdapter --> AIOrchestrator: DocumentContent (Value Object)
+deactivate LLMAdapter
+
+AIOrchestrator -> LLMAdapter: ValidateQuality(content)
+activate LLMAdapter
+LLMAdapter -> Backend: POST /ai/validate
+Backend -> OpenAI: Quality validation request (1500 tokens)
+OpenAI --> Backend: Validation results
+Backend --> LLMAdapter: Quality report
+LLMAdapter --> AIOrchestrator: QualityValidationResult (Value Object)
+deactivate LLMAdapter
+
+AIOrchestrator -> PDFAdapter: ExportPDF(validatedContent, template)
+activate PDFAdapter
+PDFAdapter -> Backend: POST /pdf/generate
+Backend -> Storage: Store PDF file
+Storage --> Backend: File path
+Backend --> PDFAdapter: PDF metadata
+PDFAdapter --> AIOrchestrator: PDFExportResult (Value Object)
+deactivate PDFAdapter
+
+AIOrchestrator --> GenerateUseCase: GenerationResult (Success)
+deactivate AIOrchestrator
+
+== Persistence and State Update ==
+GenerateUseCase -> DocumentRepo: SaveDocument(generatedDocument)
+activate DocumentRepo
+DocumentRepo -> Database: INSERT generated document
+Database --> DocumentRepo: Document ID
+DocumentRepo --> GenerateUseCase: DocumentEntity
+deactivate DocumentRepo
+
+GenerateUseCase --> StateProvider: GenerationCompleted(documentEntity)
+deactivate GenerateUseCase
+
+StateProvider --> UI: Update state (completed)
+deactivate StateProvider
+
+== Status Polling (Asynchronous) ==
+loop Status Updates
+  UI -> StatusUseCase: GetGenerationStatus(generationId)
+  StatusUseCase -> DocumentRepo: GetGenerationStatus(generationId)  
+  DocumentRepo -> Database: SELECT generation status
+  Database --> DocumentRepo: Current status
+  DocumentRepo --> StatusUseCase: StatusResult
+  StatusUseCase --> UI: Progress update
+  UI -> User: Show progress
+end
+
+== Final Document Retrieval ==
+UI -> DocumentRepo: GetDocument(documentId)
+DocumentRepo -> Database: SELECT document
+Database --> DocumentRepo: Document data
+DocumentRepo --> UI: Generated resume
+UI -> User: Display resume + PDF options
+deactivate UI
+
+note over AIOrchestrator
+  **Clean Architecture Benefits:**
+  
+  **Domain Service Independence:**
+  - No external dependencies
+  - Uses only repository interfaces
+  - Pure business logic
+  - Fully testable with mocks
+  
+  **Token Budget Management:**
+  - Total: 8000 tokens per generation
+  - Stage 1: Job Analysis (1500 tokens)
+  - Stage 2: Profile Compilation (2000 tokens)
+  - Stage 3: Content Generation (3000 tokens)
+  - Stage 4: Quality Validation (1500 tokens)
+  - Stage 5: PDF Export (0 tokens - local)
+end note
+
+note over GenerateUseCase, StatusUseCase
+  **Application Layer Responsibilities:**
+  
+  **Use Case Orchestration:**
+  - Coordinate domain services
+  - Handle cross-cutting concerns
+  - Manage transaction boundaries
+  - Transform DTOs ↔ Domain objects
+  
+  **Error Handling Strategy:**
+  - LLM timeout: Exponential backoff retry
+  - Token limit exceeded: Queue for later
+  - Quality validation failure: Single retry
+  - Complete pipeline failure: Error result
+end note
+
+note over ProfileRepo, DocumentRepo
+  **Repository Pattern Benefits:**
+  
+  **Environment Switching:**
+  - SQLite implementation (Prototype)
+  - PostgreSQL implementation (Production)
+  - Same interface, different storage
+  
+  **Offline-First Strategy:**
+  - Local cache with sync queue
+  - Conflict resolution (last-write-wins)
+  - Background synchronization
+  - Graceful degradation
+end note
+
+note over LLMAdapter, PDFAdapter
+  **Adapter Pattern Benefits:**
+  
+  **Provider Abstraction:**
+  - OpenAI adapter (primary)
+  - Claude adapter (future alternative)
+  - Mock adapter (testing)
+  
+  **Configuration Strategy:**
+  - Environment-based selection
+  - Fallback mechanisms
+  - Rate limiting & circuit breakers
+  - Cost optimization
+end note
+
+@enduml

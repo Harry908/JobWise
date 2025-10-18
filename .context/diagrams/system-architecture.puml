@@ -1,0 +1,191 @@
+@startuml JobWise-Clean-Architecture
+!theme plain
+title JobWise System Architecture - Clean Architecture (Hexagonal)
+
+' Clean Architecture Layers
+package "Presentation Layer" {
+  package "Flutter Mobile App" {
+    [Profile UI] as ProfileUI
+    [Jobs UI] as JobsUI
+    [Generate UI] as GenerateUI
+    [Documents UI] as DocumentsUI
+    [State Management\n(Provider/Riverpod)] as StateManagement
+  }
+  
+  package "FastAPI Controllers" {
+    [Profile Controller] as ProfileController
+    [Job Controller] as JobController
+    [Generation Controller] as GenerationController
+    [Document Controller] as DocumentController
+  }
+}
+
+package "Application Layer" {
+  package "Use Cases" {
+    [Profile Management\nUse Cases] as ProfileUseCases
+    [Job Discovery\nUse Cases] as JobUseCases
+    [Resume Generation\nUse Cases] as GenerationUseCases
+    [Document Management\nUse Cases] as DocumentUseCases
+  }
+  
+  package "DTOs & Commands" {
+    [Commands] as Commands
+    [Queries] as Queries
+    [Results] as Results
+  }
+}
+
+package "Domain Layer" {
+  package "Entities" {
+    [MasterProfile] as MasterProfile
+    [Job] as Job
+    [GeneratedDocument] as GeneratedDocument
+  }
+  
+  package "Value Objects" {
+    [PersonalInfo] as PersonalInfo
+    [Skills] as Skills
+    [Experience] as Experience
+  }
+  
+  package "Domain Services" {
+    [AI Orchestrator] as AIOrchestrator
+    [Validation Service] as ValidationService
+  }
+  
+  package "Repository Interfaces" {
+    [IProfileRepository] as IProfileRepo
+    [IJobRepository] as IJobRepo
+    [IDocumentRepository] as IDocumentRepo
+  }
+}
+
+package "Infrastructure Layer" {
+  package "Repository Implementations" {
+    [SQLite Profile Repository] as SQLiteProfileRepo
+    [PostgreSQL Profile Repository] as PostgreSQLProfileRepo
+    [Static Job Repository] as StaticJobRepo
+    [API Job Repository] as APIJobRepo
+  }
+  
+  package "External Service Adapters" {
+    [OpenAI LLM Adapter] as OpenAIAdapter
+    [PDF Service Adapter] as PDFAdapter
+    [Cache Service Adapter] as CacheAdapter
+  }
+  
+  package "Infrastructure Services" {
+    database "Database\n(SQLite/PostgreSQL)" as DB
+    [Cache\n(Memory/Redis)] as Cache
+    [File Storage\n(Local/S3)" as FileStorage
+  }
+}
+
+package "External Services" {
+  cloud "OpenAI API\nGPT-3.5/GPT-4" as OpenAIAPI
+  cloud "Job APIs\n(Indeed/LinkedIn)" as JobAPIs
+  cloud "PDF Generation\n(WeasyPrint/Puppeteer)" as PDFServices
+}
+
+' Clean Architecture Dependencies (Inward Only)
+' Presentation → Application
+ProfileUI --> ProfileUseCases : Execute Commands
+JobsUI --> JobUseCases : Execute Queries
+GenerateUI --> GenerationUseCases : Execute Commands
+DocumentsUI --> DocumentUseCases : Execute Queries
+
+ProfileController --> ProfileUseCases : HTTP → Use Cases
+JobController --> JobUseCases : HTTP → Use Cases
+GenerationController --> GenerationUseCases : HTTP → Use Cases
+DocumentController --> DocumentUseCases : HTTP → Use Cases
+
+' Application → Domain
+ProfileUseCases --> MasterProfile : Domain Logic
+JobUseCases --> Job : Domain Logic
+GenerationUseCases --> AIOrchestrator : Core Business Logic
+DocumentUseCases --> GeneratedDocument : Domain Logic
+
+ProfileUseCases --> IProfileRepo : Repository Interface
+JobUseCases --> IJobRepo : Repository Interface
+DocumentUseCases --> IDocumentRepo : Repository Interface
+
+' Domain Rules (No Outward Dependencies)
+AIOrchestrator --> ValidationService : Domain Service
+MasterProfile --> PersonalInfo : Value Objects
+MasterProfile --> Skills : Value Objects
+MasterProfile --> Experience : Value Objects
+
+' Infrastructure → Domain (Implements Interfaces)
+SQLiteProfileRepo ..|> IProfileRepo : implements
+PostgreSQLProfileRepo ..|> IProfileRepo : implements
+StaticJobRepo ..|> IJobRepo : implements
+APIJobRepo ..|> IJobRepo : implements
+
+' Infrastructure → External Services
+OpenAIAdapter --> OpenAIAPI : LLM Calls
+PDFAdapter --> PDFServices : PDF Generation
+CacheAdapter --> Cache : Caching
+SQLiteProfileRepo --> DB : Data Access
+PostgreSQLProfileRepo --> DB : Data Access
+APIJobRepo --> JobAPIs : Job Data
+
+' Clean Architecture Notes
+note top of AIOrchestrator
+  **Domain Service - Core Business Logic**
+  5-Stage AI Pipeline:
+  1. Job Analysis (1500 tokens)
+  2. Profile Compilation (2000 tokens)
+  3. Document Generation (3000 tokens)
+  4. Quality Validation (1500 tokens)
+  5. PDF Export (local processing)
+  
+  **Zero External Dependencies**
+  **Token Budget: 8000 total**
+end note
+
+note right of IProfileRepo
+  **Repository Pattern**
+  - Abstracts data access
+  - Enables environment switching
+  - Supports testing with mocks
+  
+  **Implementations:**
+  - SQLite (Prototype)
+  - PostgreSQL (Production)
+end note
+
+note right of StateManagement
+  **Strategy Pattern**
+  - Provider (Prototype)
+  - Riverpod (Production)
+  
+  **Features:**
+  - Offline-first architecture
+  - State synchronization
+  - Progress tracking
+end note
+
+note bottom of Commands
+  **CQRS Pattern**
+  Commands: Write operations
+  Queries: Read operations
+  Results: Standardized responses
+  
+  **Benefits:**
+  - Clear operation separation
+  - Better testing
+  - Scalable design
+end note
+
+note left of OpenAIAdapter
+  **Adapter Pattern**
+  - Isolates external dependencies
+  - Enables provider switching
+  - Handles rate limiting & retries
+  
+  **Configuration:**
+  - Dev: GPT-3.5-turbo
+  - Prod: GPT-4 + fallback
+end note
+
+@enduml

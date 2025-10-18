@@ -152,7 +152,7 @@ A concise, one-paragraph summary of the response you provided to the user.
 
 2. **Agent Summary**: Create/update `.context/solutions-architect-summary.md` with your architectural decisions
 
-## MCP Summary Template
+## Agent Summary Template
 
 ```markdown
 # Solutions Architect Analysis Summary

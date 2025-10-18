@@ -1,8 +1,8 @@
 # Software Requirements Specification (SRS)
 ## JobWise - AI-Powered Job Application Assistant
 
-**Document Version:** 1.0  
-**Date:** October 13, 2025  
+**Document Version:** 1.1  
+**Date:** October 18, 2025  
 **Prepared by:** Solutions Architect Team  
 **Project:** JobWise AI Resume Generation System  
 
@@ -91,11 +91,14 @@ The major functions of JobWise include:
    - Job analysis and profile matching
    - ATS-optimized and visual template options
    - Quality validation and compliance checking
+   - Tailored cover letter generation
+   - Generation progress tracking and status updates
 
 4. **Document Management**
    - PDF generation and export
    - Document versioning and history
    - Offline access and synchronization
+   - Search and filtering across generated documents
 
 ### 2.3 User Classes and Characteristics
 
@@ -206,6 +209,10 @@ Functionality for browsing, searching, and managing job opportunities that users
 - The system SHALL cache job listings for offline browsing
 - The system SHALL refresh job data periodically
 
+**FR-3.2.5**: Offline Saves & Sync Queue
+- The system SHALL allow saving jobs and updating statuses while offline and SHALL queue these changes for synchronization.
+- Upon reconnection, queued operations SHALL sync within 5 seconds when the backend is available.
+
 ### 3.3 AI-Powered Resume Generation
 
 #### 3.3.1 Description
@@ -253,6 +260,21 @@ The core AI functionality that analyzes job requirements and generates tailored 
 - The system SHALL provide visual-enhanced template (modern design)
 - The system SHALL support one-page and two-page length options
 - The system SHALL maintain consistent formatting across templates
+
+**FR-3.3.7**: Cover Letter Generation
+- The system SHALL generate a tailored cover letter tied to a specific job using analyzed job requirements and the master profile.
+- The cover letter SHALL include an introduction, 2–3 body paragraphs, and a closing with a professional tone.
+
+**FR-3.3.8**: Generation Progress & Status
+- The system SHALL expose generation progress at the stage level (analysis, scoring, drafting, validation, export).
+- The system SHALL update and surface statuses including: pending, generating, generated, needs review, failed.
+
+**FR-3.3.9**: Factuality Validation & Controlled Regeneration
+- The system SHALL validate that generated content is traceable to the master profile and SHALL not fabricate information.
+- On validation failure, the system SHALL perform at most one stricter regeneration; if still failing, mark the document "Needs Review" with guidance.
+
+**FR-3.3.10**: ATS Keyword Coverage Threshold
+- The system SHALL ensure that at least 90% of required ATS keywords from the job analysis appear naturally in the generated resume content without keyword stuffing.
 
 ### 3.4 Document Management
 
@@ -311,6 +333,7 @@ Functionality for managing generated resumes, cover letters, and document versio
 - Generation setup screen (profile + job selection)
 - Generation progress tracking screen
 - Generated document preview screen
+ - Status dashboard indicating stage-level progress and outcome (generated/needs review/failed)
 
 ### 4.2 Hardware Interfaces
 
@@ -386,12 +409,14 @@ Functionality for managing generated resumes, cover letters, and document versio
 - **Retry Logic**: Exponential backoff for failed API calls (max 3 attempts)
 - **Fallback Mechanisms**: Cached data when external services unavailable
 - **Error Recovery**: Automatic retry for transient failures
+ - **Offline Queue**: Operations performed offline (job saves, edits) SHALL be queued and synchronized automatically upon reconnection.
 
 #### 5.2.3 Data Integrity
 - **Transaction Management**: ACID compliance for critical operations
 - **Data Validation**: Server-side validation for all inputs
 - **Consistency Checks**: Regular data integrity verification
 - **Audit Trail**: Logging of all significant system operations
+ - **Data Retention & Deletion**: Upon user-initiated deletion of a generated document, the document SHALL become immediately inaccessible in the app and the backend SHALL flag the document for deletion from archival storage within 24 hours.
 
 ### 5.3 Security Requirements
 
@@ -406,6 +431,7 @@ Functionality for managing generated resumes, cover letters, and document versio
 - **Storage Encryption**: Encrypted local storage for sensitive data
 - **API Security**: Input sanitization and SQL injection prevention
 - **Privacy Compliance**: User data anonymization capabilities
+ - **Privacy-Aware Logging**: System logs SHALL not store PII; events SHALL use anonymized identifiers and timestamps.
 
 #### 5.3.3 Content Security
 - **Input Validation**: Sanitization of all user inputs
@@ -426,6 +452,7 @@ Functionality for managing generated resumes, cover letters, and document versio
 - **Color Contrast**: Sufficient contrast ratios for readability
 - **Text Scaling**: Support for system font size preferences
 - **Simple Navigation**: Clear visual hierarchy and navigation patterns
+ - **Measurable Thresholds**: Text and key UI elements SHALL remain functional and readable at up to 200% system text scaling without loss of content or functionality; contrast ratios SHALL meet platform-appropriate accessibility guidance.
 
 ### 5.5 Scalability Requirements
 
@@ -466,6 +493,36 @@ Functionality for managing generated resumes, cover letters, and document versio
 - **Precondition**: Application connected to job data source
 - **Main Flow**: User searches jobs, views details, saves interesting positions
 - **Postcondition**: Jobs saved to user's dashboard with status tracking
+
+**UC4: Generate Tailored Cover Letter**
+- **Actor**: Job Seeker
+- **Precondition**: Master resume exists, target job selected
+- **Main Flow**: System analyzes job + profile and generates a tailored cover letter (intro, 2–3 body paragraphs, closing)
+- **Postcondition**: Cover letter generated and stored; status updated
+
+**UC5: Review and Edit Documents**
+- **Actor**: Job Seeker
+- **Precondition**: Generated resume or cover letter exists
+- **Main Flow**: User edits sections, saves versions, compares versions, and may revert
+- **Postcondition**: New version created with metadata and history
+
+**UC6: Export as ATS-Compatible PDF**
+- **Actor**: Job Seeker
+- **Precondition**: Validated document exists
+- **Main Flow**: User selects template (ATS/visual) and exports PDF for viewing/sharing
+- **Postcondition**: PDF available via viewer and sharing mechanisms
+
+**UC7: View Application Pipeline & Status**
+- **Actor**: Job Seeker
+- **Precondition**: One or more generations in progress or completed
+- **Main Flow**: User views stage-level progress and status (pending, generating, generated, needs review, failed)
+- **Postcondition**: User understands progress and next steps
+
+**UC8: Offline Save and Sync**
+- **Actor**: Job Seeker
+- **Precondition**: Device offline, cached jobs available
+- **Main Flow**: User saves jobs and adds notes; operations queued; on reconnection, changes sync automatically
+- **Postcondition**: Saved jobs and notes reflected in backend within expected time
 
 ### 6.2 Data Model
 
@@ -571,7 +628,7 @@ GenerationRequest 1--1 GeneratedDocument
 ---
 
 **Document Control:**
-- Version: 1.0
-- Last Updated: October 13, 2025
-- Next Review: November 13, 2025
+- Version: 1.1
+- Last Updated: October 18, 2025
+- Next Review: November 18, 2025
 - Approved by: Solutions Architect Team

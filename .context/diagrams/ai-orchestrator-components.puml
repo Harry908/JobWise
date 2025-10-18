@@ -1,0 +1,222 @@
+@startuml AI-Orchestrator-Clean-Architecture
+!theme plain
+title AI Orchestrator - Domain Service Architecture
+
+package "Domain Service - AI Orchestrator" {
+  [Pipeline Orchestrator] as Orchestrator
+  
+  package "Stage Interfaces" {
+    interface "IPipelineStage" as IPipelineStage
+    interface "IJobAnalyzer" as IJobAnalyzer
+    interface "IProfileCompiler" as IProfileCompiler
+    interface "IDocumentGenerator" as IDocumentGenerator
+    interface "IQualityValidator" as IQualityValidator
+    interface "IPDFExporter" as IPDFExporter
+  }
+  
+  package "Domain Models" {
+    [Pipeline Context] as PipelineContext
+    [Stage Result] as StageResult
+    [Generation Options] as GenerationOptions
+    [Token Budget] as TokenBudget
+    [Pipeline Status] as PipelineStatus
+  }
+  
+  package "Value Objects" {
+    [Job Analysis Result] as JobAnalysisResult
+    [Profile Compiler Result] as ProfileCompilerResult
+    [Document Content] as DocumentContent
+    [Quality Validation Result] as QualityValidationResult
+    [PDF Export Result] as PDFExportResult
+  }
+}
+
+package "Infrastructure - Stage Implementations" {
+  package "Stage 1: Job Analyzer" {
+    [OpenAI Job Analyzer] as JobAnalyzerImpl
+    [Job Parser] as JobParser
+    [Requirements Extractor] as ReqExtractor
+    [Keyword Analyzer] as KeywordAnalyzer
+  }
+  
+  package "Stage 2: Profile Compiler" {
+    [Profile Compiler Impl] as ProfileCompilerImpl
+    [Relevance Scorer] as RelevanceScorer
+    [Content Ranker] as ContentRanker
+    [Match Calculator] as MatchCalculator
+  }
+  
+  package "Stage 3: Document Generator" {
+    [Document Generator Impl] as DocumentGeneratorImpl
+    [Content Rewriter] as ContentRewriter
+    [Template Engine] as TemplateEngine
+    [Bullet Point Generator] as BulletGenerator
+  }
+  
+  package "Stage 4: Quality Validator" {
+    [Quality Validator Impl] as QualityValidatorImpl
+    [ATS Checker] as ATSChecker
+    [Grammar Validator] as GrammarValidator
+    [Consistency Checker] as ConsistencyChecker
+    [Factuality Validator] as FactualityValidator
+  }
+  
+  package "Stage 5: PDF Exporter" {
+    [PDF Exporter Impl] as PDFExporterImpl
+    [ATS Template Formatter] as ATSFormatter
+    [Visual Template Formatter] as VisualFormatter
+    [Multi-Format Generator] as MultiFormat
+  }
+}
+
+package "External Service Interfaces" {
+  interface "ILLMService" as ILLMService
+  interface "IPDFService" as IPDFService
+  interface "ICacheService" as ICacheService
+}
+
+' Clean Architecture Dependencies (Domain → Infrastructure)
+' Domain Orchestrator uses interfaces only
+Orchestrator --> IJobAnalyzer : Stage 1
+Orchestrator --> IProfileCompiler : Stage 2  
+Orchestrator --> IDocumentGenerator : Stage 3
+Orchestrator --> IQualityValidator : Stage 4
+Orchestrator --> IPDFExporter : Stage 5
+
+' Pipeline management
+Orchestrator --> PipelineContext : Execution Context
+Orchestrator --> TokenBudget : Budget Management
+Orchestrator --> PipelineStatus : Progress Tracking
+
+' Infrastructure implements domain interfaces
+JobAnalyzerImpl ..|> IJobAnalyzer : implements
+ProfileCompilerImpl ..|> IProfileCompiler : implements
+DocumentGeneratorImpl ..|> IDocumentGenerator : implements
+QualityValidatorImpl ..|> IQualityValidator : implements
+PDFExporterImpl ..|> IPDFExporter : implements
+
+' Stage internal components
+JobAnalyzerImpl --> JobParser
+JobAnalyzerImpl --> ReqExtractor  
+JobAnalyzerImpl --> KeywordAnalyzer
+
+ProfileCompilerImpl --> RelevanceScorer
+ProfileCompilerImpl --> ContentRanker
+ProfileCompilerImpl --> MatchCalculator
+
+DocumentGeneratorImpl --> ContentRewriter
+DocumentGeneratorImpl --> TemplateEngine
+DocumentGeneratorImpl --> BulletGenerator
+
+QualityValidatorImpl --> ATSChecker
+QualityValidatorImpl --> GrammarValidator
+QualityValidatorImpl --> ConsistencyChecker
+QualityValidatorImpl --> FactualityValidator
+
+PDFExporterImpl --> ATSFormatter
+PDFExporterImpl --> VisualFormatter
+PDFExporterImpl --> MultiFormat
+
+' External service dependencies (via interfaces)
+JobAnalyzerImpl --> ILLMService : Analyze Job (1500 tokens)
+ProfileCompilerImpl --> ILLMService : Score Relevance (2000 tokens)
+DocumentGeneratorImpl --> ILLMService : Generate Content (3000 tokens)
+QualityValidatorImpl --> ILLMService : Validate Quality (1500 tokens)
+
+PDFExporterImpl --> IPDFService : Generate PDF
+Orchestrator --> ICacheService : Cache Results
+
+' Value object flows
+IJobAnalyzer --> JobAnalysisResult : produces
+IProfileCompiler --> ProfileCompilerResult : produces
+IDocumentGenerator --> DocumentContent : produces
+IQualityValidator --> QualityValidationResult : produces
+IPDFExporter --> PDFExportResult : produces
+
+' Clean Architecture Notes
+note top of Orchestrator
+  **Domain Service - Pure Business Logic**
+  - No external dependencies
+  - Uses interfaces only
+  - Coordinates 5-stage pipeline
+  - Manages token budget (8000 total)
+  - Implements retry logic
+  - Tracks progress status
+end note
+
+note right of JobAnalyzerImpl
+  **Stage 1: Job Analysis**
+  Token Budget: 1500
+  
+  Extracts:
+  - Required skills
+  - Experience level  
+  - Key responsibilities
+  - Company culture
+  - ATS keywords
+  - Industry indicators
+end note
+
+note right of ProfileCompilerImpl
+  **Stage 2: Profile Compilation**
+  Token Budget: 2000
+  
+  Scoring Algorithm:
+  - Keyword matching (40%)
+  - Skills alignment (30%)
+  - Experience relevance (20%)
+  - Industry/role fit (10%)
+  
+  Output: 0-100 relevance scores
+end note
+
+note right of DocumentGeneratorImpl
+  **Stage 3: Document Generation**
+  Token Budget: 3000
+  
+  Generates:
+  - Tailored professional summary
+  - Rewritten experience bullets
+  - Optimized skills section
+  - Quantified achievements
+  - ATS-optimized keywords
+end note
+
+note right of QualityValidatorImpl
+  **Stage 4: Quality Validation**
+  Token Budget: 1500
+  
+  Validates:
+  - ATS compatibility (90% keyword coverage)
+  - Grammar and spelling
+  - Date consistency
+  - Length requirements
+  - Section completeness
+  - Factuality (no fabrication)
+end note
+
+note right of PDFExporterImpl
+  **Stage 5: PDF Export**
+  Token Budget: 0 (local processing)
+  
+  Outputs:
+  - ATS-optimized template
+  - Visual-enhanced template
+  - Multi-page support
+  - Metadata report
+end note
+
+note bottom of ILLMService
+  **External Service Interface**
+  - Abstracts LLM provider
+  - Enables provider switching
+  - Handles rate limiting
+  - Manages token counting
+  
+  **Implementations:**
+  - OpenAI Adapter (primary)
+  - Claude Adapter (future)
+  - Mock Adapter (testing)
+end note
+
+@enduml

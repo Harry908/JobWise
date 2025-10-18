@@ -1,0 +1,226 @@
+@startuml Flutter-Clean-Architecture
+!theme plain
+title Flutter Mobile App - Clean Architecture
+
+package "Presentation Layer" {
+  package "UI Components" {
+    [Profile Management UI] as ProfileUI
+    [Job Discovery UI] as JobUI
+    [Generation Tracking UI] as GenerationUI
+    [Document Management UI] as DocumentUI
+    [PDF Viewer UI] as PDFViewerUI
+  }
+  
+  package "State Management" {
+    interface "State Provider Interface" as IStateProvider
+    [Provider Implementation] as ProviderImpl
+    [Riverpod Implementation] as RiverpodImpl
+    [State Notifiers] as StateNotifiers
+  }
+}
+
+package "Application Layer" {
+  package "Use Cases (Mobile)" {
+    [Profile Use Cases] as ProfileUseCases
+    [Job Use Cases] as JobUseCases
+    [Generation Use Cases] as GenerationUseCases
+    [Document Use Cases] as DocumentUseCases
+    [Offline Sync Use Cases] as SyncUseCases
+  }
+  
+  package "DTOs & Models" {
+    [Profile DTOs] as ProfileDTOs
+    [Job DTOs] as JobDTOs
+    [Generation DTOs] as GenerationDTOs
+    [UI State Models] as UIStateModels
+  }
+}
+
+package "Domain Layer (Shared)" {
+  package "Entities" {
+    [Master Profile Entity] as MasterProfileEntity
+    [Job Entity] as JobEntity
+    [Generated Document Entity] as DocumentEntity
+  }
+  
+  package "Value Objects" {
+    [Personal Info VO] as PersonalInfoVO
+    [Skills VO] as SkillsVO
+    [Experience VO] as ExperienceVO
+  }
+  
+  package "Repository Interfaces" {
+    interface "IProfile Repository" as IProfileRepository
+    interface "IJob Repository" as IJobRepository
+    interface "IDocument Repository" as IDocumentRepository
+    interface "ISync Repository" as ISyncRepository
+  }
+}
+
+package "Infrastructure Layer" {
+  package "Repository Implementations" {
+    [Local Profile Repository] as LocalProfileRepo
+    [Remote Profile Repository] as RemoteProfileRepo
+    [Hybrid Profile Repository] as HybridProfileRepo
+    [Cache Repository] as CacheRepo
+  }
+  
+  package "External Services" {
+    [HTTP API Client] as HTTPClient
+    [Local Database (SQLite)] as LocalDB
+    [File Storage Service] as FileStorage
+    [PDF Generation Service] as PDFService
+  }
+  
+  package "Infrastructure Services" {
+    [Network Manager] as NetworkManager
+    [Cache Manager] as CacheManager
+    [Sync Queue Manager] as SyncQueueManager
+    [Configuration Manager] as ConfigManager
+  }
+}
+
+' Clean Architecture Dependencies (Inward Only)
+' Presentation → Application
+ProfileUI --> ProfileUseCases : Execute Commands/Queries
+JobUI --> JobUseCases : Execute Commands/Queries
+GenerationUI --> GenerationUseCases : Execute Commands/Queries
+DocumentUI --> DocumentUseCases : Execute Commands/Queries
+
+' State Management Strategy Pattern
+ProviderImpl ..|> IStateProvider : implements (Prototype)
+RiverpodImpl ..|> IStateProvider : implements (Production)
+StateNotifiers --> IStateProvider : manages state
+
+ProfileUI --> IStateProvider : observe state
+JobUI --> IStateProvider : observe state
+GenerationUI --> IStateProvider : observe state
+
+' Application → Domain
+ProfileUseCases --> MasterProfileEntity : business logic
+JobUseCases --> JobEntity : business logic
+GenerationUseCases --> DocumentEntity : business logic
+SyncUseCases --> ISyncRepository : offline sync
+
+ProfileUseCases --> IProfileRepository : data access interface
+JobUseCases --> IJobRepository : data access interface
+DocumentUseCases --> IDocumentRepository : data access interface
+
+' Domain Value Objects (No Dependencies)
+MasterProfileEntity --> PersonalInfoVO : contains
+MasterProfileEntity --> SkillsVO : contains
+MasterProfileEntity --> ExperienceVO : contains
+
+' Infrastructure → Domain (Implements Interfaces)
+LocalProfileRepo ..|> IProfileRepository : implements
+RemoteProfileRepo ..|> IProfileRepository : implements
+HybridProfileRepo ..|> IProfileRepository : implements (offline-first)
+CacheRepo ..|> ISyncRepository : implements
+
+' Infrastructure Dependencies
+HybridProfileRepo --> LocalProfileRepo : local access
+HybridProfileRepo --> RemoteProfileRepo : remote access
+HybridProfileRepo --> SyncQueueManager : queue operations
+
+LocalProfileRepo --> LocalDB : SQLite access
+RemoteProfileRepo --> HTTPClient : API calls
+CacheRepo --> CacheManager : cache operations
+
+' Infrastructure Services
+HTTPClient --> NetworkManager : network status
+SyncQueueManager --> NetworkManager : connectivity check
+All_Repositories --> ConfigManager : environment config
+
+' External Service Integration
+PDFService --> FileStorage : PDF storage
+HTTPClient --> "FastAPI Backend" : REST API calls
+
+' Clean Architecture Notes
+note top of IStateProvider
+  **Strategy Pattern for State Management**
+  
+  **Prototype**: Provider
+  - Simple, fast implementation
+  - ChangeNotifier pattern
+  - Easy debugging
+  
+  **Production**: Riverpod
+  - Compile-time safety
+  - Better dependency injection
+  - Enhanced testing support
+end note
+
+note right of ProfileUseCases
+  **Application Layer - Use Cases**
+  
+  **Profile Management:**
+  - CreateProfileUseCase
+  - UpdateProfileUseCase
+  - GetProfileUseCase
+  - ValidateProfileUseCase
+  
+  **No External Dependencies**
+  **Pure Business Logic**
+end note
+
+note right of HybridProfileRepo
+  **Repository Pattern - Offline First**
+  
+  **Strategy:**
+  1. Try local data first
+  2. Fetch from remote if needed
+  3. Cache remote data locally
+  4. Queue writes when offline
+  5. Sync when connection restored
+  
+  **Conflict Resolution:**
+  - Last-write-wins
+  - Version tracking
+  - Merge strategies
+end note
+
+note bottom of MasterProfileEntity
+  **Domain Entities - Core Business Rules**
+  
+  **Invariants:**
+  - Must have valid personal info
+  - At least one experience OR education
+  - Skills must be categorized
+  - All dates must be logical
+  
+  **No Framework Dependencies**
+  **Pure Dart Objects**
+end note
+
+note left of SyncQueueManager
+  **Offline-First Architecture**
+  
+  **Queue Operations:**
+  - Profile updates
+  - Job saves/status changes
+  - Generation requests
+  - Document deletions
+  
+  **Sync Strategy:**
+  - Background synchronization
+  - Retry with exponential backoff
+  - Conflict detection & resolution
+end note
+
+note bottom of ConfigManager
+  **Environment Configuration**
+  
+  **Prototype:**
+  - Local API endpoints
+  - SQLite storage
+  - Provider state management
+  - Mock external services
+  
+  **Production:**
+  - Cloud API endpoints
+  - Remote synchronization
+  - Riverpod state management
+  - Real external integrations
+end note
+
+@enduml
