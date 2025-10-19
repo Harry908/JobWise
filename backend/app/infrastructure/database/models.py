@@ -599,7 +599,7 @@ class GenerationResultModel(Base, TimestampMixin):
     
     # Generation metadata
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    generation_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
     
     # Quality metrics
     readability_score: Mapped[Optional[float]] = mapped_column(Float)
@@ -750,7 +750,7 @@ class AuditLogModel(Base, TimestampMixin):
     # Context
     ip_address: Mapped[Optional[str]] = mapped_column(String(45))
     user_agent: Mapped[Optional[str]] = mapped_column(String(500))
-    metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    audit_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
     
     # Severity
     severity: Mapped[str] = mapped_column(String(20), default="info", nullable=False)

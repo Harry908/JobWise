@@ -1,16 +1,12 @@
 @startuml Database_Schema_ERD
-!define ENTITY class
-!define RELATIONSHIP --> 
 
 ' Title and description
 title JobWise Database Schema - Entity Relationship Diagram
-note top
-  Comprehensive database schema for JobWise AI-powered job application assistant
-  Supporting multi-LLM universal architecture with user profiles, job management, and generation tracking
-end note
+
+
 
 ' User Management Entities
-ENTITY UserModel {
+entity UserModel {
   +id: UUID (PK)
   --
   email: String (UNIQUE)
@@ -32,7 +28,12 @@ ENTITY UserModel {
   updated_at: DateTime
 }
 
-ENTITY UserSessionModel {
+note top
+    - Comprehensive database schema for JobWise AI-powered job application assistant
+    - Supporting multi-LLM universal architecture with user profiles, job management, and generation tracking
+end note
+
+entity UserSessionModel {
   +id: UUID (PK)
   +user_id: UUID (FK)
   --
@@ -50,7 +51,7 @@ ENTITY UserSessionModel {
 }
 
 ' Profile Management Entities
-ENTITY MasterProfileModel {
+entity MasterProfileModel {
   +id: UUID (PK)
   +user_id: UUID (FK)
   --
@@ -70,7 +71,7 @@ ENTITY MasterProfileModel {
   updated_at: DateTime
 }
 
-ENTITY ExperienceModel {
+entity ExperienceModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -88,7 +89,7 @@ ENTITY ExperienceModel {
   updated_at: DateTime
 }
 
-ENTITY EducationModel {
+entity EducationModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -105,7 +106,7 @@ ENTITY EducationModel {
   updated_at: DateTime
 }
 
-ENTITY SkillModel {
+entity SkillModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -120,7 +121,7 @@ ENTITY SkillModel {
   updated_at: DateTime
 }
 
-ENTITY LanguageModel {
+entity LanguageModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -132,7 +133,7 @@ ENTITY LanguageModel {
   updated_at: DateTime
 }
 
-ENTITY CertificationModel {
+entity CertificationModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -148,7 +149,7 @@ ENTITY CertificationModel {
   updated_at: DateTime
 }
 
-ENTITY ProjectModel {
+entity ProjectModel {
   +id: UUID (PK)
   +profile_id: UUID (FK)
   --
@@ -166,7 +167,7 @@ ENTITY ProjectModel {
 }
 
 ' Job Management Entities
-ENTITY JobPostingModel {
+entity JobPostingModel {
   +id: String (PK) <<External ID>>
   --
   title: String
@@ -196,7 +197,7 @@ ENTITY JobPostingModel {
 }
 
 ' AI Generation Entities
-ENTITY GenerationModel {
+entity GenerationModel {
   +id: UUID (PK)
   +user_id: UUID (FK)
   +profile_id: UUID (FK)
@@ -218,7 +219,7 @@ ENTITY GenerationModel {
   updated_at: DateTime
 }
 
-ENTITY GenerationResultModel {
+entity GenerationResultModel {
   +id: UUID (PK)
   +generation_id: UUID (FK)
   --
@@ -240,7 +241,7 @@ ENTITY GenerationResultModel {
 }
 
 ' Job Application Tracking
-ENTITY JobApplicationModel {
+entity JobApplicationModel {
   +id: UUID (PK)
   +user_id: UUID (FK)
   +job_id: String (FK)
@@ -261,7 +262,7 @@ ENTITY JobApplicationModel {
 }
 
 ' Audit and Logging
-ENTITY AuditLogModel {
+entity AuditLogModel {
   +id: UUID (PK)
   +user_id: UUID? (FK)
   --
@@ -301,8 +302,9 @@ GenerationModel ||--o{ GenerationResultModel : "produces results"
 GenerationModel ||--o{ JobApplicationModel : "used in applications"
 
 ' Database Constraints and Indexes
-note bottom : Key Database Features
 note bottom
+  **Key Database Features**
+
   **Performance Indexes:**
   - Composite indexes for user queries (user_id + status + date)
   - Full-text search on job descriptions and requirements
@@ -325,7 +327,7 @@ note bottom
 end note
 
 ' Styling
-skinparam class {
+skinparam entity {
   BackgroundColor lightyellow
   BorderColor black
   ArrowColor black

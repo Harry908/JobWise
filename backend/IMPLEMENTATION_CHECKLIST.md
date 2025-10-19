@@ -1,4 +1,17 @@
-# JobWise Universal Backend Implementation Checklist
+# ⚠️ DEPRECATED - Use FEATURE_IMPLEMENTATION_PLAN.md Instead
+
+This file has been replaced with a new feature-based implementation plan.
+
+**👉 See: `FEATURE_IMPLEMENTATION_PLAN.md` for the updated plan**
+
+The new plan breaks down the backend development into 26 small, independent, testable features that can be developed sequentially without blocking dependencies.
+
+---
+
+# Original Implementation Checklist (DEPRECATED)
+
+*This content is kept for reference but should not be used for implementation.*
+
 
 ## Phase 1: Universal Foundation Setup (Priority: High) 🚀
 

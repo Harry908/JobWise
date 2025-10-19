@@ -17,7 +17,7 @@ openai==1.6.1  # OpenAI GPT models
 anthropic==0.7.7  # Claude models
 google-generativeai==0.3.2  # Gemini models
 groq==0.4.1  # Groq ultra-fast inference (Llama/Mixtral)
-azure-openai==1.3.0  # Azure OpenAI service
+# azure-ai-openai  # Azure OpenAI service - commented out for prototype
 transformers==4.36.2  # Local model support
 torch==2.1.2  # PyTorch for local models
 tokenizers==0.15.0  # Token handling
@@ -67,9 +67,9 @@ dramatiq==1.15.0  # Alternative task processing
 structlog==23.2.0  # Structured logging
 prometheus-client==0.19.0  # Metrics collection
 sentry-sdk[fastapi]==1.39.1  # Error tracking
-circuit-breaker==1.4.0  # Circuit breaker pattern
+# circuit-breaker==1.4.0  # Circuit breaker pattern - commented out for prototype
 tenacity==8.2.3  # Retry logic with exponential backoff
-health-check==3.4.7  # Health monitoring
+# health-check==3.4.7  # Health monitoring - commented out for prototype
 
 # Configuration
 python-decouple==3.8
@@ -119,7 +119,7 @@ minio==7.2.0  # MinIO S3-compatible storage
 fsspec==2023.12.2  # Filesystem interface abstraction
 
 # Job Search API Integrations
-indeed-api==1.0.0  # Indeed job search
+# indeed-api==1.0.0  # Indeed job search - commented out for prototype
 linkedin-api==2.0.1  # LinkedIn integration
 scrapy==2.11.0  # Web scraping for job data
 beautifulsoup4==4.12.2  # HTML parsing for job data

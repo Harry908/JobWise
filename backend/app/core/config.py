@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(default="sqlite+aiosqlite:///./jobwise.db")
     DATABASE_URL_PROD: Optional[str] = None
     
+    @property
+    def effective_database_url(self) -> str:
+        """Get the effective database URL based on environment."""
+        if self.ENVIRONMENT == "production" and self.DATABASE_URL_PROD:
+            return self.DATABASE_URL_PROD
+        return self.DATABASE_URL
+    
     # Security
     SECRET_KEY: str = Field(..., min_length=32)
     ALGORITHM: str = Field(default="HS256")
@@ -36,6 +43,11 @@ class Settings(BaseSettings):
     OPENAI_MAX_TOKENS: int = Field(default=8000)
     OPENAI_TEMPERATURE: float = Field(default=0.7)
     OPENAI_REQUEST_TIMEOUT: int = Field(default=60)
+    
+    # Alternative AI Models (Optional)
+    GROQ_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = None
+    CLAUDE_MODEL: str = Field(default="claude-3-sonnet-20240229")
     
     # Redis Configuration
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
@@ -97,6 +109,4 @@ def is_production() -> bool:
 def get_database_url() -> str:
     """Get appropriate database URL for current environment."""
     settings = get_settings()
-    if is_production() and settings.DATABASE_URL_PROD:
-        return settings.DATABASE_URL_PROD
-    return settings.DATABASE_URL
+    return settings.effective_database_url
