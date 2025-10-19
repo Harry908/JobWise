@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
     
+    # JWT Configuration
+    JWT_SECRET_KEY: str = Field(...)
+    JWT_ALGORITHM: str = Field(default="HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
+    
     # CORS
     CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
     
@@ -93,6 +99,10 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached application settings."""
     return Settings()
+
+
+# Global settings instance
+settings = get_settings()
 
 
 # Environment-specific settings

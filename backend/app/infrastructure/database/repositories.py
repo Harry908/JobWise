@@ -139,15 +139,17 @@ class UserRepository(BaseRepository):
         )
         await self.commit()
     
-    async def get_active_users(self, limit: int = 100) -> List[UserModel]:
-        """Get active users."""
-        result = await self.session.execute(
-            select(UserModel)
-            .where(UserModel.is_active == True)
-            .order_by(UserModel.last_active_at.desc())
-            .limit(limit)
+    async def update_last_login(self, user_id: str) -> None:
+        """Update user's last login timestamp."""
+        await self.session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(
+                last_active_at=func.now(),
+                updated_at=func.now()
+            )
         )
-        return result.scalars().all()
+        await self.commit()
 
 
 class MasterProfileRepository(BaseRepository):

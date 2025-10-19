@@ -66,6 +66,10 @@ class NotFoundError(JobWiseException):
         )
 
 
+# Alias for backward compatibility
+EntityNotFoundError = NotFoundError
+
+
 class ConflictError(JobWiseException):
     """Raised when a resource conflict occurs."""
     
@@ -76,6 +80,10 @@ class ConflictError(JobWiseException):
             status_code=409,
             details=details,
         )
+
+
+# Alias for backward compatibility  
+DuplicateEntityError = ConflictError
 
 
 class RateLimitExceeded(JobWiseException):

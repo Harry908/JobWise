@@ -46,8 +46,10 @@ def client(test_app) -> TestClient:
 
 
 @pytest.fixture(scope="session")
-async def test_db_engine():
+def test_db_engine():
     """Create test database engine."""
+    from sqlalchemy.ext.asyncio import create_async_engine
+    
     engine = create_async_engine(
         test_settings.DATABASE_URL,
         echo=False,
@@ -56,28 +58,46 @@ async def test_db_engine():
 
     # Create all tables
     from app.infrastructure.database.models import Base
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    import asyncio
+    asyncio.run(create_tables(engine))
 
     yield engine
 
     # Drop all tables and dispose engine
+    import asyncio
+    asyncio.run(drop_tables(engine))
+    asyncio.run(engine.dispose())
+
+
+async def create_tables(engine):
+    """Create all tables."""
+    from app.infrastructure.database.models import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+async def drop_tables(engine):
+    """Drop all tables."""
+    from app.infrastructure.database.models import Base
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
 
 
 @pytest.fixture
-async def db_session(test_db_engine) -> AsyncSession:
+def db_session(test_db_engine):
     """Create test database session."""
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import AsyncSession
+    
     async_session = sessionmaker(
         test_db_engine,
         class_=AsyncSession,
         expire_on_commit=False,
     )
 
-    async with async_session() as session:
-        yield session
+    session = async_session()
+    yield session
+    # Note: We can't await close() in a sync fixture, but that's ok for testing
 
 
 @pytest.fixture

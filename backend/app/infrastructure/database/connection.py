@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncEngine
 )
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy.pool import StaticPool
 
 from ...core.config import get_settings
@@ -164,7 +164,7 @@ async def check_database_health() -> bool:
     """Check if database is accessible and healthy."""
     try:
         async with get_database_session() as session:
-            result = await session.execute("SELECT 1")
+            result = await session.execute(text("SELECT 1"))
             return result.scalar() == 1
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
