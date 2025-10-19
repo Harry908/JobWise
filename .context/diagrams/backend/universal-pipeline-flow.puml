@@ -1,0 +1,132 @@
+@startuml Universal AI Orchestrator Flow
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Universal AI Pipeline - Multi-Provider Support with Fallbacks
+
+participant "Mobile App" as Mobile
+participant "Generation API" as API
+participant "Universal AI Orchestrator" as Orchestrator
+participant "Service Factory" as Factory
+participant "Primary LLM\n(OpenAI)" as Primary
+participant "Speed Fallback\n(Groq)" as Groq
+participant "Quality Fallback\n(Claude)" as Claude
+participant "Circuit Breaker" as CB
+participant "Fallback Manager" as FM
+participant "Cache Service" as Cache
+participant "Monitoring" as Monitor
+
+== Initialization Phase ==
+Mobile -> API: POST /api/v1/generations/resume
+API -> Orchestrator: execute_pipeline(profile, job)
+Orchestrator -> Factory: create_llm_service(OPENAI_GPT4)
+Factory -> Primary: initialize_adapter(config)
+Factory --> Orchestrator: LLMServicePort instance
+
+== Stage Execution with Provider Selection ==
+loop for each pipeline stage
+    Orchestrator -> CB: check_circuit_state("openai")
+    CB --> Orchestrator: CLOSED (healthy)
+    
+    Orchestrator -> Cache: get(prompt_cache_key)
+    Cache --> Orchestrator: cache_miss
+    
+    Orchestrator -> Monitor: start_timer("stage_1_execution")
+    
+    == Primary Provider Attempt ==
+    Orchestrator -> Primary: generate_completion(llm_request)
+    
+    alt Provider Success
+        Primary --> Orchestrator: LLMResponse(content, tokens, cost)
+        Orchestrator -> Cache: set(prompt_cache_key, response, ttl=3600)
+        Orchestrator -> Monitor: record_success("openai", latency, cost)
+        Orchestrator -> CB: on_success()
+    
+    else Provider Failure (Rate Limit/API Error)
+        Primary --> Orchestrator: ProviderException(rate_limit_exceeded)
+        Orchestrator -> CB: on_failure()
+        Orchestrator -> FM: get_next_provider("llm", "openai")
+        FM --> Orchestrator: groq_adapter (speed priority)
+        
+        == Speed Fallback Provider Attempt ==
+        Orchestrator -> Factory: create_llm_service(GROQ_LLAMA3_70B)
+        Factory -> Groq: initialize_adapter(config)
+        Factory --> Orchestrator: groq_llm_service
+        
+        Orchestrator -> Groq: generate_completion(llm_request)
+        
+        alt Groq Success (Ultra-Fast)
+            Groq --> Orchestrator: LLMResponse(content, tokens, cost, 50ms_latency)
+            Orchestrator -> Monitor: record_speed_fallback("groq", "ultra_fast_recovery")
+            Orchestrator -> Cache: set(prompt_cache_key, response, ttl=1800)
+        
+        else Groq Also Fails
+            Groq --> Orchestrator: ProviderException(service_unavailable)
+            Orchestrator -> FM: get_next_provider("llm", "groq")
+            FM --> Orchestrator: claude_adapter (quality fallback)
+            
+            == Quality Fallback Provider Attempt ==
+            Orchestrator -> Factory: create_llm_service(CLAUDE_SONNET)
+            Factory -> Claude: initialize_adapter(config)
+            Factory --> Orchestrator: claude_llm_service
+            
+            Orchestrator -> Claude: generate_completion(llm_request)
+            Claude --> Orchestrator: LLMResponse(content, tokens, cost)
+            
+            Orchestrator -> Monitor: record_double_fallback("claude", "openai_groq_failure")
+        end
+    
+    else Circuit Breaker Open
+        CB --> Orchestrator: OPEN (unhealthy)
+        Orchestrator -> FM: get_primary_fallback("llm")
+        FM --> Orchestrator: groq_adapter (speed priority)
+        
+        note over Orchestrator: Skip primary provider,\nuse speed fallback directly
+        
+        Orchestrator -> Groq: generate_completion(llm_request)
+        Groq --> Orchestrator: LLMResponse(content, tokens, cost, ultra_fast)
+    end
+    
+    Orchestrator -> Monitor: record_stage_completion("stage_1", success=true)
+end
+
+== Multi-Provider Cost Optimization ==
+Orchestrator -> Monitor: get_provider_costs()
+Monitor --> Orchestrator: cost_analysis{openai: $0.03, groq: $0.0006, claude: $0.015}
+
+note over Orchestrator: Dynamic provider selection\nbased on cost, speed, and performance
+
+== Provider Health Recovery ==
+CB -> Primary: health_check()
+Primary --> CB: healthy_response
+CB -> CB: reset_to_closed_state()
+CB -> FM: mark_provider_healthy("openai")
+
+== Response Assembly ==
+Orchestrator -> Orchestrator: assemble_pipeline_result()
+Orchestrator --> API: PipelineResult(document, metadata, cost_breakdown)
+API --> Mobile: GenerationResponse(document_id, pdf_url, generation_stats)
+
+== Background Monitoring ==
+Monitor -> Monitor: analyze_provider_performance()
+Monitor -> FM: update_provider_rankings(performance_data)
+FM -> Factory: optimize_default_providers()
+
+note over Monitor
+Continuous monitoring enables:
+- Performance-based provider ranking
+- Cost optimization suggestions (Groq for speed, Claude for quality)
+- Proactive fallback configuration
+- SLA compliance tracking
+- Speed vs cost vs quality optimization
+end note
+
+note over CB, FM
+Resilience patterns:
+- Circuit breaker prevents cascade failures
+- Intelligent fallbacks maintain service quality
+- Speed-first fallback strategy (Groq → Claude)
+- Health recovery enables provider restoration
+- Load balancing optimizes resource usage
+end note
+
+@enduml

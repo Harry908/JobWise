@@ -1,0 +1,339 @@
+@startuml Database_Schema_ERD
+!define ENTITY class
+!define RELATIONSHIP --> 
+
+' Title and description
+title JobWise Database Schema - Entity Relationship Diagram
+note top
+  Comprehensive database schema for JobWise AI-powered job application assistant
+  Supporting multi-LLM universal architecture with user profiles, job management, and generation tracking
+end note
+
+' User Management Entities
+ENTITY UserModel {
+  +id: UUID (PK)
+  --
+  email: String (UNIQUE)
+  password_hash: String
+  is_active: Boolean
+  is_verified: Boolean
+  --
+  first_name: String?
+  last_name: String?
+  phone: String?
+  timezone: String?
+  --
+  subscription_tier: Enum
+  subscription_expires_at: DateTime?
+  generations_this_month: Integer
+  last_active_at: DateTime?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY UserSessionModel {
+  +id: UUID (PK)
+  +user_id: UUID (FK)
+  --
+  session_token: String (UNIQUE)
+  refresh_token: String? (UNIQUE)
+  expires_at: DateTime
+  is_active: Boolean
+  --
+  user_agent: String?
+  ip_address: String?
+  device_type: String?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' Profile Management Entities
+ENTITY MasterProfileModel {
+  +id: UUID (PK)
+  +user_id: UUID (FK)
+  --
+  full_name: String
+  email: String
+  phone: String?
+  location: String?
+  linkedin: String?
+  github: String?
+  website: String?
+  --
+  professional_summary: Text?
+  version: Integer
+  is_active: Boolean
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY ExperienceModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  title: String
+  company: String
+  location: String?
+  start_date: Date
+  end_date: Date?
+  is_current: Boolean
+  description: Text
+  achievements: JSON[]
+  display_order: Integer
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY EducationModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  institution: String
+  degree: String
+  field_of_study: String
+  start_date: Date
+  end_date: Date?
+  gpa: Float?
+  honors: JSON[]
+  display_order: Integer
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY SkillModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  name: String
+  category: Enum
+  proficiency_level: Enum?
+  years_experience: Float?
+  display_order: Integer
+  is_featured: Boolean
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY LanguageModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  name: String
+  proficiency: Enum
+  display_order: Integer
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY CertificationModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  name: String
+  issuer: String
+  date_obtained: Date
+  expiry_date: Date?
+  credential_id: String?
+  verification_url: String?
+  display_order: Integer
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY ProjectModel {
+  +id: UUID (PK)
+  +profile_id: UUID (FK)
+  --
+  name: String
+  description: Text
+  technologies: JSON[]
+  url: String?
+  start_date: Date?
+  end_date: Date?
+  display_order: Integer
+  is_featured: Boolean
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' Job Management Entities
+ENTITY JobPostingModel {
+  +id: String (PK) <<External ID>>
+  --
+  title: String
+  company: String
+  location: String
+  description: Text
+  requirements: JSON[]
+  --
+  salary_min: Integer?
+  salary_max: Integer?
+  salary_currency: String
+  remote: Boolean
+  job_type: Enum
+  experience_level: Enum
+  --
+  posted_date: DateTime
+  expires_date: DateTime?
+  application_url: String?
+  source: String
+  --
+  keywords_extracted: JSON[]
+  ats_keywords: JSON[]
+  match_difficulty: Float?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' AI Generation Entities
+ENTITY GenerationModel {
+  +id: UUID (PK)
+  +user_id: UUID (FK)
+  +profile_id: UUID (FK)
+  +job_id: String (FK)
+  --
+  status: Enum
+  completed_at: DateTime?
+  processing_time_seconds: Float?
+  --
+  error_message: Text?
+  retry_count: Integer
+  pipeline_metadata: JSON
+  --
+  llm_provider_used: String?
+  total_tokens_used: Integer?
+  estimated_cost: Float?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+ENTITY GenerationResultModel {
+  +id: UUID (PK)
+  +generation_id: UUID (FK)
+  --
+  document_type: Enum
+  content: Text
+  ats_score: Float?
+  word_count: Integer
+  --
+  pdf_file_path: String?
+  docx_file_path: String?
+  generated_at: DateTime
+  metadata: JSON
+  --
+  readability_score: Float?
+  keyword_density: Float?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' Job Application Tracking
+ENTITY JobApplicationModel {
+  +id: UUID (PK)
+  +user_id: UUID (FK)
+  +job_id: String (FK)
+  +generation_id: UUID? (FK)
+  --
+  status: Enum
+  applied_date: DateTime
+  --
+  follow_up_date: DateTime?
+  interview_date: DateTime?
+  response_date: DateTime?
+  --
+  notes: Text?
+  feedback: Text?
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' Audit and Logging
+ENTITY AuditLogModel {
+  +id: UUID (PK)
+  +user_id: UUID? (FK)
+  --
+  event_type: String
+  event_description: String
+  resource_type: String?
+  resource_id: UUID?
+  --
+  ip_address: String?
+  user_agent: String?
+  metadata: JSON
+  severity: Enum
+  --
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+' Relationships
+UserModel ||--o{ UserSessionModel : "has sessions"
+UserModel ||--o{ MasterProfileModel : "owns profiles"
+UserModel ||--o{ GenerationModel : "requests generations"
+UserModel ||--o{ JobApplicationModel : "tracks applications"
+UserModel ||--o{ AuditLogModel : "generates logs"
+
+MasterProfileModel ||--o{ ExperienceModel : "contains experiences"
+MasterProfileModel ||--o{ EducationModel : "contains education"
+MasterProfileModel ||--o{ SkillModel : "contains skills"
+MasterProfileModel ||--o{ LanguageModel : "contains languages"
+MasterProfileModel ||--o{ CertificationModel : "contains certifications"
+MasterProfileModel ||--o{ ProjectModel : "contains projects"
+MasterProfileModel ||--o{ GenerationModel : "used in generations"
+
+JobPostingModel ||--o{ GenerationModel : "generates for"
+JobPostingModel ||--o{ JobApplicationModel : "applied to"
+
+GenerationModel ||--o{ GenerationResultModel : "produces results"
+GenerationModel ||--o{ JobApplicationModel : "used in applications"
+
+' Database Constraints and Indexes
+note bottom : Key Database Features
+note bottom
+  **Performance Indexes:**
+  - Composite indexes for user queries (user_id + status + date)
+  - Full-text search on job descriptions and requirements
+  - Time-based indexes for generation and job queries
+  
+  **Data Integrity:**
+  - Cascade deletes for user data privacy compliance
+  - Check constraints for data validation (dates, scores, etc.)
+  - Unique constraints preventing duplicate applications
+  
+  **Audit Trail:**
+  - Complete audit logging for compliance and debugging
+  - Session tracking for security and user management
+  - Versioning on profiles for change management
+  
+  **Multi-LLM Support:**
+  - Provider tracking in generation metadata
+  - Cost and token usage monitoring
+  - Pipeline stage tracking for debugging
+end note
+
+' Styling
+skinparam class {
+  BackgroundColor lightyellow
+  BorderColor black
+  ArrowColor black
+}
+
+skinparam note {
+  BackgroundColor lightblue
+  BorderColor navy
+}
+
+@enduml

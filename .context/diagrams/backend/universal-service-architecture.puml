@@ -1,0 +1,505 @@
+@startuml Universal Service Architecture
+!define RECTANGLE class
+
+title JobWise Universal Service Architecture - Adapter Pattern Design
+
+package "Domain Abstractions (Ports)" {
+    interface LLMServicePort {
+        +generate_completion(request: LLMRequest): LLMResponse
+        +estimate_tokens(text: str): TokenEstimate
+        +get_model_capabilities(): ModelCapabilities
+        +validate_response(response: LLMResponse): ValidationResult
+        +get_rate_limits(): RateLimitInfo
+        +calculate_cost(request: LLMRequest): CostEstimate
+    }
+    
+    interface JobSearchServicePort {
+        +search_jobs(criteria: JobSearchCriteria): JobSearchResult
+        +get_job_details(job_id: str): JobDetails
+        +get_trending_skills(): List[Skill]
+        +get_salary_data(position: str, location: str): SalaryInfo
+    }
+    
+    interface PDFGeneratorPort {
+        +generate_pdf(content: DocumentContent, template: PDFTemplate): PDFResult
+        +get_available_templates(): List[PDFTemplate]
+        +validate_content(content: DocumentContent): ValidationResult
+        +optimize_layout(content: DocumentContent): LayoutOptimization
+    }
+    
+    interface CacheServicePort {
+        +get[T](key: str, type_: Type[T]): Optional[T]
+        +set(key: str, value: Any, ttl: Optional[int]): bool
+        +delete(key: str): bool
+        +exists(key: str): bool
+        +clear_pattern(pattern: str): int
+        +get_stats(): CacheStats
+    }
+    
+    interface StorageServicePort {
+        +upload_file(file_data: bytes, metadata: FileMetadata): FileReference
+        +download_file(file_id: str): bytes
+        +delete_file(file_id: str): bool
+        +get_file_url(file_id: str): str
+        +list_files(prefix: str): List[FileReference]
+    }
+    
+    interface MonitoringServicePort {
+        +record_metric(name: str, value: float, tags: Dict[str, str]): void
+        +start_timer(operation: str): Timer
+        +log_event(event: str, context: Dict[str, Any]): void
+        +create_alert(condition: AlertCondition): AlertRule
+        +get_health_status(): HealthStatus
+    }
+}
+
+package "Service Adapters (Implementations)" {
+    package "LLM Adapters" {
+        RECTANGLE OpenAIAdapter {
+            -client: OpenAIClient
+            -model_configs: Dict[str, ModelConfig]
+            -rate_limiter: RateLimiter
+            --
+            +generate_completion(request: LLMRequest): LLMResponse
+            +estimate_tokens(text: str): TokenEstimate
+            -map_to_openai_format(request: LLMRequest): OpenAIRequest
+            -parse_openai_response(response: OpenAIResponse): LLMResponse
+            -handle_rate_limits(): void
+            -retry_with_backoff(operation: Callable): Any
+        }
+        
+        RECTANGLE ClaudeAdapter {
+            -client: AnthropicClient
+            -model_configs: Dict[str, ModelConfig]
+            -token_manager: TokenManager
+            --
+            +generate_completion(request: LLMRequest): LLMResponse
+            +estimate_tokens(text: str): TokenEstimate
+            -map_to_claude_format(request: LLMRequest): ClaudeRequest
+            -parse_claude_response(response: ClaudeResponse): LLMResponse
+            -handle_claude_specific_limits(): void
+        }
+        
+        RECTANGLE GeminiAdapter {
+            -client: GoogleGenAIClient
+            -safety_settings: SafetySettings
+            --
+            +generate_completion(request: LLMRequest): LLMResponse
+            +estimate_tokens(text: str): TokenEstimate
+            -map_to_gemini_format(request: LLMRequest): GeminiRequest
+            -configure_safety_settings(): SafetySettings
+            -handle_content_filtering(): ContentFilterResult
+        }
+        
+        RECTANGLE GroqAdapter {
+            -client: GroqClient
+            -model_configs: Dict[str, ModelConfig]
+            -speed_optimizer: SpeedOptimizer
+            --
+            +generate_completion(request: LLMRequest): LLMResponse
+            +estimate_tokens(text: str): TokenEstimate
+            -map_to_groq_format(request: LLMRequest): GroqRequest
+            -parse_groq_response(response: GroqResponse): LLMResponse
+            -optimize_for_speed(): SpeedConfig
+            -handle_high_throughput(): ThroughputConfig
+        }
+        
+        RECTANGLE LocalLLMAdapter {
+            -model_path: str
+            -inference_engine: InferenceEngine
+            -model_loader: ModelLoader
+            --
+            +generate_completion(request: LLMRequest): LLMResponse
+            +estimate_tokens(text: str): TokenEstimate
+            -load_local_model(): Model
+            -optimize_inference_params(): InferenceParams
+            -handle_resource_constraints(): ResourceAllocation
+        }
+    }
+    
+    package "Job Search Adapters" {
+        RECTANGLE IndeedAdapter {
+            -api_client: IndeedAPIClient
+            -search_transformer: SearchTransformer
+            --
+            +search_jobs(criteria: JobSearchCriteria): JobSearchResult
+            +get_job_details(job_id: str): JobDetails
+            -transform_search_criteria(criteria: JobSearchCriteria): IndeedQuery
+            -parse_indeed_response(response: IndeedResponse): JobSearchResult
+            -handle_api_limits(): void
+        }
+        
+        RECTANGLE LinkedInAdapter {
+            -api_client: LinkedInAPIClient
+            -oauth_handler: OAuthHandler
+            --
+            +search_jobs(criteria: JobSearchCriteria): JobSearchResult
+            +get_job_details(job_id: str): JobDetails
+            -authenticate_user(): AuthToken
+            -transform_linkedin_data(data: LinkedInJobData): JobDetails
+            -handle_rate_limiting(): void
+        }
+        
+        RECTANGLE MockJobAdapter {
+            -sample_data: List[JobPosting]
+            -search_engine: LocalSearchEngine
+            --
+            +search_jobs(criteria: JobSearchCriteria): JobSearchResult
+            +get_job_details(job_id: str): JobDetails
+            -generate_realistic_data(): List[JobPosting]
+            -simulate_search_latency(): void
+        }
+    }
+    
+    package "PDF Generator Adapters" {
+        RECTANGLE ReportLabAdapter {
+            -template_engine: ReportLabEngine
+            -style_manager: StyleManager
+            --
+            +generate_pdf(content: DocumentContent, template: PDFTemplate): PDFResult
+            +get_available_templates(): List[PDFTemplate]
+            -apply_reportlab_styling(content: DocumentContent): StyledContent
+            -optimize_page_layout(): LayoutResult
+        }
+        
+        RECTANGLE WeasyPrintAdapter {
+            -html_engine: WeasyPrintEngine
+            -css_processor: CSSProcessor
+            --
+            +generate_pdf(content: DocumentContent, template: PDFTemplate): PDFResult
+            -convert_to_html(content: DocumentContent): HTMLContent
+            -apply_css_styling(html: HTMLContent): StyledHTML
+        }
+        
+        RECTANGLE CloudPDFAdapter {
+            -api_client: CloudPDFClient
+            -template_manager: CloudTemplateManager
+            --
+            +generate_pdf(content: DocumentContent, template: PDFTemplate): PDFResult
+            -upload_content(content: DocumentContent): ContentReference
+            -download_generated_pdf(): bytes
+        }
+    }
+    
+    package "Cache Adapters" {
+        RECTANGLE RedisAdapter {
+            -redis_client: RedisClient
+            -serializer: Serializer
+            --
+            +get[T](key: str, type_: Type[T]): Optional[T]
+            +set(key: str, value: Any, ttl: Optional[int]): bool
+            -serialize_value(value: Any): bytes
+            -deserialize_value(data: bytes, type_: Type[T]): T
+        }
+        
+        RECTANGLE MemoryAdapter {
+            -cache_store: Dict[str, CacheEntry]
+            -eviction_policy: EvictionPolicy
+            --
+            +get[T](key: str, type_: Type[T]): Optional[T]
+            +set(key: str, value: Any, ttl: Optional[int]): bool
+            -cleanup_expired_entries(): void
+            -apply_eviction_policy(): void
+        }
+    }
+    
+    package "Storage Adapters" {
+        RECTANGLE S3Adapter {
+            -s3_client: S3Client
+            -bucket_name: str
+            --
+            +upload_file(file_data: bytes, metadata: FileMetadata): FileReference
+            +download_file(file_id: str): bytes
+            -generate_presigned_url(file_id: str): str
+            -handle_multipart_upload(): UploadResult
+        }
+        
+        RECTANGLE AzureBlobAdapter {
+            -blob_client: BlobServiceClient
+            -container_name: str
+            --
+            +upload_file(file_data: bytes, metadata: FileMetadata): FileReference
+            +download_file(file_id: str): bytes
+            -configure_access_policies(): AccessPolicy
+            -handle_blob_metadata(): BlobMetadata
+        }
+        
+        RECTANGLE LocalFileAdapter {
+            -storage_path: str
+            -file_manager: FileManager
+            --
+            +upload_file(file_data: bytes, metadata: FileMetadata): FileReference
+            +download_file(file_id: str): bytes
+            -ensure_directory_structure(): void
+            -cleanup_temp_files(): void
+        }
+    }
+}
+
+package "Service Factory & Configuration" {
+    RECTANGLE ServiceFactory {
+        -config: ServiceConfiguration
+        -registry: ServiceRegistry
+        --
+        +create_llm_service(provider: LLMProvider): LLMServicePort
+        +create_job_service(provider: JobProvider): JobSearchServicePort
+        +create_pdf_service(provider: PDFProvider): PDFGeneratorPort
+        +create_cache_service(provider: CacheProvider): CacheServicePort
+        +create_storage_service(provider: StorageProvider): StorageServicePort
+        +create_monitoring_service(provider: MonitoringProvider): MonitoringServicePort
+        -validate_configuration(config: ProviderConfig): ValidationResult
+        -initialize_adapter(adapter_class: Type, config: Dict): Any
+    }
+    
+    RECTANGLE ServiceConfiguration {
+        -llm_provider: LLMProvider
+        -job_provider: JobProvider
+        -pdf_provider: PDFProvider
+        -cache_provider: CacheProvider
+        -storage_provider: StorageProvider
+        -monitoring_provider: MonitoringProvider
+        -fallback_providers: Dict[str, List[str]]
+        -feature_flags: Dict[str, bool]
+        --
+        +get_provider_config(service_type: str): ProviderConfig
+        +get_fallback_chain(service_type: str): List[str]
+        +is_feature_enabled(feature: str): bool
+        +validate_configuration(): ValidationResult
+    }
+    
+    enum LLMProvider {
+        OPENAI_GPT3_5
+        OPENAI_GPT4
+        CLAUDE_SONNET
+        CLAUDE_HAIKU
+        GEMINI_PRO
+        GEMINI_FLASH
+        GROQ_LLAMA3_70B
+        GROQ_LLAMA3_8B
+        GROQ_MIXTRAL_8X7B
+        GROQ_GEMMA_7B
+        LOCAL_LLAMA
+        LOCAL_MISTRAL
+        AZURE_OPENAI
+    }
+    
+    enum JobProvider {
+        INDEED_API
+        LINKEDIN_API
+        GLASSDOOR_API
+        MOCK_DATA
+        STATIC_JSON
+    }
+    
+    enum PDFProvider {
+        REPORTLAB
+        WEASYPRINT
+        CLOUD_PDF_API
+        PUPPETEER
+        LATEX
+    }
+    
+    enum CacheProvider {
+        REDIS
+        MEMORY_CACHE
+        MEMCACHED
+        DYNAMODB
+    }
+    
+    enum StorageProvider {
+        AWS_S3
+        AZURE_BLOB
+        GOOGLE_CLOUD
+        LOCAL_FILE
+        MINIO
+    }
+}
+
+package "Universal AI Orchestrator" {
+    RECTANGLE UniversalAIOrchestrator {
+        -llm_service: LLMServicePort
+        -cache_service: CacheServicePort
+        -storage_service: StorageServicePort
+        -monitoring_service: MonitoringServicePort
+        -pipeline_stages: List[PipelineStage]
+        -fallback_manager: FallbackManager
+        -circuit_breaker: CircuitBreaker
+        --
+        +execute_pipeline(profile: MasterProfile, job: JobPosting): PipelineResult
+        +set_llm_provider(provider: LLMProvider): void
+        +get_pipeline_status(execution_id: UUID): PipelineStatus
+        +cancel_execution(execution_id: UUID): void
+        -handle_provider_failure(error: Exception): FallbackResult
+        -switch_to_fallback_provider(): void
+        -monitor_pipeline_performance(): void
+    }
+    
+    RECTANGLE FallbackManager {
+        -fallback_chains: Dict[str, List[ServiceAdapter]]
+        -health_checker: HealthChecker
+        -circuit_breakers: Dict[str, CircuitBreaker]
+        --
+        +get_next_provider(service_type: str, failed_provider: str): Optional[ServiceAdapter]
+        +mark_provider_unhealthy(service_type: str, provider: str): void
+        +check_provider_recovery(service_type: str, provider: str): bool
+        +get_fallback_statistics(): FallbackStats
+        -evaluate_provider_health(): HealthStatus
+        -reset_circuit_breaker(service_type: str): void
+    }
+    
+    RECTANGLE CircuitBreaker {
+        -failure_threshold: int
+        -timeout_duration: int
+        -state: CircuitState
+        -failure_count: int
+        -last_failure_time: datetime
+        --
+        +call[T](operation: Callable[[], T]): T
+        +get_state(): CircuitState
+        +reset(): void
+        +force_open(): void
+        +force_close(): void
+        -should_attempt_call(): bool
+        -on_success(): void
+        -on_failure(): void
+    }
+    
+    enum CircuitState {
+        CLOSED
+        OPEN
+        HALF_OPEN
+    }
+}
+
+package "Common Value Objects" {
+    RECTANGLE LLMRequest {
+        -prompt: str
+        -max_tokens: int
+        -temperature: float
+        -model: str
+        -system_message: Optional[str]
+        -response_format: ResponseFormat
+        -metadata: Dict[str, Any]
+        --
+        +validate(): ValidationResult
+        +estimate_cost(): CostEstimate
+        +to_dict(): Dict[str, Any]
+    }
+    
+    RECTANGLE LLMResponse {
+        -content: str
+        -tokens_used: TokenUsage
+        -model_used: str
+        -finish_reason: FinishReason
+        -cost: float
+        -latency_ms: int
+        -metadata: Dict[str, Any]
+        --
+        +is_complete(): bool
+        +get_quality_score(): float
+        +to_dict(): Dict[str, Any]
+    }
+    
+    RECTANGLE TokenUsage {
+        -prompt_tokens: int
+        -completion_tokens: int
+        -total_tokens: int
+        --
+        +calculate_cost(model: str, provider: str): float
+        +to_dict(): Dict[str, int]
+    }
+    
+    RECTANGLE ServiceHealth {
+        -service_type: str
+        -provider: str
+        -is_healthy: bool
+        -response_time_ms: float
+        -error_rate: float
+        -last_check: datetime
+        -details: Dict[str, Any]
+        --
+        +is_degraded(): bool
+        +needs_attention(): bool
+        +to_dict(): Dict[str, Any]
+    }
+}
+
+' Implement relationships
+LLMServicePort <|.. OpenAIAdapter
+LLMServicePort <|.. ClaudeAdapter
+LLMServicePort <|.. GeminiAdapter
+LLMServicePort <|.. GroqAdapter
+LLMServicePort <|.. LocalLLMAdapter
+
+JobSearchServicePort <|.. IndeedAdapter
+JobSearchServicePort <|.. LinkedInAdapter
+JobSearchServicePort <|.. MockJobAdapter
+
+PDFGeneratorPort <|.. ReportLabAdapter
+PDFGeneratorPort <|.. WeasyPrintAdapter
+PDFGeneratorPort <|.. CloudPDFAdapter
+
+CacheServicePort <|.. RedisAdapter
+CacheServicePort <|.. MemoryAdapter
+
+StorageServicePort <|.. S3Adapter
+StorageServicePort <|.. AzureBlobAdapter
+StorageServicePort <|.. LocalFileAdapter
+
+' Factory relationships
+ServiceFactory --> ServiceConfiguration
+ServiceFactory ..> LLMServicePort : creates
+ServiceFactory ..> JobSearchServicePort : creates
+ServiceFactory ..> PDFGeneratorPort : creates
+ServiceFactory ..> CacheServicePort : creates
+ServiceFactory ..> StorageServicePort : creates
+
+' Orchestrator dependencies
+UniversalAIOrchestrator --> LLMServicePort : uses
+UniversalAIOrchestrator --> CacheServicePort : uses
+UniversalAIOrchestrator --> StorageServicePort : uses
+UniversalAIOrchestrator --> MonitoringServicePort : uses
+UniversalAIOrchestrator --> FallbackManager : manages
+UniversalAIOrchestrator --> CircuitBreaker : monitors
+
+' Value object usage
+OpenAIAdapter --> LLMRequest : consumes
+OpenAIAdapter --> LLMResponse : produces
+ClaudeAdapter --> LLMRequest : consumes
+ClaudeAdapter --> LLMResponse : produces
+GeminiAdapter --> LLMRequest : consumes
+GeminiAdapter --> LLMResponse : produces
+GroqAdapter --> LLMRequest : consumes
+GroqAdapter --> LLMResponse : produces
+
+FallbackManager --> ServiceHealth : monitors
+CircuitBreaker --> ServiceHealth : evaluates
+
+note top of ServiceFactory
+Universal service factory that creates
+appropriate adapters based on configuration:
+- Environment-specific providers
+- Runtime provider switching
+- Fallback chain management
+- Health monitoring integration
+end note
+
+note bottom of UniversalAIOrchestrator
+Provider-agnostic AI orchestrator:
+- Supports any LLM provider via adapters
+- Automatic fallback on provider failures
+- Circuit breaker pattern for resilience
+- Real-time provider health monitoring
+- Cost optimization across providers
+end note
+
+note right of FallbackManager
+Intelligent fallback management:
+- Multiple fallback chains per service
+- Health-based provider selection
+- Automatic recovery detection
+- Performance-based routing
+- Cost-aware provider switching
+end note
+
+@enduml

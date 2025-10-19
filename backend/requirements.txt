@@ -4,35 +4,49 @@ uvicorn[standard]==0.24.0
 pydantic[email]==2.5.0
 pydantic-settings==2.1.0
 
-# Database
+# Database - Universal Support
 sqlalchemy[asyncio]==2.0.23
 alembic==1.13.1
 asyncpg==0.29.0  # PostgreSQL async driver
 aiosqlite==0.19.0  # SQLite async driver
+pymysql==1.1.0  # MySQL driver
+psycopg2-binary==2.9.9  # PostgreSQL sync driver
 
-# AI Services
-openai==1.3.7
-anthropic==0.7.7
-langchain==0.0.340
-langchain-openai==0.0.2
+# Universal LLM Provider Support
+openai==1.6.1  # OpenAI GPT models
+anthropic==0.7.7  # Claude models
+google-generativeai==0.3.2  # Gemini models
+groq==0.4.1  # Groq ultra-fast inference (Llama/Mixtral)
+azure-openai==1.3.0  # Azure OpenAI service
+transformers==4.36.2  # Local model support
+torch==2.1.2  # PyTorch for local models
+tokenizers==0.15.0  # Token handling
+sentence-transformers==2.2.2  # Embedding models
 
-# HTTP Client
-httpx==0.25.2
-aiohttp==3.9.1
+# Universal HTTP Clients & API Integration
+httpx==0.25.2  # Primary async HTTP client
+aiohttp==3.9.1  # Alternative HTTP client
+requests==2.31.0  # Sync HTTP client for legacy APIs
+requests-oauthlib==1.3.1  # OAuth support for APIs
+urllib3==2.1.0  # HTTP library
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
-# Caching
-redis==5.0.1
-python-memcached==1.59
+# Universal Caching Backends
+redis==4.6.0  # Redis cache adapter
+python-memcached==1.59  # Memcached adapter
+diskcache==5.6.3  # Disk-based cache
+cachetools==5.3.2  # Memory cache utilities
 
-# PDF Generation
-reportlab==4.0.7
-weasyprint==60.2
-pypdf2==3.0.1
+# Universal PDF Generation
+reportlab==4.0.7  # ReportLab adapter
+weasyprint==60.2  # WeasyPrint adapter
+pdfkit==1.0.0  # wkhtmltopdf wrapper
+pypdf==3.17.4  # PDF manipulation
+jinja2==3.1.2  # Template engine for PDF generation
 
 # Document Processing
 python-docx==1.1.0
@@ -43,26 +57,34 @@ beautifulsoup4==4.12.2
 marshmallow==3.20.1
 marshmallow-sqlalchemy==0.29.0
 
-# Background Tasks
-celery[redis]==5.3.4
-rq==1.15.1
+# Universal Background Processing
+celery[redis]==5.3.4  # Distributed task queue
+rq==1.15.1  # Simple task queue
+apscheduler==3.10.4  # Advanced scheduling
+dramatiq==1.15.0  # Alternative task processing
 
-# Monitoring & Logging
-structlog==23.2.0
-prometheus-client==0.19.0
-sentry-sdk[fastapi]==1.39.1
+# Universal Monitoring & Resilience
+structlog==23.2.0  # Structured logging
+prometheus-client==0.19.0  # Metrics collection
+sentry-sdk[fastapi]==1.39.1  # Error tracking
+circuit-breaker==1.4.0  # Circuit breaker pattern
+tenacity==8.2.3  # Retry logic with exponential backoff
+health-check==3.4.7  # Health monitoring
 
 # Configuration
 python-decouple==3.8
 pyyaml==6.0.1
 
-# Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-httpx==0.25.2
-factory-boy==3.3.0
-faker==20.1.0
+# Universal Testing Framework
+pytest==7.4.3  # Core testing framework
+pytest-asyncio==0.21.1  # Async testing
+pytest-cov==4.1.0  # Coverage reporting
+pytest-mock==3.12.0  # Mocking framework
+pytest-xdist==3.5.0  # Parallel test execution
+factory-boy==3.3.0  # Test data generation
+faker==20.1.0  # Fake data generation
+responses==0.24.1  # HTTP request mocking
+aioresponses==0.7.6  # Async HTTP mocking
 
 # Code Quality
 black==23.11.0
@@ -89,6 +111,15 @@ numpy==1.25.2
 # Email (for notifications)
 fastapi-mail==1.4.1
 
-# File Storage
-boto3==1.34.0  # AWS S3
-azure-storage-blob==12.19.0  # Azure Blob Storage
+# Universal File Storage Backends
+boto3==1.34.0  # AWS S3 adapter
+azure-storage-blob==12.19.0  # Azure Blob Storage adapter
+google-cloud-storage==2.10.0  # Google Cloud Storage adapter
+minio==7.2.0  # MinIO S3-compatible storage
+fsspec==2023.12.2  # Filesystem interface abstraction
+
+# Job Search API Integrations
+indeed-api==1.0.0  # Indeed job search
+linkedin-api==2.0.1  # LinkedIn integration
+scrapy==2.11.0  # Web scraping for job data
+beautifulsoup4==4.12.2  # HTML parsing for job data
