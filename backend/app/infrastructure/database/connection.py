@@ -2,7 +2,7 @@
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession, 
@@ -19,8 +19,8 @@ from ...core.logging import get_logger
 logger = get_logger(__name__)
 
 # Global engine instance
-engine: AsyncEngine = None
-async_session_factory: async_sessionmaker[AsyncSession] = None
+engine: Optional[AsyncEngine] = None
+async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 
 
 def create_engine() -> AsyncEngine:
@@ -188,23 +188,9 @@ async def get_database_info() -> dict:
 
 # Migration helper functions
 async def run_migrations() -> None:
-    """Run database migrations using Alembic."""
-    from alembic import command
-    from alembic.config import Config
-    
-    logger.info("Running database migrations...")
-    
-    # Configure Alembic
-    alembic_cfg = Config("alembic.ini")
-    
-    # Run migrations in a separate thread to avoid blocking
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,
-        lambda: command.upgrade(alembic_cfg, "head")
-    )
-    
-    logger.info("Database migrations completed")
+    """Run database migrations using Alembic - DISABLED: Using single schema approach."""
+    logger.info("Migrations disabled - using single schema approach")
+    logger.info("Use 'python init_database.py' to initialize database")
 
 
 # Backup functions (for SQLite)

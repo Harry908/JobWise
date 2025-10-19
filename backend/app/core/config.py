@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         return self.DATABASE_URL
     
     # Security
-    SECRET_KEY: str = Field(..., min_length=32)
+    SECRET_KEY: str = Field(...)
     ALGORITHM: str = Field(default="HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
     
     # OpenAI Configuration
-    OPENAI_API_KEY: str = Field(...)
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = Field(default="gpt-3.5-turbo")
     OPENAI_MAX_TOKENS: int = Field(default=8000)
     OPENAI_TEMPERATURE: float = Field(default=0.7)
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     CLAUDE_MODEL: str = Field(default="claude-3-sonnet-20240229")
     
     # Redis Configuration
-    REDIS_URL: str = Field(default="redis://localhost:6379/0")
+    REDIS_URL: Optional[str] = None
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(default=100)

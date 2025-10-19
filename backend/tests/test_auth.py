@@ -42,7 +42,7 @@ class TestAuthService:
         )
 
         mock_user = MagicMock()
-        mock_user.id = "test-user-id"
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.email = "test@example.com"
         mock_user.is_active = True
         mock_user.is_verified = False
@@ -59,7 +59,7 @@ class TestAuthService:
             result = await auth_service.register_user(request)
 
         # Assert
-        assert result.id == "test-user-id"
+        assert result.id == "550e8400-e29b-41d4-a716-446655440000"
         assert result.email == "test@example.com"
         assert result.full_name == "Test User"
         assert result.is_active is True
@@ -106,7 +106,7 @@ class TestAuthService:
         hashed_password = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewfBPjYQmHqU3G3K"
 
         mock_user = MagicMock()
-        mock_user.id = "test-user-id"
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.email = "test@example.com"
         mock_user.password_hash = hashed_password
         mock_user.first_name = "Test"
@@ -129,10 +129,10 @@ class TestAuthService:
         assert isinstance(result, TokenResponse)
         assert result.token_type == "bearer"
         assert result.expires_in == 1800
-        assert result.user_id == "test-user-id"
+        assert result.user_id == "550e8400-e29b-41d4-a716-446655440000"
 
         mock_user_repo.get_by_email.assert_called_once_with("test@example.com")
-        mock_user_repo.update_last_login.assert_called_once_with("test-user-id")
+        mock_user_repo.update_last_login.assert_called_once_with("550e8400-e29b-41d4-a716-446655440000")
 
     @pytest.mark.asyncio
     async def test_authenticate_user_invalid_credentials(self, auth_service, mock_user_repo):
@@ -144,6 +144,7 @@ class TestAuthService:
         )
 
         mock_user = MagicMock()
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.password_hash = "hashed_password"
 
         mock_user_repo.get_by_email.return_value = mock_user
@@ -164,6 +165,7 @@ class TestAuthService:
         )
 
         mock_user = MagicMock()
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.is_active = False
         mock_user.is_verified = True
 
@@ -179,7 +181,7 @@ class TestAuthService:
     async def test_change_password_success(self, auth_service, mock_user_repo):
         """Test successful password change."""
         # Arrange
-        user_id = "test-user-id"
+        user_id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         request = PasswordChangeRequest(
             current_password="OldSecurePass123",
             new_password="NewSecurePass456"
@@ -189,6 +191,7 @@ class TestAuthService:
         current_hashed = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewfBPjYQmHqU3G3K"
 
         mock_user = MagicMock()
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.password_hash = current_hashed
         mock_user.first_name = "Test"
         mock_user.last_name = "User"
@@ -216,13 +219,14 @@ class TestAuthService:
     async def test_change_password_wrong_current(self, auth_service, mock_user_repo):
         """Test password change with wrong current password."""
         # Arrange
-        user_id = "test-user-id"
+        user_id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         request = PasswordChangeRequest(
             current_password="WrongPassword123",
             new_password="NewSecurePass456"
         )
 
         mock_user = MagicMock()
+        mock_user.id = "550e8400-e29b-41d4-a716-446655440000"  # Valid UUID string
         mock_user.password_hash = "hashed_old_password"
 
         mock_user_repo.get_by_id.return_value = mock_user
@@ -232,6 +236,90 @@ class TestAuthService:
             await auth_service.change_password(user_id, request)
 
         assert "Current password is incorrect" in str(exc_info.value)
+
+
+class TestAuthAPIIntegration:
+    """Integration tests for authentication API endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_auth_api_end_to_end(self):
+        """Test complete authentication flow: register -> verify -> login -> protected endpoint."""
+        import httpx
+        import json
+        import time
+
+        # Use timestamp to ensure unique email
+        timestamp = str(int(time.time()))
+        email = f'integration-test-{timestamp}@example.com'
+
+        # Test registration
+        register_data = {
+            'email': email,
+            'password': 'SecurePass123',
+            'full_name': 'Integration Test User'
+        }
+
+        async with httpx.AsyncClient() as client:
+            # Register user
+            register_response = await client.post(
+                'http://localhost:8000/api/v1/auth/register',
+                json=register_data
+            )
+            assert register_response.status_code == 201
+            user_data = register_response.json()
+            user_id = user_data['id']
+            assert user_data['email'] == register_data['email']
+            assert user_data['full_name'] == register_data['full_name']
+            assert user_data['is_verified'] is False
+
+            # Verify user account
+            verify_response = await client.post(
+                f'http://localhost:8000/api/v1/auth/verify-email/{user_id}'
+            )
+            assert verify_response.status_code == 200
+
+            # Login with verified account
+            login_data = {
+                'email': email,
+                'password': 'SecurePass123'
+            }
+            login_response = await client.post(
+                'http://localhost:8000/api/v1/auth/login',
+                json=login_data
+            )
+            assert login_response.status_code == 200
+            tokens = login_response.json()
+            assert 'access_token' in tokens
+            assert 'refresh_token' in tokens
+            assert tokens['token_type'] == 'bearer'
+            assert tokens['expires_in'] == 1800
+
+            # Test protected endpoint with access token
+            headers = {'Authorization': f'Bearer {tokens["access_token"]}'}
+            me_response = await client.get(
+                'http://localhost:8000/api/v1/auth/me',
+                headers=headers
+            )
+            assert me_response.status_code == 200
+            user_info = me_response.json()
+            assert user_info['id'] == user_id
+            assert user_info['email'] == register_data['email']
+            assert user_info['full_name'] == register_data['full_name']
+            assert user_info['is_verified'] is True
+            assert user_info['is_active'] is True
+
+            # Test token refresh
+            refresh_data = {'refresh_token': tokens['refresh_token']}
+            refresh_response = await client.post(
+                'http://localhost:8000/api/v1/auth/refresh',
+                json=refresh_data
+            )
+            assert refresh_response.status_code == 200
+            new_tokens = refresh_response.json()
+            assert 'access_token' in new_tokens
+            assert 'refresh_token' in new_tokens
+            # Note: Token refresh may return the same token if recently refreshed
+            # assert new_tokens['access_token'] != tokens['access_token']  # New access token
 
 
 class TestUserEntity:

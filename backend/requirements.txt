@@ -6,7 +6,6 @@ pydantic-settings==2.1.0
 
 # Database - Universal Support
 sqlalchemy[asyncio]==2.0.23
-alembic==1.13.1
 asyncpg==0.29.0  # PostgreSQL async driver
 aiosqlite==0.19.0  # SQLite async driver
 pymysql==1.1.0  # MySQL driver

@@ -1,33 +1,37 @@
-"""SQLAlchemy database models for JobWise application."""
+"""Single comprehensive database schema for JobWise application.
+
+This file contains all table definitions and can be used to create the complete
+database schema in a single operation, replacing the need for incremental migrations.
+"""
 
 import uuid
 from datetime import datetime, date
 from typing import List, Optional
 
 from sqlalchemy import (
-    Boolean, Column, String, Integer, Float, DateTime, Date, Text, 
+    Boolean, Column, String, Integer, Float, DateTime, Date, Text,
     ForeignKey, JSON, CheckConstraint, Index, UniqueConstraint,
-    Enum as SQLEnum
+    Enum as SQLEnum, create_engine, MetaData
 )
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from ...domain.entities.job import JobType, ExperienceLevel
-from ...domain.entities.generation import GenerationStatus, DocumentType
-from ...domain.entities.job_description import JobDescriptionStatus, JobDescriptionSource
-from ...domain.value_objects import ProficiencyLevel, SkillCategory
+from app.domain.entities.job import JobType, ExperienceLevel
+from app.domain.entities.generation import GenerationStatus, DocumentType
+from app.domain.entities.job_description import JobDescriptionStatus, JobDescriptionSource
+from app.domain.value_objects import ProficiencyLevel, SkillCategory
 
 # Base class for all models
 Base = declarative_base()
-
+metadata = Base.metadata
 
 class TimestampMixin:
     """Mixin for common timestamp fields."""
-    
+
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
+        DateTime(timezone=True),
         default=func.now(),
         nullable=False
     )
@@ -41,39 +45,39 @@ class TimestampMixin:
 
 class UserModel(Base, TimestampMixin):
     """User account model."""
-    
+
     __tablename__ = "users"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
-        String(36), 
+        String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Authentication fields
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
     # Profile fields
     first_name: Mapped[Optional[str]] = mapped_column(String(100))
     last_name: Mapped[Optional[str]] = mapped_column(String(100))
     phone: Mapped[Optional[str]] = mapped_column(String(20))
     timezone: Mapped[Optional[str]] = mapped_column(String(50))
-    
+
     # Subscription fields
     subscription_tier: Mapped[str] = mapped_column(String(20), default="free", nullable=False)
     subscription_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    
+
     # Usage tracking
     generations_this_month: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    
+
     # Relationships
     master_profiles: Mapped[List["MasterProfileModel"]] = relationship(
-        "MasterProfileModel", 
+        "MasterProfileModel",
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -97,7 +101,7 @@ class UserModel(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan"
     )
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("subscription_tier IN ('free', 'basic', 'premium', 'enterprise')"),
@@ -109,16 +113,16 @@ class UserModel(Base, TimestampMixin):
 
 class MasterProfileModel(Base, TimestampMixin):
     """Master resume profile model."""
-    
+
     __tablename__ = "master_profiles"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     user_id: Mapped[str] = mapped_column(
         String(36),
@@ -126,7 +130,7 @@ class MasterProfileModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Profile fields
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -135,19 +139,19 @@ class MasterProfileModel(Base, TimestampMixin):
     linkedin: Mapped[Optional[str]] = mapped_column(String(500))
     github: Mapped[Optional[str]] = mapped_column(String(500))
     website: Mapped[Optional[str]] = mapped_column(String(500))
-    
+
     # Content fields
     professional_summary: Mapped[Optional[str]] = mapped_column(Text)
-    
+
     # Version control
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    
+
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="master_profiles")
     experiences: Mapped[List["ExperienceModel"]] = relationship(
         "ExperienceModel",
-        back_populates="profile", 
+        back_populates="profile",
         cascade="all, delete-orphan",
         order_by="ExperienceModel.start_date.desc()"
     )
@@ -168,7 +172,7 @@ class MasterProfileModel(Base, TimestampMixin):
         cascade="all, delete-orphan"
     )
     certifications: Mapped[List["CertificationModel"]] = relationship(
-        "CertificationModel", 
+        "CertificationModel",
         back_populates="profile",
         cascade="all, delete-orphan",
         order_by="CertificationModel.date_obtained.desc()"
@@ -176,14 +180,14 @@ class MasterProfileModel(Base, TimestampMixin):
     projects: Mapped[List["ProjectModel"]] = relationship(
         "ProjectModel",
         back_populates="profile",
-        cascade="all, delete-orphan", 
+        cascade="all, delete-orphan",
         order_by="ProjectModel.start_date.desc()"
     )
     generations: Mapped[List["GenerationModel"]] = relationship(
         "GenerationModel",
         back_populates="profile"
     )
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("version > 0"),
@@ -195,16 +199,16 @@ class MasterProfileModel(Base, TimestampMixin):
 
 class ExperienceModel(Base, TimestampMixin):
     """Work experience model."""
-    
+
     __tablename__ = "experiences"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
-        primary_key=True, 
+        primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     profile_id: Mapped[str] = mapped_column(
         String(36),
@@ -212,7 +216,7 @@ class ExperienceModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Experience fields
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     company: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -222,13 +226,13 @@ class ExperienceModel(Base, TimestampMixin):
     is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     achievements: Mapped[List[str]] = mapped_column(JSON, default=list)
-    
+
     # Display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="experiences")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("start_date <= COALESCE(end_date, CURRENT_DATE)"),
@@ -240,39 +244,39 @@ class ExperienceModel(Base, TimestampMixin):
 
 class EducationModel(Base, TimestampMixin):
     """Education model."""
-    
+
     __tablename__ = "education"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
-    # Foreign keys  
+
+    # Foreign keys
     profile_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("master_profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-    
+
     # Education fields
     institution: Mapped[str] = mapped_column(String(200), nullable=False)
-    degree: Mapped[str] = mapped_column(String(100), nullable=False) 
+    degree: Mapped[str] = mapped_column(String(100), nullable=False)
     field_of_study: Mapped[str] = mapped_column(String(200), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[Optional[date]] = mapped_column(Date)
     gpa: Mapped[Optional[float]] = mapped_column(Float)
     honors: Mapped[List[str]] = mapped_column(JSON, default=list)
-    
+
     # Display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="education")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("start_date <= COALESCE(end_date, CURRENT_DATE)"),
@@ -284,37 +288,37 @@ class EducationModel(Base, TimestampMixin):
 
 class SkillModel(Base, TimestampMixin):
     """Skills model."""
-    
+
     __tablename__ = "skills"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     profile_id: Mapped[str] = mapped_column(
-        String(36), 
+        String(36),
         ForeignKey("master_profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-    
+
     # Skill fields
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     category: Mapped[SkillCategory] = mapped_column(SQLEnum(SkillCategory), nullable=False)
     proficiency_level: Mapped[Optional[ProficiencyLevel]] = mapped_column(SQLEnum(ProficiencyLevel))
     years_experience: Mapped[Optional[float]] = mapped_column(Float)
-    
+
     # Display fields
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="skills")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("years_experience IS NULL OR years_experience >= 0"),
@@ -326,16 +330,16 @@ class SkillModel(Base, TimestampMixin):
 
 class LanguageModel(Base, TimestampMixin):
     """Language proficiency model."""
-    
+
     __tablename__ = "languages"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     profile_id: Mapped[str] = mapped_column(
         String(36),
@@ -343,17 +347,17 @@ class LanguageModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Language fields
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     proficiency: Mapped[ProficiencyLevel] = mapped_column(SQLEnum(ProficiencyLevel), nullable=False)
-    
+
     # Display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="languages")
-    
+
     # Constraints
     __table_args__ = (
         UniqueConstraint("profile_id", "name", name="unique_profile_language"),
@@ -363,16 +367,16 @@ class LanguageModel(Base, TimestampMixin):
 
 class CertificationModel(Base, TimestampMixin):
     """Certification model."""
-    
+
     __tablename__ = "certifications"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     profile_id: Mapped[str] = mapped_column(
         String(36),
@@ -380,7 +384,7 @@ class CertificationModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Certification fields
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     issuer: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -388,13 +392,13 @@ class CertificationModel(Base, TimestampMixin):
     expiry_date: Mapped[Optional[date]] = mapped_column(Date)
     credential_id: Mapped[Optional[str]] = mapped_column(String(100))
     verification_url: Mapped[Optional[str]] = mapped_column(String(500))
-    
+
     # Display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="certifications")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("date_obtained <= COALESCE(expiry_date, CURRENT_DATE)"),
@@ -405,16 +409,16 @@ class CertificationModel(Base, TimestampMixin):
 
 class ProjectModel(Base, TimestampMixin):
     """Project model."""
-    
+
     __tablename__ = "projects"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     profile_id: Mapped[str] = mapped_column(
         String(36),
@@ -422,7 +426,7 @@ class ProjectModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Project fields
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -430,14 +434,14 @@ class ProjectModel(Base, TimestampMixin):
     url: Mapped[Optional[str]] = mapped_column(String(500))
     start_date: Mapped[Optional[date]] = mapped_column(Date)
     end_date: Mapped[Optional[date]] = mapped_column(Date)
-    
+
     # Display fields
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
     # Relationships
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="projects")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("start_date IS NULL OR end_date IS NULL OR start_date <= end_date"),
@@ -448,39 +452,39 @@ class ProjectModel(Base, TimestampMixin):
 
 class JobPostingModel(Base, TimestampMixin):
     """Job posting model - renamed from job_postings to jobs for API consistency."""
-    
+
     __tablename__ = "jobs"
-    
+
     # Primary key (external job ID)
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
-    
+
     # Job fields
     title: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     company: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     location: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     requirements: Mapped[List[str]] = mapped_column(JSON, nullable=False)
-    
+
     # Salary and type
     salary_min: Mapped[Optional[int]] = mapped_column(Integer)
-    salary_max: Mapped[Optional[int]] = mapped_column(Integer) 
+    salary_max: Mapped[Optional[int]] = mapped_column(Integer)
     salary_currency: Mapped[str] = mapped_column(String(3), default="USD")
     remote: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     job_type: Mapped[JobType] = mapped_column(SQLEnum(JobType), nullable=False)
     experience_level: Mapped[ExperienceLevel] = mapped_column(SQLEnum(ExperienceLevel), nullable=False)
-    
+
     # Dates and source
     posted_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expires_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     application_url: Mapped[Optional[str]] = mapped_column(String(500))
     source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    
+
     # Processing metadata
     keywords_extracted: Mapped[List[str]] = mapped_column(JSON, default=list)
     ats_keywords: Mapped[List[str]] = mapped_column(JSON, default=list)
     match_difficulty: Mapped[Optional[float]] = mapped_column(Float)
-    
-    # Relationships  
+
+    # Relationships
     generations: Mapped[List["GenerationModel"]] = relationship(
         "GenerationModel",
         back_populates="job_posting"
@@ -489,7 +493,7 @@ class JobPostingModel(Base, TimestampMixin):
         "JobApplicationModel",
         back_populates="job_posting"
     )
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("salary_min IS NULL OR salary_min > 0"),
@@ -581,16 +585,16 @@ class JobDescriptionModel(Base, TimestampMixin):
 
 class GenerationModel(Base, TimestampMixin):
     """AI generation process model."""
-    
+
     __tablename__ = "generations"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     user_id: Mapped[str] = mapped_column(
         String(36),
@@ -612,22 +616,22 @@ class GenerationModel(Base, TimestampMixin):
         String(36),
         ForeignKey("job_descriptions.id", ondelete="CASCADE")
     )
-    
+
     # Generation status and timing
     status: Mapped[GenerationStatus] = mapped_column(SQLEnum(GenerationStatus), nullable=False, index=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     processing_time_seconds: Mapped[Optional[float]] = mapped_column(Float)
-    
+
     # Error handling
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    
+
     # Pipeline metadata
     pipeline_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
     llm_provider_used: Mapped[Optional[str]] = mapped_column(String(50))
     total_tokens_used: Mapped[Optional[int]] = mapped_column(Integer)
     estimated_cost: Mapped[Optional[float]] = mapped_column(Float)
-    
+
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="generations")
     profile: Mapped["MasterProfileModel"] = relationship("MasterProfileModel", back_populates="generations")
@@ -638,7 +642,7 @@ class GenerationModel(Base, TimestampMixin):
         back_populates="generation",
         cascade="all, delete-orphan"
     )
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("processing_time_seconds IS NULL OR processing_time_seconds >= 0"),
@@ -656,16 +660,16 @@ class GenerationModel(Base, TimestampMixin):
 
 class GenerationResultModel(Base, TimestampMixin):
     """Generated document result model - renamed from generation_results to documents for API consistency."""
-    
+
     __tablename__ = "documents"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     generation_id: Mapped[str] = mapped_column(
         String(36),
@@ -673,28 +677,28 @@ class GenerationResultModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Result fields
     document_type: Mapped[DocumentType] = mapped_column(SQLEnum(DocumentType), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     ats_score: Mapped[Optional[float]] = mapped_column(Float)
     word_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    
+
     # File storage
     pdf_file_path: Mapped[Optional[str]] = mapped_column(String(500))
     docx_file_path: Mapped[Optional[str]] = mapped_column(String(500))
-    
+
     # Generation metadata
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     generation_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
-    
+
     # Quality metrics
     readability_score: Mapped[Optional[float]] = mapped_column(Float)
     keyword_density: Mapped[Optional[float]] = mapped_column(Float)
-    
+
     # Relationships
     generation: Mapped["GenerationModel"] = relationship("GenerationModel", back_populates="results")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("ats_score IS NULL OR (ats_score >= 0 AND ats_score <= 1)"),
@@ -709,16 +713,16 @@ class GenerationResultModel(Base, TimestampMixin):
 
 class JobApplicationModel(Base, TimestampMixin):
     """Job application tracking model - renamed from job_applications to saved_jobs for API consistency."""
-    
+
     __tablename__ = "saved_jobs"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     user_id: Mapped[str] = mapped_column(
         String(36),
@@ -736,7 +740,7 @@ class JobApplicationModel(Base, TimestampMixin):
         String(36),
         ForeignKey("generations.id", ondelete="SET NULL")
     )
-    
+
     # Application status
     status: Mapped[str] = mapped_column(
         String(50),
@@ -745,20 +749,20 @@ class JobApplicationModel(Base, TimestampMixin):
         index=True
     )
     applied_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    
+
     # Follow-up dates
     follow_up_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     interview_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     response_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    
+
     # Notes and feedback
     notes: Mapped[Optional[str]] = mapped_column(Text)
     feedback: Mapped[Optional[str]] = mapped_column(Text)
-    
+
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="saved_jobs")
     job_posting: Mapped["JobPostingModel"] = relationship("JobPostingModel", back_populates="saved_jobs")
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("status IN ('applied', 'under_review', 'interview_scheduled', 'interviewed', 'rejected', 'withdrawn', 'offer_received', 'accepted')"),
@@ -770,16 +774,16 @@ class JobApplicationModel(Base, TimestampMixin):
 
 class UserSessionModel(Base, TimestampMixin):
     """User session tracking model."""
-    
+
     __tablename__ = "user_sessions"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     user_id: Mapped[str] = mapped_column(
         String(36),
@@ -787,21 +791,21 @@ class UserSessionModel(Base, TimestampMixin):
         nullable=False,
         index=True
     )
-    
+
     # Session fields
     session_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     refresh_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    
+
     # Device and location info
     user_agent: Mapped[Optional[str]] = mapped_column(String(500))
     ip_address: Mapped[Optional[str]] = mapped_column(String(45))  # IPv6 support
     device_type: Mapped[Optional[str]] = mapped_column(String(50))
-    
+
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="user_sessions")
-    
+
     # Constraints
     __table_args__ = (
         Index("idx_session_user", "user_id", "is_active"),
@@ -811,37 +815,37 @@ class UserSessionModel(Base, TimestampMixin):
 
 class AuditLogModel(Base, TimestampMixin):
     """Audit log for tracking important system events."""
-    
+
     __tablename__ = "audit_logs"
-    
+
     # Primary key
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4())
     )
-    
+
     # Foreign keys
     user_id: Mapped[Optional[str]] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="SET NULL"),
         index=True
     )
-    
+
     # Event fields
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     event_description: Mapped[str] = mapped_column(String(500), nullable=False)
     resource_type: Mapped[Optional[str]] = mapped_column(String(100), index=True)
     resource_id: Mapped[Optional[str]] = mapped_column(String(36))
-    
+
     # Context
     ip_address: Mapped[Optional[str]] = mapped_column(String(45))
     user_agent: Mapped[Optional[str]] = mapped_column(String(500))
     audit_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
-    
+
     # Severity
     severity: Mapped[str] = mapped_column(String(20), default="info", nullable=False)
-    
+
     # Constraints
     __table_args__ = (
         CheckConstraint("severity IN ('debug', 'info', 'warning', 'error', 'critical')"),
@@ -851,28 +855,45 @@ class AuditLogModel(Base, TimestampMixin):
     )
 
 
+def create_all_tables(engine):
+    """Create all database tables in the correct order."""
+    metadata.create_all(engine)
+
+
+def drop_all_tables(engine):
+    """Drop all database tables."""
+    metadata.drop_all(engine)
+
+
 # Create indexes for performance optimization
-def create_performance_indexes():
+def create_performance_indexes(engine):
     """Create additional performance indexes."""
     from sqlalchemy import text
-    
+
     # Composite indexes for common query patterns
     indexes = [
         # User and profile queries
         "CREATE INDEX IF NOT EXISTS idx_profile_user_active ON master_profiles (user_id, is_active);",
         "CREATE INDEX IF NOT EXISTS idx_generation_user_status_date ON generations (user_id, status, created_at);",
-        
-        # Job search queries  
+
+        # Job search queries
         "CREATE INDEX IF NOT EXISTS idx_job_title_company ON jobs (title, company);",
         "CREATE INDEX IF NOT EXISTS idx_job_location_remote_type ON jobs (location, remote, job_type);",
-        
+
         # Time-based queries
         "CREATE INDEX IF NOT EXISTS idx_generation_completed_time ON generations (completed_at) WHERE completed_at IS NOT NULL;",
         "CREATE INDEX IF NOT EXISTS idx_job_posted_expires ON jobs (posted_date, expires_date);",
-        
+
         # Full-text search preparation (for PostgreSQL)
         "CREATE INDEX IF NOT EXISTS idx_job_description_gin ON jobs USING gin(to_tsvector('english', description));",
         "CREATE INDEX IF NOT EXISTS idx_job_requirements_gin ON jobs USING gin(to_tsvector('english', array_to_string(requirements, ' ')));",
     ]
-    
-    return indexes
+
+    with engine.connect() as conn:
+        for index_sql in indexes:
+            try:
+                conn.execute(text(index_sql))
+                conn.commit()
+            except Exception as e:
+                print(f"Warning: Could not create index: {e}")
+                continue

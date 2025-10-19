@@ -65,12 +65,6 @@ class AuthService:
                 "is_verified": False
             }
 
-            # Ensure user ID is a UUID
-            user_data["id"] = uuid4()
-
-            # Log user data creation
-            print("Creating user with data:", user_data)
-
             # Create user in database
             user_model = await self.user_repository.create(user_data)
 
@@ -114,7 +108,7 @@ class AuthService:
 
         # Convert to domain entity for validation
         user = User(
-            id=user_model.id,
+            id=UUID(user_model.id),
             email=user_model.email,
             hashed_password=user_model.password_hash,
             full_name=f"{user_model.first_name} {user_model.last_name}".strip(),
@@ -204,7 +198,7 @@ class AuthService:
 
         # Convert to domain entity for password verification
         user = User(
-            id=user_model.id,
+            id=UUID(user_model.id),
             email=user_model.email,
             hashed_password=user_model.password_hash,
             full_name=f"{user_model.first_name} {user_model.last_name}".strip(),

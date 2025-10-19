@@ -5,16 +5,12 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .config import settings
 from .exceptions import AuthenticationException, ValidationException
-
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class JWTToken(BaseModel):
@@ -34,7 +30,7 @@ class TokenData(BaseModel):
 
 
 class PasswordHasher:
-    """Password hashing utilities using passlib/bcrypt."""
+    """Password hashing utilities using bcrypt directly."""
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -42,7 +38,20 @@ class PasswordHasher:
         if not password:
             raise ValidationException("Password cannot be empty")
 
-        return pwd_context.hash(password)
+        # Ensure password is a string and truncate to 72 bytes
+        if isinstance(password, str):
+            password_bytes = password.encode('utf-8')
+        else:
+            password_bytes = str(password).encode('utf-8')
+        
+        # Truncate to 72 bytes as required by bcrypt
+        truncated_password = password_bytes[:72]
+        
+        # Generate salt and hash
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(truncated_password, salt)
+        
+        return hashed.decode('utf-8')
 
     @staticmethod
     def verify_password(password: str, hashed_password: str) -> bool:
@@ -51,7 +60,9 @@ class PasswordHasher:
             return False
 
         try:
-            return pwd_context.verify(password, hashed_password)
+            password_bytes = password.encode('utf-8')
+            hashed_bytes = hashed_password.encode('utf-8')
+            return bcrypt.checkpw(password_bytes, hashed_bytes)
         except Exception:
             return False
 
@@ -118,7 +129,15 @@ class JWTManager:
             token_data = TokenData(**payload)
 
             # Check if token is expired
-            if token_data.exp < datetime.utcnow():
+            # Handle timezone-aware vs timezone-naive datetime comparison
+            current_time = datetime.utcnow()
+            exp_time = token_data.exp
+            
+            # If exp_time is timezone-aware, convert to naive UTC
+            if isinstance(exp_time, datetime) and exp_time.tzinfo is not None:
+                exp_time = exp_time.replace(tzinfo=None)
+            
+            if exp_time < current_time:
                 raise AuthenticationException("Token has expired")
 
             return token_data
