@@ -1,19 +1,10 @@
-import asyncio
-from app.infrastructure.database.connection import create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession
+import pytest
+from app.infrastructure.database.connection import initialize_database, get_database_session
 
-async def test_fixture():
-    test_settings = type('obj', (object,), {
-        'DATABASE_URL': 'sqlite+aiosqlite:///./test_jobwise.db'
-    })()
+@pytest.fixture(scope="function")
+async def db_session():
+    """Provide a database session for tests."""
+    initialize_database()
 
-    engine = create_async_engine(test_settings.DATABASE_URL, echo=False, future=True)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with async_session() as session:
-        print(f'Session type: {type(session)}')
-        print(f'Has add method: {hasattr(session, "add")}')
-
-if __name__ == "__main__":
-    asyncio.run(test_fixture())
+    async with get_database_session() as session:
+        yield session

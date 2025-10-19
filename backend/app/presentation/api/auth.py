@@ -18,6 +18,7 @@ from ...application.dtos.auth_dtos import (
     PasswordResetRequest,
     PasswordResetConfirmRequest
 )
+from ...core.exceptions import ValidationException
 
 # Create auth router
 router = APIRouter()
@@ -43,10 +44,15 @@ async def register_user(
     """Register a new user."""
     try:
         return await auth_service.register_user(request)
-    except Exception as e:
+    except ValidationException as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=str(ve)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
         )
 
 

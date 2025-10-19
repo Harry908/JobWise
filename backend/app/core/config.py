@@ -5,6 +5,13 @@ from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 class Settings(BaseSettings):
     """Application settings with environment-based configuration."""
@@ -90,9 +97,10 @@ class Settings(BaseSettings):
     ENABLE_BATCH_GENERATION: bool = Field(default=False)
     ENABLE_DOCUMENT_SHARING: bool = Field(default=True)
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+    }
 
 
 @lru_cache()

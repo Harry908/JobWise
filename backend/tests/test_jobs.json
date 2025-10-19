@@ -1,0 +1,92 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Senior Python Backend Developer",
+    "company": "TechCorp Solutions",
+    "location": "Seattle, WA",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 120000,
+      "max": 160000,
+      "currency": "USD"
+    },
+    "description": "We are seeking a Senior Python Backend Developer to join our growing team.",
+    "requirements": [
+      "5+ years of Python development experience",
+      "Strong knowledge of FastAPI or Django",
+      "Experience with PostgreSQL and Redis"
+    ],
+    "benefits": [
+      "Competitive salary and equity package",
+      "Health, dental, and vision insurance",
+      "Flexible work hours and remote options"
+    ],
+    "posted_date": "2024-10-15T10:00:00Z",
+    "application_deadline": "2024-11-15T23:59:59Z",
+    "company_size": "500-1000",
+    "industry": "Technology",
+    "remote_work_policy": "hybrid",
+    "tags": ["python", "fastapi", "postgresql", "aws", "microservices", "docker"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "title": "Frontend React Developer",
+    "company": "InnovateLabs",
+    "location": "San Francisco, CA",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 90000,
+      "max": 130000,
+      "currency": "USD"
+    },
+    "description": "Join our dynamic frontend team to build beautiful, responsive web applications.",
+    "requirements": [
+      "3+ years of React development experience",
+      "Strong TypeScript skills",
+      "Experience with modern CSS frameworks"
+    ],
+    "benefits": [
+      "Competitive salary",
+      "Health insurance",
+      "Remote work options"
+    ],
+    "posted_date": "2024-10-16T10:00:00Z",
+    "application_deadline": "2024-11-16T23:59:59Z",
+    "company_size": "200-500",
+    "industry": "Technology",
+    "remote_work_policy": "remote",
+    "tags": ["react", "typescript", "javascript", "css", "frontend"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "title": "DevOps Engineer",
+    "company": "CloudTech Inc",
+    "location": "Austin, TX",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 95000,
+      "max": 135000,
+      "currency": "USD"
+    },
+    "description": "We are looking for a DevOps Engineer to help us build and maintain our cloud infrastructure.",
+    "requirements": [
+      "3+ years of DevOps experience",
+      "Strong AWS/Azure/GCP knowledge",
+      "Experience with Docker and Kubernetes"
+    ],
+    "benefits": [
+      "Competitive salary",
+      "Health and dental insurance",
+      "Professional development budget"
+    ],
+    "posted_date": "2024-10-17T10:00:00Z",
+    "application_deadline": "2024-11-17T23:59:59Z",
+    "company_size": "200-500",
+    "industry": "Technology",
+    "remote_work_policy": "hybrid",
+    "tags": ["devops", "aws", "docker", "kubernetes", "terraform"]
+  }
+]

@@ -1,0 +1,703 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Senior Python Backend Developer",
+    "company": "TechCorp Solutions",
+    "location": "Seattle, WA",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 120000,
+      "max": 160000,
+      "currency": "USD"
+    },
+    "description": "We are seeking a Senior Python Backend Developer to join our growing team. You will be responsible for designing, developing, and maintaining scalable backend services using Python, FastAPI, and PostgreSQL. Experience with microservices architecture and cloud platforms (AWS) is required.",
+    "requirements": [
+      "5+ years of Python development experience",
+      "Strong knowledge of FastAPI or Django",
+      "Experience with PostgreSQL and Redis",
+      "Familiarity with AWS services (EC2, S3, Lambda)",
+      "Understanding of microservices architecture",
+      "Experience with Docker and Kubernetes"
+    ],
+    "benefits": [
+      "Competitive salary and equity package",
+      "Health, dental, and vision insurance",
+      "Flexible work hours and remote options",
+      "Professional development budget",
+      "401(k) with company match"
+    ],
+    "posted_date": "2024-10-15T10:00:00Z",
+    "application_deadline": "2024-11-15T23:59:59Z",
+    "company_size": "500-1000",
+    "industry": "Technology",
+    "remote_work_policy": "hybrid",
+    "tags": ["python", "fastapi", "postgresql", "aws", "microservices", "docker"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "title": "Frontend React Developer",
+    "company": "InnovateLabs",
+    "location": "San Francisco, CA",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 90000,
+      "max": 130000,
+      "currency": "USD"
+    },
+    "description": "Join our dynamic frontend team to build beautiful, responsive web applications using React, TypeScript, and modern CSS frameworks. You'll work closely with UX designers and backend developers to create exceptional user experiences.",
+    "requirements": [
+      "3+ years of React development experience",
+      "Proficiency in TypeScript and JavaScript",
+      "Experience with state management (Redux, Zustand)",
+      "Knowledge of CSS frameworks (Tailwind, Styled Components)",
+      "Understanding of RESTful APIs and GraphQL",
+      "Experience with testing frameworks (Jest, React Testing Library)"
+    ],
+    "benefits": [
+      "Competitive salary with performance bonuses",
+      "Comprehensive health benefits",
+      "Flexible PTO policy",
+      "Learning and development stipend",
+      "Catered meals and wellness programs"
+    ],
+    "posted_date": "2024-10-14T09:30:00Z",
+    "application_deadline": "2024-11-14T23:59:59Z",
+    "company_size": "100-500",
+    "industry": "Technology",
+    "remote_work_policy": "remote",
+    "tags": ["react", "typescript", "javascript", "css", "redux", "graphql"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "title": "DevOps Engineer",
+    "company": "CloudScale Systems",
+    "location": "Austin, TX",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 110000,
+      "max": 150000,
+      "currency": "USD"
+    },
+    "description": "We're looking for a Senior DevOps Engineer to help us build and maintain our cloud infrastructure. You'll work with cutting-edge technologies to ensure our systems are scalable, secure, and highly available.",
+    "requirements": [
+      "4+ years of DevOps/Infrastructure experience",
+      "Strong experience with AWS or GCP",
+      "Proficiency in Infrastructure as Code (Terraform, CloudFormation)",
+      "Experience with container orchestration (Kubernetes, Docker)",
+      "Knowledge of CI/CD pipelines (Jenkins, GitLab CI, GitHub Actions)",
+      "Scripting skills in Python, Bash, or Go"
+    ],
+    "benefits": [
+      "Competitive compensation package",
+      "Full health and dental coverage",
+      "Unlimited PTO",
+      "Home office stipend",
+      "Annual company retreat"
+    ],
+    "posted_date": "2024-10-13T14:20:00Z",
+    "application_deadline": "2024-11-13T23:59:59Z",
+    "company_size": "50-200",
+    "industry": "Cloud Computing",
+    "remote_work_policy": "hybrid",
+    "tags": ["devops", "aws", "kubernetes", "terraform", "docker", "ci-cd"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440004",
+    "title": "Data Scientist",
+    "company": "DataDriven Analytics",
+    "location": "Boston, MA",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 95000,
+      "max": 135000,
+      "currency": "USD"
+    },
+    "description": "Join our data science team to develop machine learning models and extract insights from large datasets. You'll work on challenging problems in predictive analytics, recommendation systems, and natural language processing.",
+    "requirements": [
+      "3+ years of data science experience",
+      "Strong Python programming skills",
+      "Experience with ML frameworks (scikit-learn, TensorFlow, PyTorch)",
+      "Proficiency in SQL and data manipulation",
+      "Knowledge of statistical analysis and modeling",
+      "Experience with data visualization tools"
+    ],
+    "benefits": [
+      "Competitive salary and stock options",
+      "Comprehensive benefits package",
+      "Flexible work arrangements",
+      "Conference attendance budget",
+      "Research time allocation"
+    ],
+    "posted_date": "2024-10-12T11:15:00Z",
+    "application_deadline": "2024-11-12T23:59:59Z",
+    "company_size": "200-500",
+    "industry": "Data Analytics",
+    "remote_work_policy": "hybrid",
+    "tags": ["python", "machine-learning", "tensorflow", "sql", "statistics", "data-visualization"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440005",
+    "title": "Product Manager",
+    "company": "AgileWorks",
+    "location": "New York, NY",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 130000,
+      "max": 170000,
+      "currency": "USD"
+    },
+    "description": "We're seeking an experienced Product Manager to lead product development for our SaaS platform. You'll work closely with engineering, design, and marketing teams to define product strategy and drive execution.",
+    "requirements": [
+      "5+ years of product management experience",
+      "Experience with SaaS products",
+      "Strong analytical and problem-solving skills",
+      "Excellent communication and leadership abilities",
+      "Experience with agile development methodologies",
+      "Data-driven decision making skills"
+    ],
+    "benefits": [
+      "Competitive salary and equity",
+      "Comprehensive health benefits",
+      "Flexible work policy",
+      "Professional development opportunities",
+      "Team building events"
+    ],
+    "posted_date": "2024-10-11T13:45:00Z",
+    "application_deadline": "2024-11-11T23:59:59Z",
+    "company_size": "100-500",
+    "industry": "SaaS",
+    "remote_work_policy": "hybrid",
+    "tags": ["product-management", "saas", "agile", "strategy", "analytics", "leadership"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440006",
+    "title": "Mobile App Developer (iOS)",
+    "company": "AppCraft Studios",
+    "location": "Los Angeles, CA",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 95000,
+      "max": 135000,
+      "currency": "USD"
+    },
+    "description": "Join our mobile development team to create innovative iOS applications. You'll work on consumer-facing apps using Swift, SwiftUI, and Apple's latest frameworks to deliver exceptional user experiences.",
+    "requirements": [
+      "3+ years of iOS development experience",
+      "Proficiency in Swift and SwiftUI",
+      "Experience with iOS frameworks and APIs",
+      "Knowledge of mobile UI/UX principles",
+      "Experience with version control (Git)",
+      "Understanding of app store deployment process"
+    ],
+    "benefits": [
+      "Competitive salary package",
+      "Health and wellness benefits",
+      "Flexible working hours",
+      "Latest MacBook Pro provided",
+      "App store revenue sharing"
+    ],
+    "posted_date": "2024-10-10T10:30:00Z",
+    "application_deadline": "2024-11-10T23:59:59Z",
+    "company_size": "50-100",
+    "industry": "Mobile Apps",
+    "remote_work_policy": "onsite",
+    "tags": ["ios", "swift", "swiftui", "mobile-development", "ui-ux", "apple"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440007",
+    "title": "Cybersecurity Analyst",
+    "company": "SecureNet Solutions",
+    "location": "Washington, DC",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 85000,
+      "max": 115000,
+      "currency": "USD"
+    },
+    "description": "We're looking for a Cybersecurity Analyst to help protect our clients' digital assets. You'll monitor security systems, analyze threats, and implement security measures to safeguard against cyber attacks.",
+    "requirements": [
+      "3+ years of cybersecurity experience",
+      "Knowledge of security frameworks (NIST, ISO 27001)",
+      "Experience with SIEM tools and intrusion detection",
+      "Understanding of network security and firewalls",
+      "Familiarity with vulnerability assessment",
+      "Security certifications preferred (CISSP, CEH)"
+    ],
+    "benefits": [
+      "Competitive salary and bonuses",
+      "Comprehensive security for your family",
+      "Professional certification support",
+      "Flexible work arrangements",
+      "Government contractor benefits"
+    ],
+    "posted_date": "2024-10-09T15:20:00Z",
+    "application_deadline": "2024-11-09T23:59:59Z",
+    "company_size": "500-1000",
+    "industry": "Cybersecurity",
+    "remote_work_policy": "hybrid",
+    "tags": ["cybersecurity", "siem", "network-security", "threat-analysis", "nist", "cissp"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440008",
+    "title": "UX/UI Designer",
+    "company": "DesignForward",
+    "location": "Portland, OR",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 75000,
+      "max": 105000,
+      "currency": "USD"
+    },
+    "description": "Join our design team to create beautiful and intuitive user experiences. You'll work on web and mobile applications, conducting user research, creating wireframes, and designing high-fidelity prototypes.",
+    "requirements": [
+      "3+ years of UX/UI design experience",
+      "Proficiency in Figma, Sketch, or Adobe XD",
+      "Strong portfolio demonstrating design skills",
+      "Understanding of user-centered design principles",
+      "Experience with user research and usability testing",
+      "Knowledge of design systems and accessibility"
+    ],
+    "benefits": [
+      "Creative and collaborative environment",
+      "Competitive salary and design tools budget",
+      "Health and wellness benefits",
+      "Flexible work schedule",
+      "Professional development opportunities"
+    ],
+    "posted_date": "2024-10-08T12:10:00Z",
+    "application_deadline": "2024-11-08T23:59:59Z",
+    "company_size": "20-50",
+    "industry": "Design",
+    "remote_work_policy": "remote",
+    "tags": ["ux-ui", "figma", "user-research", "prototyping", "design-systems", "accessibility"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440009",
+    "title": "Database Administrator",
+    "company": "DataCore Systems",
+    "location": "Chicago, IL",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 100000,
+      "max": 140000,
+      "currency": "USD"
+    },
+    "description": "We're seeking an experienced Database Administrator to manage our large-scale database infrastructure. You'll ensure database performance, security, and availability while working with development teams on database design and optimization.",
+    "requirements": [
+      "5+ years of database administration experience",
+      "Expert knowledge of PostgreSQL or MySQL",
+      "Experience with database performance tuning",
+      "Knowledge of backup and recovery procedures",
+      "Understanding of database security best practices",
+      "Experience with cloud database services (AWS RDS, GCP Cloud SQL)"
+    ],
+    "benefits": [
+      "Competitive salary and performance bonuses",
+      "Comprehensive benefits package",
+      "Flexible work options",
+      "Database certification support",
+      "Conference attendance budget"
+    ],
+    "posted_date": "2024-10-07T14:45:00Z",
+    "application_deadline": "2024-11-07T23:59:59Z",
+    "company_size": "200-500",
+    "industry": "Database Management",
+    "remote_work_policy": "hybrid",
+    "tags": ["database", "postgresql", "mysql", "performance-tuning", "backup-recovery", "aws-rds"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440010",
+    "title": "Machine Learning Engineer",
+    "company": "AI Innovations Lab",
+    "location": "Palo Alto, CA",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 140000,
+      "max": 190000,
+      "currency": "USD"
+    },
+    "description": "Join our AI team to build and deploy machine learning models at scale. You'll work on cutting-edge projects involving computer vision, natural language processing, and recommendation systems.",
+    "requirements": [
+      "4+ years of machine learning engineering experience",
+      "Strong Python programming skills",
+      "Experience with ML frameworks (TensorFlow, PyTorch)",
+      "Knowledge of MLOps practices and tools",
+      "Experience with cloud ML platforms (SageMaker, Vertex AI)",
+      "Understanding of distributed computing"
+    ],
+    "benefits": [
+      "Industry-leading compensation",
+      "Equity participation",
+      "Comprehensive benefits",
+      "Research time and conference budget",
+      "State-of-the-art ML infrastructure"
+    ],
+    "posted_date": "2024-10-06T11:30:00Z",
+    "application_deadline": "2024-11-06T23:59:59Z",
+    "company_size": "100-500",
+    "industry": "Artificial Intelligence",
+    "remote_work_policy": "hybrid",
+    "tags": ["machine-learning", "tensorflow", "pytorch", "mlops", "computer-vision", "nlp"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440011",
+    "title": "Full Stack Developer",
+    "company": "WebFlow Solutions",
+    "location": "Denver, CO",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 85000,
+      "max": 120000,
+      "currency": "USD"
+    },
+    "description": "We're looking for a versatile Full Stack Developer to work on our web applications. You'll handle both frontend and backend development, working with modern technologies to deliver complete solutions.",
+    "requirements": [
+      "3+ years of full stack development experience",
+      "Frontend: React, Vue.js, or Angular",
+      "Backend: Node.js, Python, or Ruby on Rails",
+      "Database experience (SQL and NoSQL)",
+      "RESTful API development",
+      "Version control with Git"
+    ],
+    "benefits": [
+      "Competitive salary and benefits",
+      "Flexible work environment",
+      "Technology learning budget",
+      "Health and wellness programs",
+      "Team building activities"
+    ],
+    "posted_date": "2024-10-05T09:15:00Z",
+    "application_deadline": "2024-11-05T23:59:59Z",
+    "company_size": "50-200",
+    "industry": "Web Development",
+    "remote_work_policy": "remote",
+    "tags": ["full-stack", "react", "node-js", "python", "sql", "rest-api"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440012",
+    "title": "QA Automation Engineer",
+    "company": "QualityFirst Software",
+    "location": "Raleigh, NC",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 80000,
+      "max": 110000,
+      "currency": "USD"
+    },
+    "description": "Join our QA team to develop and maintain automated test suites. You'll work with development teams to ensure software quality through comprehensive testing strategies and CI/CD integration.",
+    "requirements": [
+      "3+ years of QA automation experience",
+      "Proficiency in Selenium, Cypress, or Playwright",
+      "Experience with test frameworks (JUnit, TestNG, pytest)",
+      "Knowledge of CI/CD pipelines",
+      "API testing experience",
+      "Understanding of software testing methodologies"
+    ],
+    "benefits": [
+      "Competitive compensation",
+      "Health and dental benefits",
+      "Flexible work hours",
+      "Professional development",
+      "Recognition programs"
+    ],
+    "posted_date": "2024-10-04T13:20:00Z",
+    "application_deadline": "2024-11-04T23:59:59Z",
+    "company_size": "100-500",
+    "industry": "Quality Assurance",
+    "remote_work_policy": "hybrid",
+    "tags": ["qa", "automation", "selenium", "cypress", "ci-cd", "api-testing"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440013",
+    "title": "Blockchain Developer",
+    "company": "CryptoChain Labs",
+    "location": "Miami, FL",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 125000,
+      "max": 165000,
+      "currency": "USD"
+    },
+    "description": "We're building the next generation of blockchain applications. Join our team to develop smart contracts, decentralized applications, and blockchain infrastructure using Solidity, Web3.js, and modern blockchain technologies.",
+    "requirements": [
+      "4+ years of blockchain development experience",
+      "Proficiency in Solidity and smart contract development",
+      "Experience with Web3.js or Ethers.js",
+      "Knowledge of Ethereum, Polygon, or other blockchain networks",
+      "Understanding of DeFi protocols and NFT standards",
+      "Security best practices for blockchain applications"
+    ],
+    "benefits": [
+      "Competitive salary and crypto bonuses",
+      "Equity in promising blockchain projects",
+      "Flexible work arrangements",
+      "Conference and event attendance",
+      "Latest hardware and tools provided"
+    ],
+    "posted_date": "2024-10-03T16:45:00Z",
+    "application_deadline": "2024-11-03T23:59:59Z",
+    "company_size": "20-50",
+    "industry": "Blockchain",
+    "remote_work_policy": "remote",
+    "tags": ["blockchain", "solidity", "web3", "ethereum", "smart-contracts", "defi"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440014",
+    "title": "Technical Writer",
+    "company": "DocuTech Solutions",
+    "location": "Atlanta, GA",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 70000,
+      "max": 95000,
+      "currency": "USD"
+    },
+    "description": "Join our documentation team to create clear, comprehensive technical documentation. You'll work with engineering teams to document APIs, user guides, and technical specifications for our software products.",
+    "requirements": [
+      "3+ years of technical writing experience",
+      "Strong writing and communication skills",
+      "Experience with documentation tools (Markdown, Confluence)",
+      "Understanding of software development processes",
+      "API documentation experience preferred",
+      "Knowledge of content management systems"
+    ],
+    "benefits": [
+      "Competitive salary and benefits",
+      "Flexible work environment",
+      "Professional development opportunities",
+      "Writing tools and software provided",
+      "Collaborative team environment"
+    ],
+    "posted_date": "2024-10-02T10:00:00Z",
+    "application_deadline": "2024-11-02T23:59:59Z",
+    "company_size": "50-200",
+    "industry": "Technical Writing",
+    "remote_work_policy": "hybrid",
+    "tags": ["technical-writing", "documentation", "api-docs", "markdown", "confluence", "content-management"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440015",
+    "title": "Systems Architect",
+    "company": "Enterprise Solutions Inc",
+    "location": "Dallas, TX",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 135000,
+      "max": 175000,
+      "currency": "USD"
+    },
+    "description": "We're seeking a Systems Architect to design and oversee the implementation of complex enterprise systems. You'll work with stakeholders to understand business requirements and design scalable, secure solutions.",
+    "requirements": [
+      "7+ years of systems architecture experience",
+      "Experience with enterprise-scale applications",
+      "Knowledge of cloud architecture (AWS, Azure)",
+      "Understanding of microservices and distributed systems",
+      "Experience with system integration and APIs",
+      "Strong analytical and problem-solving skills"
+    ],
+    "benefits": [
+      "Executive-level compensation",
+      "Comprehensive benefits package",
+      "Leadership development programs",
+      "Flexible work arrangements",
+      "Annual bonus opportunities"
+    ],
+    "posted_date": "2024-10-01T14:30:00Z",
+    "application_deadline": "2024-11-01T23:59:59Z",
+    "company_size": "1000+",
+    "industry": "Enterprise Software",
+    "remote_work_policy": "hybrid",
+    "tags": ["systems-architecture", "enterprise-software", "cloud-architecture", "microservices", "api-design", "scalability"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440016",
+    "title": "Junior Software Developer",
+    "company": "StartUp Innovations",
+    "location": "Nashville, TN",
+    "job_type": "full-time",
+    "experience_level": "entry",
+    "salary_range": {
+      "min": 55000,
+      "max": 75000,
+      "currency": "USD"
+    },
+    "description": "Perfect opportunity for a recent graduate or career changer to join our dynamic startup. You'll work on full-stack web applications using modern technologies and receive mentorship from experienced developers.",
+    "requirements": [
+      "Bachelor's degree in Computer Science or related field",
+      "Basic programming knowledge (any language)",
+      "Understanding of web development concepts",
+      "Eagerness to learn and grow",
+      "Strong problem-solving skills",
+      "Good communication abilities"
+    ],
+    "benefits": [
+      "Competitive entry-level salary",
+      "Health insurance coverage",
+      "Flexible work hours",
+      "Mentorship program",
+      "Equity participation",
+      "Learning and development budget"
+    ],
+    "posted_date": "2024-09-30T11:45:00Z",
+    "application_deadline": "2024-10-30T23:59:59Z",
+    "company_size": "10-50",
+    "industry": "Startups",
+    "remote_work_policy": "hybrid",
+    "tags": ["junior-developer", "mentorship", "web-development", "startup", "learning", "growth"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440017",
+    "title": "Data Engineer",
+    "company": "BigData Corp",
+    "location": "San Jose, CA",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 130000,
+      "max": 170000,
+      "currency": "USD"
+    },
+    "description": "Join our data engineering team to build and maintain large-scale data pipelines. You'll work with massive datasets, implement ETL processes, and ensure data quality and reliability for analytics and machine learning teams.",
+    "requirements": [
+      "5+ years of data engineering experience",
+      "Strong SQL and Python skills",
+      "Experience with Apache Spark, Kafka, or similar",
+      "Knowledge of cloud data platforms (AWS, GCP, Azure)",
+      "Experience with data warehousing solutions",
+      "Understanding of data modeling and ETL processes"
+    ],
+    "benefits": [
+      "Competitive salary and equity",
+      "Comprehensive benefits",
+      "Flexible work arrangements",
+      "Data conference budget",
+      "Advanced data tools access"
+    ],
+    "posted_date": "2024-09-29T13:15:00Z",
+    "application_deadline": "2024-10-29T23:59:59Z",
+    "company_size": "500-1000",
+    "industry": "Big Data",
+    "remote_work_policy": "hybrid",
+    "tags": ["data-engineering", "spark", "kafka", "etl", "sql", "python"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440018",
+    "title": "Android Developer",
+    "company": "MobileFirst Apps",
+    "location": "Salt Lake City, UT",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 90000,
+      "max": 125000,
+      "currency": "USD"
+    },
+    "description": "We're looking for an experienced Android Developer to create innovative mobile applications. You'll work with Kotlin, Android Jetpack, and modern Android development practices to deliver high-quality apps.",
+    "requirements": [
+      "3+ years of Android development experience",
+      "Proficiency in Kotlin and Java",
+      "Experience with Android Jetpack components",
+      "Knowledge of Android UI/UX principles",
+      "Experience with RESTful APIs",
+      "Understanding of app publishing process"
+    ],
+    "benefits": [
+      "Competitive salary package",
+      "Health and dental benefits",
+      "Flexible work schedule",
+      "Latest Android devices provided",
+      "App revenue sharing"
+    ],
+    "posted_date": "2024-09-28T10:20:00Z",
+    "application_deadline": "2024-10-28T23:59:59Z",
+    "company_size": "20-50",
+    "industry": "Mobile Development",
+    "remote_work_policy": "remote",
+    "tags": ["android", "kotlin", "jetpack", "mobile-development", "ui-ux", "google-play"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440019",
+    "title": "Scrum Master",
+    "company": "Agile Transformations",
+    "location": "Minneapolis, MN",
+    "job_type": "full-time",
+    "experience_level": "senior",
+    "salary_range": {
+      "min": 95000,
+      "max": 130000,
+      "currency": "USD"
+    },
+    "description": "Join our agile coaching team as a Scrum Master. You'll facilitate scrum ceremonies, coach teams on agile practices, and help organizations achieve higher levels of agility and delivery excellence.",
+    "requirements": [
+      "3+ years as a Scrum Master",
+      "Certified Scrum Master (CSM) certification",
+      "Experience with agile frameworks (Scrum, Kanban)",
+      "Strong facilitation and coaching skills",
+      "Understanding of agile metrics and reporting",
+      "Experience with agile tooling (Jira, Azure DevOps)"
+    ],
+    "benefits": [
+      "Competitive salary and bonuses",
+      "Professional certification support",
+      "Flexible work arrangements",
+      "Conference attendance budget",
+      "Agile community involvement"
+    ],
+    "posted_date": "2024-09-27T14:10:00Z",
+    "application_deadline": "2024-10-27T23:59:59Z",
+    "company_size": "50-200",
+    "industry": "Agile Consulting",
+    "remote_work_policy": "hybrid",
+    "tags": ["scrum-master", "agile", "scrum", "coaching", "facilitation", "csm"]
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440020",
+    "title": "Network Engineer",
+    "company": "NetConnect Solutions",
+    "location": "Phoenix, AZ",
+    "job_type": "full-time",
+    "experience_level": "mid",
+    "salary_range": {
+      "min": 85000,
+      "max": 115000,
+      "currency": "USD"
+    },
+    "description": "We're seeking a Network Engineer to design, implement, and maintain our network infrastructure. You'll work with enterprise-level networking equipment and ensure high availability and security of our network systems.",
+    "requirements": [
+      "3+ years of network engineering experience",
+      "CCNA or CCNP certification preferred",
+      "Experience with Cisco networking equipment",
+      "Knowledge of network protocols and security",
+      "Understanding of VPN, firewall, and load balancing",
+      "Experience with network monitoring tools"
+    ],
+    "benefits": [
+      "Competitive salary and certification bonuses",
+      "Comprehensive benefits package",
+      "Flexible work options",
+      "Professional development support",
+      "On-call compensation"
+    ],
+    "posted_date": "2024-09-26T12:30:00Z",
+    "application_deadline": "2024-10-26T23:59:59Z",
+    "company_size": "100-500",
+    "industry": "Network Infrastructure",
+    "remote_work_policy": "hybrid",
+    "tags": ["network-engineering", "cisco", "ccna", "network-security", "vpn", "firewall"]
+  }
+]

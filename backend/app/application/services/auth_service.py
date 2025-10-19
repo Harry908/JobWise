@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
+from uuid import UUID, uuid4
 
 from ...core.exceptions import AuthenticationException, ValidationException, NotFoundError
 from ...core.security import (
@@ -31,61 +32,78 @@ class AuthService:
 
     async def register_user(self, request: UserRegisterRequest) -> UserResponse:
         """Register a new user."""
-        # Check if user already exists
-        existing_user = await self.user_repository.get_by_email(request.email)
-        if existing_user:
-            raise ValidationException("User with this email already exists")
+        try:
+            # Check if user already exists
+            existing_user = await self.user_repository.get_by_email(request.email)
+            if existing_user:
+                raise ValidationException("User with this email already exists")
 
-        # Validate email format (additional validation beyond Pydantic)
-        if not User.validate_email(request.email):
-            raise ValidationException("Invalid email format")
+            # Validate email format (additional validation beyond Pydantic)
+            if not User.validate_email(request.email):
+                raise ValidationException("Invalid email format")
 
-        # Validate password strength (additional validation beyond Pydantic)
-        if not User.validate_password(request.password):
-            raise ValidationException(
-                "Password must be at least 8 characters long and contain "
-                "uppercase, lowercase, and numeric characters"
+            # Validate password strength (additional validation beyond Pydantic)
+            if not User.validate_password(request.password):
+                raise ValidationException(
+                    "Password must be at least 8 characters long and contain "
+                    "uppercase, lowercase, and numeric characters"
+                )
+
+            # Truncate password to 72 bytes before hashing
+            truncated_password = request.password[:72]
+
+            # Hash password
+            hashed_password = hash_password(truncated_password)
+
+            # Create user data
+            user_data = {
+                "email": request.email,
+                "password_hash": hashed_password,
+                "first_name": request.full_name.split()[0] if request.full_name.split() else "",
+                "last_name": " ".join(request.full_name.split()[1:]) if len(request.full_name.split()) > 1 else "",
+                "is_active": True,
+                "is_verified": False
+            }
+
+            # Ensure user ID is a UUID
+            user_data["id"] = uuid4()
+
+            # Log user data creation
+            print("Creating user with data:", user_data)
+
+            # Create user in database
+            user_model = await self.user_repository.create(user_data)
+
+            # Convert to domain entity
+            user = User(
+                id=UUID(user_model.id),
+                email=user_model.email,
+                hashed_password=user_model.password_hash,
+                full_name=request.full_name,
+                is_active=user_model.is_active,
+                is_verified=user_model.is_verified,
+                created_at=user_model.created_at,
+                updated_at=user_model.updated_at,
+                last_login_at=user_model.last_active_at
             )
 
-        # Hash password
-        hashed_password = hash_password(request.password)
+            # Log successful user creation
+            print("User successfully created:", user)
 
-        # Create user data
-        user_data = {
-            "email": request.email,
-            "password_hash": hashed_password,
-            "first_name": request.full_name.split()[0] if request.full_name.split() else "",
-            "last_name": " ".join(request.full_name.split()[1:]) if len(request.full_name.split()) > 1 else "",
-            "is_active": True,
-            "is_verified": False
-        }
-
-        # Create user in database
-        user_model = await self.user_repository.create(user_data)
-
-        # Convert to domain entity
-        user = User(
-            id=user_model.id,
-            email=user_model.email,
-            hashed_password=user_model.password_hash,
-            full_name=request.full_name,
-            is_active=user_model.is_active,
-            is_verified=user_model.is_verified,
-            created_at=user_model.created_at,
-            updated_at=user_model.updated_at,
-            last_login_at=user_model.last_active_at
-        )
-
-        return UserResponse(
-            id=user.id,
-            email=user.email,
-            full_name=user.full_name,
-            is_active=user.is_active,
-            is_verified=user.is_verified,
-            created_at=user.created_at,
-            updated_at=user.updated_at,
-            last_login_at=user.last_login_at
-        )
+            return UserResponse(
+                id=str(user.id),
+                email=user.email,
+                full_name=user.full_name,
+                is_active=user.is_active,
+                is_verified=user.is_verified,
+                created_at=user.created_at,
+                updated_at=user.updated_at,
+                last_login_at=user.last_login_at
+            )
+        except Exception as e:
+            # Log unexpected errors
+            print("Error during user registration:", str(e))
+            raise
 
     async def authenticate_user(self, request: UserLoginRequest) -> TokenResponse:
         """Authenticate user and return tokens."""
@@ -131,7 +149,7 @@ class AuthService:
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=1800,  # 30 minutes
-            user_id=user.id
+            user_id=str(user.id)
         )
 
     async def refresh_access_token(self, request: RefreshTokenRequest) -> TokenResponse:
