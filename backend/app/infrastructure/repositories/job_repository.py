@@ -4,6 +4,7 @@ from typing import List, Optional
 from pathlib import Path
 import json
 from datetime import datetime
+import uuid
 
 from app.application.dtos.job_dtos import JobDTO, JobFiltersDTO
 
@@ -53,73 +54,66 @@ class JobRepositoryInterface(ABC):
         pass
 
 
-class StaticJobRepository(JobRepositoryInterface):
-    """Static JSON-based job repository for development/testing"""
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, insert, update, delete, func
+from ...infrastructure.database.models import JobPostingModel
+from ...application.dtos.job_dtos import (
+    CreateJobDTO,
+    UpdateJobDTO,
+    JobDTO,
+    JobSummaryDTO,
+    JobFiltersDTO,
+    JobSearchRequestDTO,
+    JobSearchResponseDTO,
+    AnalyzeJobResponseDTO,
+    ConvertTextRequestDTO,
+    JobTemplateDTO,
+    UserJobListDTO,
+)
 
-    def __init__(self, data_file: Path):
-        self.data_file = data_file
-        self._jobs_cache: Optional[List[JobDTO]] = None
-        self._filters_cache: Optional[JobFiltersDTO] = None
 
-    async def _load_jobs(self) -> List[JobDTO]:
-        """Load jobs from JSON file with caching"""
-        if self._jobs_cache is not None:
-            return self._jobs_cache
+class DatabaseJobRepository(JobRepositoryInterface):
+    """Database-backed job repository for user-created and static jobs."""
 
-        try:
-            with open(self.data_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-            jobs = []
-            # Handle both formats: direct list or object with 'jobs' key
-            job_list = data if isinstance(data, list) else data.get('jobs', [])
-            
-            for job_data in job_list:
-                # Parse posted_date string to datetime
-                posted_date = None
-                if job_data.get('posted_date'):
-                    try:
-                        posted_date = datetime.fromisoformat(job_data['posted_date'])
-                    except (ValueError, TypeError):
-                        # If parsing fails, use current date
-                        posted_date = datetime.now()
+    async def create_user_job(self, user_id: str, job: CreateJobDTO) -> JobDTO:
+        """Insert a new user-created job into jobs table."""
+        job_id = str(uuid.uuid4())
+        stmt = insert(JobPostingModel).values(
+            id=job_id,
+            title=job.title,
+            company=job.company,
+            location=job.location or "",
+            description=job.description,
+            requirements=job.requirements or [],
+            salary_min=(job.salary_range or {}).get('min') if job.salary_range else None,
+            salary_max=(job.salary_range or {}).get('max') if job.salary_range else None,
+            salary_currency=(job.salary_range or {}).get('currency', 'USD') if job.salary_range else 'USD',
+            remote=job.remote if job.remote is not None else False,
+            job_type=job.job_type or 'full_time',
+            experience_level=job.experience_level or 'entry',
+            posted_date=func.now(),
+            application_url=None,
+            source=job.source or 'user_created',
+            user_id=user_id,
+            status='draft'
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
 
-                job = JobDTO(
-                    id=job_data['id'],
-                    title=job_data['title'],
-                    company=job_data['company'],
-                    location=job_data['location'],
-                    salary_range=job_data.get('salary_range'),
-                    description=job_data['description'],
-                    requirements=job_data.get('requirements', []),
-                    benefits=job_data.get('benefits', []),
-                    job_type=job_data.get('job_type', 'full-time'),
-                    experience_level=job_data.get('experience_level', 'entry'),
-                    industry=job_data.get('industry', ''),
-                    posted_date=posted_date,
-                    application_deadline=job_data.get('application_deadline'),
-                    remote_work_policy=job_data.get('remote_work_policy', 'onsite'),
-                    company_size=job_data.get('company_size'),
-                    tags=job_data.get('tags', [])
-                )
-                jobs.append(job)
-
-            self._jobs_cache = jobs
-            return jobs
-
-        except FileNotFoundError:
-            raise ValueError(f"Job data file not found: {self.data_file}")
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in job data file: {e}")
+        return await self.get_job_by_id(job_id)
 
     async def get_all_jobs(self) -> List[JobDTO]:
-        """Get all jobs from static data"""
-        return await self._load_jobs()
+        q = await self.session.execute(select(JobPostingModel))
+        rows = q.scalars().all()
+        return [self._model_to_dto(m) for m in rows]
 
     async def get_job_by_id(self, job_id: str) -> Optional[JobDTO]:
-        """Get a specific job by ID"""
-        jobs = await self._load_jobs()
-        return next((job for job in jobs if job.id == job_id), None)
+        q = await self.session.execute(select(JobPostingModel).where(JobPostingModel.id == job_id))
+        model = q.scalar_one_or_none()
+        return self._model_to_dto(model) if model else None
 
     async def search_jobs(
         self,
@@ -128,221 +122,252 @@ class StaticJobRepository(JobRepositoryInterface):
         limit: int = 20,
         offset: int = 0
     ) -> List[JobDTO]:
-        """Search jobs with filters and pagination"""
-        jobs = await self._load_jobs()
-
-        # Apply text search
-        if query:
-            query_lower = query.lower()
-            jobs = [
-                job for job in jobs
-                if (query_lower in job.title.lower() or
-                    query_lower in job.description.lower() or
-                    query_lower in job.company.lower() or
-                    any(query_lower in req.lower() for req in job.requirements))
-            ]
-
-        # Apply filters
-        if filters:
-            jobs = await self._apply_filters(jobs, filters)
-
-        # Apply pagination
-        start_idx = offset
-        end_idx = offset + limit
-        return jobs[start_idx:end_idx]
-
-    async def _apply_filters(self, jobs: List[JobDTO], filters: JobFiltersDTO) -> List[JobDTO]:
-        """Apply filter criteria to job list"""
-        filtered_jobs = jobs
-
-        if filters.location:
-            location_lower = filters.location.lower()
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if location_lower in job.location.lower()
-            ]
-
-        if filters.job_type:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.job_type == filters.job_type
-            ]
-
-        if filters.experience_level:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.experience_level == filters.experience_level
-            ]
-
-        if filters.industry:
-            industry_lower = filters.industry.lower()
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if industry_lower in job.industry.lower()
-            ]
-
-        if filters.remote_work is not None:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.remote_work == filters.remote_work
-            ]
-
-        if filters.min_salary:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.salary_range and
-                self._parse_salary_range(job.salary_range)[0] >= filters.min_salary
-            ]
-
-        if filters.max_salary:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.salary_range and
-                self._parse_salary_range(job.salary_range)[1] <= filters.max_salary
-            ]
-
-        if filters.company_size:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.company_size == filters.company_size
-            ]
-
-        return filtered_jobs
-
-    def _parse_salary_range(self, salary_range: str) -> tuple[int, int]:
-        """Parse salary range string like '$50,000 - $70,000'"""
-        try:
-            # Remove $ and commas, split by dash
-            parts = salary_range.replace('$', '').replace(',', '').split('-')
-            if len(parts) == 2:
-                min_salary = int(parts[0].strip())
-                max_salary = int(parts[1].strip())
-                return min_salary, max_salary
-            else:
-                # If single value, assume it's the minimum
-                salary = int(parts[0].strip())
-                return salary, salary
-        except (ValueError, IndexError):
-            return 0, 0
+        stmt = select(JobPostingModel).order_by(JobPostingModel.posted_date.desc()).limit(limit).offset(offset)
+        q = await self.session.execute(stmt)
+        models = q.scalars().all()
+        return [self._model_to_dto(m) for m in models]
 
     async def get_job_filters(self) -> JobFiltersDTO:
-        """Get available filter options from job data"""
-        if self._filters_cache is not None:
-            return self._filters_cache
-
-        jobs = await self._load_jobs()
-
-        # Extract unique values for filters
-        locations = list(set(job.location for job in jobs))
-        job_types = list(set(job.job_type for job in jobs))
-        experience_levels = list(set(job.experience_level for job in jobs))
-        remote_work_policies = list(set(job.remote_work_policy for job in jobs if job.remote_work_policy))
-        industries = list(set(job.industry for job in jobs if job.industry))
-        company_sizes = list(set(job.company_size for job in jobs if job.company_size))
-
-        # Extract all tags
-        all_tags = set()
-        for job in jobs:
-            all_tags.update(job.tags)
-        tags = list(all_tags)
-
-        # Calculate salary statistics
-        salaries = []
-        for job in jobs:
-            if job.salary_range:
-                if isinstance(job.salary_range, dict):
-                    # Handle dict format from JSON
-                    min_sal = job.salary_range.get('min', 0)
-                    max_sal = job.salary_range.get('max', 0)
-                elif hasattr(job.salary_range, 'min') and hasattr(job.salary_range, 'max'):
-                    # Handle SalaryRangeDTO object
-                    min_sal = job.salary_range.min
-                    max_sal = job.salary_range.max
-                else:
-                    # Handle string format
-                    min_sal, max_sal = self._parse_salary_range(str(job.salary_range))
-                
-                if min_sal > 0:
-                    salaries.extend([min_sal, max_sal])
-
-        salary_stats = {}
-        if salaries:
-            salary_stats = {
-                'min': min(salaries),
-                'max': max(salaries),
-                'average': sum(salaries) // len(salaries)
-            }
-
-        self._filters_cache = JobFiltersDTO(
-            locations=sorted(locations),
-            job_types=sorted(job_types),
-            experience_levels=sorted(experience_levels),
-            remote_work_policies=sorted(remote_work_policies),
-            industries=sorted(industries),
-            company_sizes=sorted(company_sizes) if company_sizes else None,
-            tags=sorted(tags),
-            salary_ranges=salary_stats
+        # Simple aggregates using SQL functions
+        # For brevity, return empty sets if none
+        job_types = [r[0] for r in await self.session.execute(select(func.distinct(JobPostingModel.job_type)))]
+        experience_levels = [r[0] for r in await self.session.execute(select(func.distinct(JobPostingModel.experience_level)))]
+        locations = [r[0] for r in await self.session.execute(select(func.distinct(JobPostingModel.location)))]
+        industries = []
+        return JobFiltersDTO(
+            job_types=[jt for jt in job_types if jt],
+            experience_levels=[el for el in experience_levels if el],
+            remote_work_policies=["remote", "hybrid", "onsite"],
+            industries=industries,
+            company_sizes=[],
+            locations=[loc for loc in locations if loc],
+            tags=[],
+            salary_ranges={}
         )
 
-        return self._filters_cache
-
     async def get_filter_options(self) -> dict:
-        """Get available filter options (alias for get_job_filters)"""
-        filters_dto = await self.get_job_filters()
-        return {
-            "locations": filters_dto.locations,
-            "job_types": filters_dto.job_types,
-            "experience_levels": filters_dto.experience_levels,
-            "companies": [],  # Not implemented in DTO
-            "salary_ranges": []  # Not implemented in DTO
-        }
+        dto = await self.get_job_filters()
+        return dto.model_dump()
 
     async def get_statistics(self) -> dict:
-        """Get job statistics"""
-        jobs = await self._load_jobs()
-
-        total_jobs = len(jobs)
-        active_jobs = total_jobs  # All jobs are considered active
-
-        # Calculate jobs posted today/this week (simplified)
-        from datetime import datetime, timedelta, timezone
-        now = datetime.now(timezone.utc)
-        today = now.date()
-        week_ago = now - timedelta(days=7)
-
-        jobs_posted_today = sum(1 for job in jobs if job.posted_date and job.posted_date.date() == today)
-        jobs_posted_this_week = sum(1 for job in jobs if job.posted_date and job.posted_date >= week_ago)
-
-        # Calculate average salary
-        salaries = []
-        for job in jobs:
-            if job.salary_range:
-                if isinstance(job.salary_range, dict):
-                    # Handle dict format from JSON
-                    min_sal = job.salary_range.get('min', 0)
-                    max_sal = job.salary_range.get('max', 0)
-                elif hasattr(job.salary_range, 'min') and hasattr(job.salary_range, 'max'):
-                    # Handle SalaryRangeDTO object
-                    min_sal = job.salary_range.min
-                    max_sal = job.salary_range.max
-                else:
-                    # Handle string format
-                    min_sal, max_sal = self._parse_salary_range(str(job.salary_range))
-                
-                if min_sal > 0 and max_sal > 0:
-                    salaries.append((min_sal + max_sal) / 2)
-
-        average_salary = sum(salaries) / len(salaries) if salaries else 0
-
-        return {
-            "total_jobs": total_jobs,
-            "active_jobs": active_jobs,
-            "jobs_posted_today": jobs_posted_today,
-            "jobs_posted_this_week": jobs_posted_this_week,
-            "average_salary": int(average_salary)
-        }
+        total = await self.session.scalar(select(func.count()).select_from(JobPostingModel))
+        return {"total_jobs": int(total or 0)}
 
     async def get_total_count(self) -> int:
-        """Get total number of jobs"""
-        jobs = await self._load_jobs()
-        return len(jobs)
+        total = await self.session.scalar(select(func.count()).select_from(JobPostingModel))
+        return int(total or 0)
+
+    async def get_user_jobs(self, user_id: str, limit: int = 20, offset: int = 0) -> UserJobListDTO:
+        q = await self.session.execute(select(JobPostingModel).where(JobPostingModel.user_id == user_id).order_by(JobPostingModel.created_at.desc()).limit(limit).offset(offset))
+        models = q.scalars().all()
+        items = [self._model_to_dto(m) for m in models]
+        total = await self.session.scalar(select(func.count()).select_from(JobPostingModel).where(JobPostingModel.user_id == user_id))
+        return UserJobListDTO(items=items, total=int(total or 0), limit=limit, offset=offset)
+
+    async def update_user_job(self, user_id: str, job_id: str, data: UpdateJobDTO) -> Optional[JobDTO]:
+        # Ensure ownership by loading model
+        model = await self.session.get(JobPostingModel, job_id)
+        if not model or (model.user_id != user_id):
+            return None
+
+        values = {}
+        payload = data.model_dump(exclude_none=True)
+        if 'title' in payload:
+            values['title'] = payload['title']
+        if 'company' in payload:
+            values['company'] = payload['company']
+        if 'description' in payload:
+            values['description'] = payload['description']
+        if 'requirements' in payload:
+            values['requirements'] = payload['requirements'] or []
+        if 'location' in payload:
+            values['location'] = payload['location']
+        if 'remote' in payload:
+            values['remote'] = payload['remote']
+        if 'job_type' in payload and payload['job_type'] is not None:
+            values['job_type'] = payload['job_type']
+        if 'experience_level' in payload and payload['experience_level'] is not None:
+            values['experience_level'] = payload['experience_level']
+        if 'salary_range' in payload and payload['salary_range']:
+            sr = payload['salary_range']
+            values['salary_min'] = sr.get('min')
+            values['salary_max'] = sr.get('max')
+            values['salary_currency'] = sr.get('currency', 'USD')
+        if 'status' in payload and payload['status']:
+            values['status'] = payload['status']
+
+        if not values:
+            return self._model_to_dto(model)
+
+        await self.session.execute(update(JobPostingModel).where(JobPostingModel.id == job_id).values(**values))
+        await self.session.commit()
+        return await self.get_job_by_id(job_id)
+
+    async def delete_user_job(self, user_id: str, job_id: str) -> bool:
+        model = await self.session.get(JobPostingModel, job_id)
+        if not model or (model.user_id != user_id):
+            return False
+        await self.session.execute(delete(JobPostingModel).where(JobPostingModel.id == job_id))
+        await self.session.commit()
+        return True
+
+    async def change_status(self, user_id: str, job_id: str, status: str) -> Optional[JobDTO]:
+        if status not in ("draft", "active", "archived"):
+            raise ValueError("Invalid status")
+        model = await self.session.get(JobPostingModel, job_id)
+        if not model or (model.user_id != user_id):
+            return None
+        await self.session.execute(update(JobPostingModel).where(JobPostingModel.id == job_id).values(status=status))
+        await self.session.commit()
+        return await self.get_job_by_id(job_id)
+
+    async def analyze_job(self, job_id: str) -> AnalyzeJobResponseDTO:
+        model = await self.session.get(JobPostingModel, job_id)
+        if not model:
+            raise ValueError("Job not found")
+
+        # Use simple analysis like domain entity
+        from ...domain.entities.job import JobPosting as DomainJob
+        dj = DomainJob.create(
+            id=model.id,
+            title=model.title,
+            company=model.company,
+            location=model.location,
+            description=model.description,
+            requirements=model.requirements or [],
+            job_type=model.job_type,
+            experience_level=model.experience_level,
+            posted_date=model.posted_date,
+            remote=model.remote,
+        )
+
+        keywords = dj.extract_keywords()
+        tech = dj.get_technical_requirements()
+        soft = dj.get_soft_skills_requirements()
+        difficulty = dj.estimate_match_difficulty()
+
+        return AnalyzeJobResponseDTO(
+            keywords=keywords,
+            technical_skills=tech,
+            soft_skills=soft,
+            experience_level=model.experience_level,
+            match_difficulty=difficulty
+        )
+
+    async def convert_text_to_job(self, raw_text: str) -> JobTemplateDTO:
+        # Very simple conversion: split lines and pick first lines as title/company
+        lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+        title = lines[0] if lines else ""
+        company = lines[1] if len(lines) > 1 else ""
+        description = "\n".join(lines[2:]) if len(lines) > 2 else raw_text
+        template = {
+            "title": title,
+            "company": company,
+            "description": description,
+            "requirements": [],
+            "benefits": [],
+            "location": "",
+            "job_type": "full_time",
+            "experience_level": "entry",
+            "salary_range": None,
+            "source": "user_converted"
+        }
+        return JobTemplateDTO(template=template)
+
+    def _model_to_dto(self, model: JobPostingModel) -> JobDTO:
+        if model is None:
+            return None
+        salary = None
+        if model.salary_min or model.salary_max:
+            salary = {"min": model.salary_min or 0, "max": model.salary_max or 0, "currency": model.salary_currency}
+
+        return JobDTO(
+            id=model.id,
+            title=model.title,
+            company=model.company,
+            location=model.location,
+            job_type=str(model.job_type),
+            experience_level=str(model.experience_level),
+            salary_range=salary,
+            description=model.description,
+            requirements=model.requirements or [],
+            benefits=[],
+            posted_date=model.posted_date,
+            application_deadline=model.expires_date,
+            company_size="",
+            industry="",
+            remote_work_policy=("remote" if model.remote else "onsite"),
+            tags=[]
+        )
+
+
+class StaticJobRepository(JobRepositoryInterface):
+    """Simple static JSON-backed repository used for tests and local data."""
+
+    def __init__(self, data_file_path: str):
+        self.data_file = Path(data_file_path)
+        self._jobs_cache = []
+
+    async def _ensure_loaded(self):
+        if self._jobs_cache is None:
+            try:
+                with open(self.data_file, 'r', encoding='utf-8') as f:
+                    self._jobs_cache = json.load(f)
+            except Exception:
+                self._jobs_cache = []
+
+    async def search_jobs(self, query: str = "", filters: Optional[JobFiltersDTO] = None, limit: int = 20, offset: int = 0):
+        await self._ensure_loaded()
+        results = []
+        q = (query or "").lower()
+        for job in self._jobs_cache:
+            if not q or q in job.get('title','').lower() or q in job.get('company','').lower() or q in job.get('description','').lower():
+                results.append(job)
+
+        return results[offset:offset+limit]
+
+    async def get_job_by_id(self, job_id: str):
+        await self._ensure_loaded()
+        for job in self._jobs_cache:
+            if job.get('id') == job_id:
+                return job
+        return None
+
+    async def get_all_jobs(self):
+        await self._ensure_loaded()
+        return list(self._jobs_cache)
+
+    async def get_job_filters(self):
+        await self._ensure_loaded()
+        job_types = sorted({j.get('job_type') for j in self._jobs_cache if j.get('job_type')})
+        experience_levels = sorted({j.get('experience_level') for j in self._jobs_cache if j.get('experience_level')})
+        locations = sorted({j.get('location') for j in self._jobs_cache if j.get('location')})
+        return {
+            'job_types': list(job_types),
+            'experience_levels': list(experience_levels),
+            'locations': list(locations),
+            'companies': sorted({j.get('company') for j in self._jobs_cache if j.get('company')}),
+            'salary_ranges': {}
+        }
+
+    # Backwards-compat alias
+    async def get_filter_options(self):
+        return await self.get_job_filters()
+
+    async def get_filter_options(self):
+        return await self.get_job_filters()
+
+    async def get_statistics(self):
+        await self._ensure_loaded()
+        total = len(self._jobs_cache)
+        return {
+            'total_jobs': total,
+            'active_jobs': total,
+            'jobs_posted_today': 0,
+            'jobs_posted_this_week': 0,
+            'average_salary': 0
+        }
+
+    async def get_total_count(self):
+        await self._ensure_loaded()
+        return len(self._jobs_cache)

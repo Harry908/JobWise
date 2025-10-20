@@ -17,13 +17,15 @@ from ...application.dtos.job_description_dtos import (
     ParseJobDescriptionDTO,
     ActivateJobDescriptionDTO,
     ArchiveJobDescriptionDTO,
+    JobDescriptionMetadataDTO,
+    CreateJobDescriptionDTO,
 )
 from ...application.services.job_description_service import JobDescriptionService
 from ...core.dependencies import get_db_session, get_current_user
 from ...domain.entities.user import User
 from ...infrastructure.repositories.job_description_repository import JobDescriptionRepository
 
-from ...domain.entities.job_description import JobDescriptionSource
+from ...domain.entities.job_description import JobDescriptionSource, JobDescriptionMetadata
 
 router = APIRouter(prefix="/job-descriptions", tags=["job-descriptions"])
 
@@ -57,6 +59,25 @@ async def create_job_description(
         # Convert source string to enum
         source_enum = JobDescriptionSource(job_description_data.source)
 
+        # Convert metadata DTO to domain metadata if provided
+        metadata_domain = None
+        if job_description_data.metadata is not None:
+            md = job_description_data.metadata
+            metadata_domain = JobDescriptionMetadata(
+                keywords=md.keywords,
+                technical_skills=md.technical_skills,
+                soft_skills=md.soft_skills,
+                experience_level=md.experience_level,
+                industry=md.industry,
+                company_size=md.company_size,
+                remote_policy=md.remote_policy,
+                salary_range_min=md.salary_range_min,
+                salary_range_max=md.salary_range_max,
+                salary_currency=md.salary_currency,
+                location=md.location,
+                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
+            )
+
         job_description = await service.create_job_description(
             user_id=current_user.id,
             title=job_description_data.title,
@@ -65,7 +86,7 @@ async def create_job_description(
             requirements=job_description_data.requirements,
             benefits=job_description_data.benefits,
             source=source_enum,
-            metadata=job_description_data.metadata,
+            metadata=metadata_domain,
             created_from_url=str(job_description_data.created_from_url) if job_description_data.created_from_url else None,
         )
 
@@ -74,6 +95,62 @@ async def create_job_description(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.post("/upload-json", response_model=JobDescriptionDTO, status_code=status.HTTP_201_CREATED)
+async def upload_json_job_description(
+    payload: CreateJobDescriptionDTO,
+    current_user: User = Depends(get_current_user),
+    service: JobDescriptionService = Depends(get_job_description_service),
+) -> JobDescriptionDTO:
+    """
+    Upload a JSON job description, convert it and store as a JobDescription.
+
+    The payload should match the `CreateJobDescriptionDTO` shape. The endpoint
+    accepts a raw JSON object, validates and converts nested metadata if present,
+    then calls the JobDescriptionService to persist the job description.
+    """
+    try:
+        # Convert source string to enum
+        source_enum = JobDescriptionSource(payload.source)
+
+        # Convert metadata DTO to domain metadata if provided
+        metadata_domain = None
+        if payload.metadata is not None:
+            md = payload.metadata
+            metadata_domain = JobDescriptionMetadata(
+                keywords=md.keywords,
+                technical_skills=md.technical_skills,
+                soft_skills=md.soft_skills,
+                experience_level=md.experience_level,
+                industry=md.industry,
+                company_size=md.company_size,
+                remote_policy=md.remote_policy,
+                salary_range_min=md.salary_range_min,
+                salary_range_max=md.salary_range_max,
+                salary_currency=md.salary_currency,
+                location=md.location,
+                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
+            )
+
+        job_description = await service.create_job_description(
+            user_id=current_user.id,
+            title=payload.title,
+            company=payload.company,
+            description=payload.description,
+            requirements=payload.requirements,
+            benefits=payload.benefits,
+            source=source_enum,
+            metadata=metadata_domain,
+            created_from_url=(str(payload.created_from_url) if payload.created_from_url else None),
+        )
+
+        return JobDescriptionDTO(**job_description.to_dict())
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 
@@ -204,6 +281,25 @@ async def update_job_description(
         if existing.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
+        # Convert metadata DTO to domain metadata if provided
+        metadata_domain = None
+        if job_description_data.metadata is not None:
+            md = job_description_data.metadata
+            metadata_domain = JobDescriptionMetadata(
+                keywords=md.keywords,
+                technical_skills=md.technical_skills,
+                soft_skills=md.soft_skills,
+                experience_level=md.experience_level,
+                industry=md.industry,
+                company_size=md.company_size,
+                remote_policy=md.remote_policy,
+                salary_range_min=md.salary_range_min,
+                salary_range_max=md.salary_range_max,
+                salary_currency=md.salary_currency,
+                location=md.location,
+                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
+            )
+
         job_description = await service.update_job_description(
             job_description_id=job_description_id,
             title=job_description_data.title,
@@ -211,7 +307,7 @@ async def update_job_description(
             description=job_description_data.description,
             requirements=job_description_data.requirements,
             benefits=job_description_data.benefits,
-            metadata=job_description_data.metadata,
+            metadata=metadata_domain,
         )
 
         return JobDescriptionDTO(**job_description.to_dict())

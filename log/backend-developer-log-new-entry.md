@@ -1,4 +1,19 @@
 ---
+## Interaction Auto-Log
+
+### User Request
+Add endpoint to upload JSON job description, convert and store it for resume generation.
+
+### Response Summary
+Implemented POST `/job-descriptions/upload-json` in `app.presentation.api.job_descriptions` which accepts a raw JSON payload, validates and converts nested `metadata` into the domain `JobDescriptionMetadata`, then calls `JobDescriptionService.create_job_description` to persist the job description. Also converted metadata handling in create/update endpoints to ensure domain types are passed to service.
+
+### Actions Taken
+- **File:** `app/presentation/api/job_descriptions.py`
+  - **Change:** Added `/upload-json` endpoint; converted metadata DTOs to domain `JobDescriptionMetadata` in create/update/upload flows.
+  - **Reason:** Accept and store uploaded JSON job descriptions for resume generation; fix type mismatches between DTOs and domain objects.
+
+---
+---
 
 ## 2024-12-19 - Backend Implementation Plan Redesign
 

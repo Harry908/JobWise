@@ -474,6 +474,15 @@ class JobPostingModel(Base, TimestampMixin):
     expires_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     application_url: Mapped[Optional[str]] = mapped_column(String(500))
     source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    # Optional ownership for user-created jobs
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    # Status for user-created jobs (draft/active/archived)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
     
     # Processing metadata
     keywords_extracted: Mapped[List[str]] = mapped_column(JSON, default=list)
@@ -496,6 +505,7 @@ class JobPostingModel(Base, TimestampMixin):
         CheckConstraint("salary_max IS NULL OR salary_max > 0"),
         CheckConstraint("salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max"),
         CheckConstraint("match_difficulty IS NULL OR (match_difficulty >= 0 AND match_difficulty <= 1)"),
+        CheckConstraint("status IN ('draft','active','archived')"),
         Index("idx_job_location", "location", "remote"),
         Index("idx_job_type_level", "job_type", "experience_level"),
         Index("idx_job_posted_date", "posted_date"),

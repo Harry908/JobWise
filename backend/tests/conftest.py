@@ -255,3 +255,15 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "ai: mark test as requiring AI services"
     )
+
+    # Reduce noisy SQLAlchemy engine logging during tests
+    import logging
+    # Broadly silence SQLAlchemy loggers that emit verbose SQL statements during test runs
+    logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+    # Some SQLAlchemy versions emit via the 'Engine' logger name
+    logging.getLogger('sqlalchemy.engine.Engine').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine.base.Engine').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
+    # Also raise the default logging level for async DB drivers if present
+    logging.getLogger('aiosqlite').setLevel(logging.WARNING)

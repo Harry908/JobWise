@@ -206,3 +206,62 @@ class JobFiltersDTO(BaseModel):
             }
         }
     )
+
+
+class CreateJobDTO(BaseModel):
+    """DTO to create a user job description via API"""
+    title: str = Field(..., max_length=200)
+    company: str = Field(..., max_length=200)
+    description: str = Field(..., max_length=5000)
+    requirements: Optional[List[str]] = Field(default_factory=list)
+    benefits: Optional[List[str]] = Field(default_factory=list)
+    location: Optional[str] = None
+    remote: Optional[bool] = False
+    job_type: Optional[str] = None
+    experience_level: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    salary_range: Optional[Dict[str, int]] = None
+    source: Optional[str] = Field(default="user_created")
+
+
+class UpdateJobDTO(BaseModel):
+    """DTO to update user job description"""
+    title: Optional[str] = Field(None, max_length=200)
+    company: Optional[str] = Field(None, max_length=200)
+    description: Optional[str] = Field(None, max_length=5000)
+    requirements: Optional[List[str]] = None
+    benefits: Optional[List[str]] = None
+    location: Optional[str] = None
+    remote: Optional[bool] = None
+    job_type: Optional[str] = None
+    experience_level: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    salary_range: Optional[Dict[str, int]] = None
+    status: Optional[str] = None
+
+
+class JobTemplateDTO(BaseModel):
+    """Template structure for copy-paste conversion"""
+    template: Dict[str, Any] = Field(...)
+
+
+class ConvertTextRequestDTO(BaseModel):
+    """Convert raw text to structured job JSON"""
+    raw_text: str = Field(..., max_length=20000)
+
+
+class AnalyzeJobResponseDTO(BaseModel):
+    keywords: List[str] = Field(default_factory=list)
+    technical_skills: List[str] = Field(default_factory=list)
+    soft_skills: List[str] = Field(default_factory=list)
+    experience_level: Optional[str] = None
+    match_difficulty: Optional[float] = None
+
+
+class UserJobListDTO(BaseModel):
+    items: List[JobDTO]
+    total: int
+    limit: int
+    offset: int
