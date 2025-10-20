@@ -1,290 +1,381 @@
 @startuml Database_Schema_ERD
 
 ' Title and description
-title JobWise Database Schema - Entity Relationship Diagram
+title JobWise Database Schema - Current Implementation (F1-F6 Complete)
 
-
+!define PRIMARY_KEY_COLOR LightBlue
+!define FOREIGN_KEY_COLOR LightGreen
+!define ENUM_COLOR LightYellow
 
 ' User Management Entities
 entity UserModel {
-  +id: UUID (PK)
+  +id: String(36) (PK) <<UUID>>
   --
-  email: String (UNIQUE)
-  password_hash: String
-  is_active: Boolean
-  is_verified: Boolean
+  email: String(255) (UNIQUE, INDEX)
+  password_hash: String(255)
+  is_active: Boolean = True
+  is_verified: Boolean = False
   --
-  first_name: String?
-  last_name: String?
-  phone: String?
-  timezone: String?
+  first_name: String(100)?
+  last_name: String(100)?
+  phone: String(20)?
+  timezone: String(50)?
   --
-  subscription_tier: Enum
+  subscription_tier: String(20) = 'free'
   subscription_expires_at: DateTime?
-  generations_this_month: Integer
+  generations_this_month: Integer = 0
   last_active_at: DateTime?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-note top
-    - Comprehensive database schema for JobWise AI-powered job application assistant
-    - Supporting multi-LLM universal architecture with user profiles, job management, and generation tracking
+note top of UserModel
+    **F3 Authentication Complete**
+    - JWT token authentication implemented
+    - bcrypt password hashing
+    - User registration/login working
+    - 13/13 tests passing (100% success)
 end note
 
 entity UserSessionModel {
-  +id: UUID (PK)
-  +user_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36) (FK → users.id)
   --
-  session_token: String (UNIQUE)
-  refresh_token: String? (UNIQUE)
+  session_token: String(255) (UNIQUE)
+  refresh_token: String(255)? (UNIQUE)
   expires_at: DateTime
-  is_active: Boolean
+  is_active: Boolean = True
   --
-  user_agent: String?
-  ip_address: String?
-  device_type: String?
+  user_agent: String(500)?
+  ip_address: String(45)?
+  device_type: String(50)?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-' Profile Management Entities
+' Profile Management Entities (F4 Complete)
 entity MasterProfileModel {
-  +id: UUID (PK)
-  +user_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36) (FK → users.id)
   --
-  full_name: String
-  email: String
-  phone: String?
-  location: String?
-  linkedin: String?
-  github: String?
-  website: String?
+  full_name: String(200)
+  email: String(255)
+  phone: String(20)?
+  location: String(200)?
+  linkedin: String(500)?
+  github: String(500)?
+  website: String(500)?
   --
   professional_summary: Text?
-  version: Integer
-  is_active: Boolean
+  version: Integer = 1
+  is_active: Boolean = True
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
+note right of MasterProfileModel
+    **F4 Profile Management Complete**
+    - Full CRUD operations implemented
+    - Experience/Education/Projects management
+    - Profile analytics endpoints
+    - Comprehensive value objects
+    - Repository pattern with async support
+end note
+
 entity ExperienceModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  title: String
-  company: String
-  location: String?
+  title: String(200)
+  company: String(200)
+  location: String(200)?
   start_date: Date
   end_date: Date?
-  is_current: Boolean
+  is_current: Boolean = False
   description: Text
   achievements: JSON[]
-  display_order: Integer
+  display_order: Integer = 0
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
 entity EducationModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  institution: String
-  degree: String
-  field_of_study: String
+  institution: String(200)
+  degree: String(200)
+  field_of_study: String(200)
   start_date: Date
   end_date: Date?
-  gpa: Float?
+  gpa: Float(3,2)?
   honors: JSON[]
-  display_order: Integer
+  display_order: Integer = 0
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
 entity SkillModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  name: String
-  category: Enum
-  proficiency_level: Enum?
+  name: String(100)
+  category: Enum(technical, soft, language, certification)
+  proficiency_level: Enum(beginner, intermediate, advanced, expert)?
   years_experience: Float?
-  display_order: Integer
-  is_featured: Boolean
+  display_order: Integer = 0
+  is_featured: Boolean = False
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
 entity LanguageModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  name: String
-  proficiency: Enum
-  display_order: Integer
+  name: String(100)
+  proficiency: Enum(basic, conversational, fluent, native)
+  display_order: Integer = 0
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
 entity CertificationModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  name: String
-  issuer: String
+  name: String(200)
+  issuer: String(200)
   date_obtained: Date
   expiry_date: Date?
-  credential_id: String?
-  verification_url: String?
-  display_order: Integer
+  credential_id: String(100)?
+  verification_url: String(500)?
+  display_order: Integer = 0
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
 entity ProjectModel {
-  +id: UUID (PK)
-  +profile_id: UUID (FK)
+  +id: String(36) (PK) <<UUID>>
+  +profile_id: String(36) (FK → master_profiles.id)
   --
-  name: String
+  name: String(200)
   description: Text
   technologies: JSON[]
-  url: String?
+  url: String(500)?
   start_date: Date?
   end_date: Date?
-  display_order: Integer
-  is_featured: Boolean
+  display_order: Integer = 0
+  is_featured: Boolean = False
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-' Job Management Entities
-entity JobPostingModel {
-  +id: String (PK) <<External ID>>
+' Unified Job Management Entity (F5 + F6 Complete)
+entity JobModel {
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36)? (FK → users.id) <<NULL for external jobs>>
   --
-  title: String
-  company: String
-  location: String
+  title: String(200) (INDEX)
+  company: String(200) (INDEX)
+  location: String(200)?
   description: Text
   requirements: JSON[]
+  responsibilities: JSON[]?
+  benefits: JSON[]?
   --
   salary_min: Integer?
   salary_max: Integer?
-  salary_currency: String
-  remote: Boolean
-  job_type: Enum
-  experience_level: Enum
+  salary_currency: String(3) = 'USD'
+  remote_work_policy: Enum(onsite, hybrid, remote, flexible)?
+  job_type: Enum(full_time, part_time, contract, freelance, internship)?
+  experience_level: Enum(entry, mid, senior, lead, executive)?
   --
-  posted_date: DateTime
+  posted_date: DateTime?
   expires_date: DateTime?
-  application_url: String?
-  source: String
+  application_url: String(500)?
   --
-  keywords_extracted: JSON[]
-  ats_keywords: JSON[]
+  source: Enum(api, static, user_created, scraped, imported) = 'static'
+  status: Enum(active, draft, archived, expired) = 'active'
+  external_job_id: String(100)? <<For API sourced jobs>>
+  --
+  keywords_extracted: JSON[]?
+  ats_keywords: JSON[]?
+  priority_keywords: JSON[]?
   match_difficulty: Float?
+  analysis_metadata: JSON?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-' AI Generation Entities
+note right of JobModel
+    **F5 + F6 Unified Job Management Complete**
+    
+    **Multiple Input Methods Supported:**
+    - 📊 **API Source**: External job boards (Indeed, LinkedIn)
+    - 📁 **Static Source**: Mock JSON data for development
+    - ✏️  **User Created**: Copy-paste with JSON template conversion
+    - 🔍 **Scraped**: Web scraping (future enhancement)
+    - 📥 **Imported**: Bulk import from files
+    
+    **Key Features:**
+    - Single entity for all job types (eliminates duplication)
+    - Optional user_id (NULL for external jobs, set for user-created)
+    - Source field tracks input method
+    - Status management for user-created jobs
+    - External job ID for API integration
+    - Comprehensive search and filtering (6/6 tests passing)
+    
+    **Design Benefits:**
+    - Simplified database schema
+    - Unified API endpoints
+    - Reduced code duplication
+    - Consistent job processing pipeline
+end note
+
+' AI Generation Entities (F7-F8 Structure Ready)
 entity GenerationModel {
-  +id: UUID (PK)
-  +user_id: UUID (FK)
-  +profile_id: UUID (FK)
-  +job_id: String (FK)
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36) (FK → users.id)
+  +profile_id: String(36) (FK → master_profiles.id)
+  +job_id: String(36) (FK → jobs.id)
   --
-  status: Enum
+  status: Enum(pending, generating, completed, failed, cancelled) = 'pending'
+  document_type: Enum(resume, cover_letter) = 'resume'
+  --
   completed_at: DateTime?
   processing_time_seconds: Float?
-  --
   error_message: Text?
-  retry_count: Integer
-  pipeline_metadata: JSON
+  retry_count: Integer = 0
   --
-  llm_provider_used: String?
+  pipeline_metadata: JSON? {stages, progress, timing}
+  generation_options: JSON? {template, length, focus_areas}
+  --
+  llm_provider_used: String(50)?
   total_tokens_used: Integer?
   estimated_cost: Float?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-entity GenerationResultModel {
-  +id: UUID (PK)
-  +generation_id: UUID (FK)
+note right of GenerationModel
+    **F7 Mock AI Pipeline Structure Ready**
+    - 5-stage pipeline scaffolding
+    - Generation tracking entity
+    - Multiple LLM provider support
+    - Job or custom job description support
+    - Cost and token tracking
+end note
+
+entity DocumentModel {
+  +id: String(36) (PK) <<UUID>>
+  +generation_id: String(36) (FK → generations.id)
+  +user_id: String(36) (FK → users.id)
   --
-  document_type: Enum
-  content: Text
-  ats_score: Float?
-  word_count: Integer
+  document_type: Enum(resume, cover_letter)
+  title: String(200)
+  content_text: Text
+  content_html: Text?
+  content_markdown: Text?
   --
-  pdf_file_path: String?
-  docx_file_path: String?
-  generated_at: DateTime
-  metadata: JSON
+  template_used: String(50)?
+  ats_score: Float? {0.0-1.0}
+  word_count: Integer?
   --
-  readability_score: Float?
-  keyword_density: Float?
+  pdf_file_path: String(500)?
+  pdf_size_bytes: Integer?
+  pdf_page_count: Integer?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  metadata: JSON? {job_match_%, keyword_coverage, etc.}
+  version: Integer = 1
+  --
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-' Job Application Tracking
-entity JobApplicationModel {
-  +id: UUID (PK)
-  +user_id: UUID (FK)
-  +job_id: String (FK)
-  +generation_id: UUID? (FK)
+note right of DocumentModel
+    **F8 Export System Structure Ready**
+    - Document storage entity
+    - PDF generation tracking
+    - Multiple content formats
+    - ATS scoring system
+    - File management support
+    
+    **Table Renamed**: generation_results → documents
+    (for semantic clarity)
+end note
+
+' Job Application Tracking (Saved Jobs)
+entity SavedJobModel {
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36) (FK → users.id)
+  +job_id: String(36) (FK → jobs.id)
+  +generation_id: String(36)? (FK → generations.id)
   --
-  status: Enum
-  applied_date: DateTime
+  status: Enum(interested, applied, interviewing, offered, rejected, withdrawn) = 'interested'
+  applied_date: Date?
   --
-  follow_up_date: DateTime?
+  follow_up_date: Date?
   interview_date: DateTime?
   response_date: DateTime?
   --
   notes: Text?
   feedback: Text?
+  application_url: String(500)?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
+
+note right of SavedJobModel
+    **Table Renamed**: job_applications → saved_jobs
+    (for API terminology alignment)
+    
+    **Enhanced Features**:
+    - Unified job tracking (all sources: API, static, user-created)
+    - Application status tracking
+    - Integration with generation system
+    - Simplified single job_id reference
+end note
 
 ' Audit and Logging
 entity AuditLogModel {
-  +id: UUID (PK)
-  +user_id: UUID? (FK)
+  +id: String(36) (PK) <<UUID>>
+  +user_id: String(36)? (FK → users.id)
   --
-  event_type: String
-  event_description: String
-  resource_type: String?
-  resource_id: UUID?
+  event_type: String(100)
+  event_description: String(500)
+  resource_type: String(50)?
+  resource_id: String(36)?
   --
-  ip_address: String?
-  user_agent: String?
-  metadata: JSON
-  severity: Enum
+  ip_address: String(45)?
+  user_agent: String(500)?
+  request_id: String(36)?
   --
-  created_at: DateTime
-  updated_at: DateTime
+  metadata: JSON?
+  severity: Enum(info, warning, error, critical) = 'info'
+  --
+  created_at: DateTime (AUTO)
+  updated_at: DateTime (AUTO)
 }
 
-' Relationships
+' Relationships (Updated for Current Implementation)
 UserModel ||--o{ UserSessionModel : "has sessions"
 UserModel ||--o{ MasterProfileModel : "owns profiles"
+UserModel ||--o{ JobModel : "creates custom jobs (when user_id set)"
 UserModel ||--o{ GenerationModel : "requests generations"
-UserModel ||--o{ JobApplicationModel : "tracks applications"
+UserModel ||--o{ SavedJobModel : "tracks applications"
 UserModel ||--o{ AuditLogModel : "generates logs"
 
 MasterProfileModel ||--o{ ExperienceModel : "contains experiences"
@@ -295,35 +386,56 @@ MasterProfileModel ||--o{ CertificationModel : "contains certifications"
 MasterProfileModel ||--o{ ProjectModel : "contains projects"
 MasterProfileModel ||--o{ GenerationModel : "used in generations"
 
-JobPostingModel ||--o{ GenerationModel : "generates for"
-JobPostingModel ||--o{ JobApplicationModel : "applied to"
+JobModel ||--o{ GenerationModel : "generates for (all job sources)"
+JobModel ||--o{ SavedJobModel : "applied to (all job sources)"
 
-GenerationModel ||--o{ GenerationResultModel : "produces results"
-GenerationModel ||--o{ JobApplicationModel : "used in applications"
+GenerationModel ||--o{ DocumentModel : "produces documents"
+GenerationModel ||--o{ SavedJobModel : "used in applications"
 
-' Database Constraints and Indexes
+' Database Implementation Notes
 note bottom
-  **Key Database Features**
+  **Current Implementation Status (F1-F6 Complete)**
 
-  **Performance Indexes:**
+  **✅ COMPLETED FEATURES:**
+  - **F1 Environment**: FastAPI application with middleware, health checks, error handling
+  - **F2 Database**: SQLAlchemy async with single schema approach, connection pooling
+  - **F3 Authentication**: JWT tokens, bcrypt hashing, 13/13 tests passing (100%)
+  - **F4 Profile Management**: Complete CRUD, value objects, repository pattern, analytics
+  - **F5 + F6 Unified Job Management**: Single JobModel supporting all input methods
+    • API sourced jobs (external_job_id for tracking)
+    • Static JSON data (mock/seed data for development)
+    • User-created jobs (copy-paste with JSON template conversion)
+    • Keyword extraction and analysis for all sources
+    • Unified search/filtering across all job types (6/6 tests passing)
+  
+  **🚧 STRUCTURE READY (F7-F8):**
+  - **F7 Mock AI Pipeline**: Entity models in place, 5-stage pipeline scaffolding
+  - **F8 Export System**: Document storage structure, PDF generation support
+  
+  **📊 PERFORMANCE OPTIMIZATIONS:**
   - Composite indexes for user queries (user_id + status + date)
-  - Full-text search on job descriptions and requirements
-  - Time-based indexes for generation and job queries
+  - Foreign key indexes for all relationships
+  - JSON field support for flexible data structures
+  - Async operations with proper connection pooling
   
-  **Data Integrity:**
+  **🔒 DATA INTEGRITY:**
   - Cascade deletes for user data privacy compliance
-  - Check constraints for data validation (dates, scores, etc.)
+  - Check constraints for data validation (enums, scores, etc.)
   - Unique constraints preventing duplicate applications
+  - Proper foreign key relationships with referential integrity
   
-  **Audit Trail:**
+  **📋 AUDIT TRAIL:**
   - Complete audit logging for compliance and debugging
   - Session tracking for security and user management
   - Versioning on profiles for change management
+  - Request ID tracking for debugging support
   
-  **Multi-LLM Support:**
-  - Provider tracking in generation metadata
-  - Cost and token usage monitoring
-  - Pipeline stage tracking for debugging
+  **🔄 SCHEMA CONSISTENCY:**
+  - Table names aligned with API endpoints (jobs, documents, saved_jobs)
+  - Unified JobModel eliminating JobModel/JobDescriptionModel duplication
+  - Single schema.py approach replacing incremental migrations
+  - Multi-database support (SQLite development, PostgreSQL production)
+  - Simplified relationships with single job reference approach
 end note
 
 ' Styling

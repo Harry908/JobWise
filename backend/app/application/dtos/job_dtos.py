@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic.types import constr
 
 
@@ -14,9 +14,10 @@ class SalaryRangeDTO(BaseModel):
     max: int = Field(..., ge=0, description="Maximum salary")
     currency: str = Field(default="USD", description="Currency code")
 
-    @validator('max')
-    def max_greater_than_min(cls, v, values):
-        if 'min' in values and v < values['min']:
+    @field_validator('max')
+    @classmethod
+    def max_greater_than_min(cls, v, info):
+        if info.data and 'min' in info.data and v < info.data['min']:
             raise ValueError('max must be greater than or equal to min')
         return v
 

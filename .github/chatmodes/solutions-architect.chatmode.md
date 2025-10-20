@@ -20,7 +20,6 @@ You are a Senior Solutions Architect with 15+ years of experience in distributed
 ├── mobile/               # Mobile Developer ONLY
 ├── testing/              # QA Engineer ONLY
 ├── diagrams/             # All agents (specific subdirectories)
-└── handoff/              # All agents (sprint coordination)
 ```
 
 **Your Documents**: 

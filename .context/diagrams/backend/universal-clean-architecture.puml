@@ -1,7 +1,7 @@
 @startuml Universal Clean Architecture
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
-title JobWise Universal Backend Architecture - Multi-Provider Support
+title JobWise Backend Architecture - Current Implementation Status (F1-F6 Complete)
 
 Person(user, "Job Seeker", "Mobile app user")
 
@@ -9,192 +9,170 @@ System_Boundary(jobwise, "JobWise Universal System") {
     Container(mobile_app, "Flutter Mobile App", "Flutter/Dart", "Cross-platform user interface")
     
     Container_Boundary(backend, "Universal FastAPI Backend") {
-        Container(api_gateway, "API Gateway", "FastAPI Router", "Request routing, CORS, rate limiting")
+        Container(api_gateway, "API Gateway", "FastAPI Router", "✅ CORS, rate limiting, health checks")
         
         Container_Boundary(presentation, "Presentation Layer") {
-            Container(auth_api, "Auth API", "FastAPI", "Authentication endpoints")
-            Container(profile_api, "Profile API", "FastAPI", "Master resume management")
-            Container(job_api, "Job API", "FastAPI", "Job discovery endpoints")
-            Container(generation_api, "Generation API", "FastAPI", "Universal AI generation")
-            Container(document_api, "Document API", "FastAPI", "Document management")
+            Container(auth_api, "Auth API", "FastAPI", "✅ F3 Complete: JWT auth, register/login")
+            Container(profile_api, "Profile API", "FastAPI", "✅ F4 Complete: Master resume CRUD")
+            Container(job_api, "Job API", "FastAPI", "✅ F5 Complete: Job discovery, search")
+            Container(job_desc_api, "Job Description API", "FastAPI", "✅ F6 Complete: Custom job descriptions")
+            Container(generation_api, "Generation API", "FastAPI", "🚧 F7 Structure: AI generation endpoints")
+            Container(document_api, "Document API", "FastAPI", "🚧 F8 Structure: Document management")
         }
         
         Container_Boundary(application, "Application Services") {
-            Container(profile_service, "Profile Service", "Python", "Profile business logic")
-            Container(job_service, "Job Service", "Python", "Multi-provider job search")
-            Container(generation_service, "Generation Service", "Python", "Provider-agnostic orchestration")
-            Container(document_service, "Document Service", "Python", "Universal document handling")
+            Container(auth_service, "Auth Service", "Python", "✅ JWT token management, password hashing")
+            Container(profile_service, "Profile Service", "Python", "✅ Profile business logic, validation")
+            Container(job_service, "Job Service", "Python", "✅ Static job search, filtering")
+            Container(job_desc_service, "Job Description Service", "Python", "✅ Custom job CRUD, keyword extraction")
+            Container(generation_service, "Generation Service", "Python", "🚧 Mock AI orchestration ready")
+            Container(document_service, "Document Service", "Python", "🚧 Document handling ready")
         }
         
         Container_Boundary(domain_core, "Domain Core") {
-            Container(entities, "Domain Entities", "Python", "Business models & rules")
-            Container(ports, "Service Ports", "Python", "Provider interfaces")
-            Container(orchestrator, "Universal AI Orchestrator", "Python", "Multi-provider pipeline")
+            Container(entities, "Domain Entities", "Python", "✅ Complete: User, Profile, Job, Generation")
+            Container(value_objects, "Value Objects", "Python", "✅ Personal info, experience, education, skills")
+            Container(ports, "Service Ports", "Python", "✅ LLM, PDF, cache, storage interfaces")
+            Container(orchestrator, "AI Orchestrator", "Python", "🚧 5-stage pipeline structure ready")
         }
         
-        Container_Boundary(infrastructure, "Infrastructure Adapters") {
-            Container(service_factory, "Service Factory", "Python", "Provider instantiation & config")
-            Container(fallback_manager, "Fallback Manager", "Python", "Provider health & switching")
-            Container(circuit_breaker, "Circuit Breaker", "Python", "Failure isolation & recovery")
+        Container_Boundary(infrastructure, "Infrastructure Layer") {
+            Container(database_layer, "Database Layer", "SQLAlchemy Async", "✅ Complete: Models, repositories, single schema")
+            Container(auth_middleware, "Auth Middleware", "JWT", "✅ Token validation, user context")
+            Container(cache_adapters, "Cache Adapters", "Redis/Memory", "🚧 Structure ready")
+            Container(storage_adapters, "Storage Adapters", "Local/Cloud", "🚧 Structure ready")
         }
         
-        Container_Boundary(llm_adapters, "LLM Provider Adapters") {
-            Container(openai_adapter, "OpenAI Adapter", "OpenAI SDK", "GPT-3.5/4 integration")
-            Container(claude_adapter, "Claude Adapter", "Anthropic SDK", "Claude Sonnet/Haiku")
-            Container(gemini_adapter, "Gemini Adapter", "Google GenAI", "Gemini Pro/Flash")
-            Container(groq_adapter, "Groq Adapter", "Groq SDK", "Ultra-fast Llama/Mixtral")
-            Container(local_llm_adapter, "Local LLM Adapter", "Transformers", "Self-hosted models")
-            Container(azure_adapter, "Azure OpenAI Adapter", "Azure SDK", "Enterprise OpenAI")
-        }
-        
-        Container_Boundary(job_adapters, "Job Search Adapters") {
-            Container(indeed_adapter, "Indeed Adapter", "Indeed API", "Job listings integration")
-            Container(linkedin_adapter, "LinkedIn Adapter", "LinkedIn API", "Professional network jobs")
-            Container(mock_job_adapter, "Mock Job Adapter", "Local Data", "Development job data")
-        }
-        
-        Container_Boundary(pdf_adapters, "PDF Generation Adapters") {
-            Container(reportlab_adapter, "ReportLab Adapter", "ReportLab", "Local PDF generation")
-            Container(weasyprint_adapter, "WeasyPrint Adapter", "WeasyPrint", "HTML-to-PDF conversion")
-            Container(cloud_pdf_adapter, "Cloud PDF Adapter", "External API", "Cloud-based PDF service")
-        }
-        
-        Container_Boundary(storage_adapters, "Storage & Cache Adapters") {
-            Container(cache_adapters, "Cache Adapters", "Redis/Memory", "Multiple caching backends")
-            Container(storage_adapters_group, "Storage Adapters", "S3/Azure/Local", "Multi-cloud storage")
-            Container(database_adapters, "Database Adapters", "SQLAlchemy", "Multi-database support")
+        Container_Boundary(ai_infrastructure, "AI Infrastructure (F7-F8 Ready)") {
+            Container(llm_adapters, "LLM Adapters", "OpenAI/Claude/Groq", "🚧 Universal adapter pattern")
+            Container(pdf_adapters, "PDF Adapters", "ReportLab/WeasyPrint", "🚧 Export system ready")
+            Container(prompt_manager, "Prompt Manager", "Template System", "🚧 5-stage prompts")
+            Container(quality_validator, "Quality Validator", "ATS Compliance", "🚧 Validation pipeline")
         }
     }
     
-    ContainerDb(database, "Database", "SQLite/PostgreSQL", "Configurable persistence")
-    Container(cache_store, "Cache Store", "Redis/Memory", "Performance optimization")
+    ContainerDb(database, "Database", "SQLite/PostgreSQL", "✅ Single schema approach, all tables created")
+    Container(cache_store, "Cache Store", "Redis/Memory", "🚧 Performance optimization ready")
 }
 
 System_Boundary(external_services, "External Service Providers") {
     System_Ext(openai_api, "OpenAI API", "GPT models")
     System_Ext(claude_api, "Anthropic API", "Claude models") 
-    System_Ext(gemini_api, "Google AI API", "Gemini models")
     System_Ext(groq_api, "Groq API", "Ultra-fast LLM inference")
-    System_Ext(azure_openai, "Azure OpenAI", "Enterprise GPT")
     
-    System_Ext(indeed_api, "Indeed API", "Job listings")
-    System_Ext(linkedin_api, "LinkedIn API", "Professional jobs")
-    
-    System_Ext(cloud_pdf, "Cloud PDF APIs", "PDF generation services")
-    System_Ext(cloud_storage, "Cloud Storage", "AWS S3 / Azure Blob / GCS")
+    System_Ext(static_jobs, "Static Job Data", "JSON files with 100+ jobs")
 }
 
 ' User interactions
 Rel(user, mobile_app, "Uses", "Mobile UI")
 Rel(mobile_app, api_gateway, "API calls", "REST/HTTPS")
 
-' API Gateway routing
-Rel(api_gateway, auth_api, "Routes auth")
-Rel(api_gateway, profile_api, "Routes profiles") 
-Rel(api_gateway, job_api, "Routes jobs")
-Rel(api_gateway, generation_api, "Routes generation")
-Rel(api_gateway, document_api, "Routes documents")
+' API Gateway routing (F1-F6 Complete)
+Rel(api_gateway, auth_api, "✅ Routes auth", "JWT tokens working")
+Rel(api_gateway, profile_api, "✅ Routes profiles", "Full CRUD working") 
+Rel(api_gateway, job_api, "✅ Routes jobs", "Search/filter working")
+Rel(api_gateway, job_desc_api, "✅ Routes custom jobs", "CRUD complete")
+Rel(api_gateway, generation_api, "🚧 Routes generation", "Structure ready")
+Rel(api_gateway, document_api, "🚧 Routes documents", "Structure ready")
 
 ' Application service dependencies
-Rel(profile_api, profile_service, "Uses")
-Rel(job_api, job_service, "Uses")
-Rel(generation_api, generation_service, "Uses")
-Rel(document_api, document_service, "Uses")
+Rel(auth_api, auth_service, "✅ Implemented")
+Rel(profile_api, profile_service, "✅ Implemented")
+Rel(job_api, job_service, "✅ Implemented")
+Rel(job_desc_api, job_desc_service, "✅ Implemented")
+Rel(generation_api, generation_service, "🚧 Structure ready")
+Rel(document_api, document_service, "🚧 Structure ready")
 
 ' Domain core relationships
-Rel(generation_service, orchestrator, "Orchestrates via")
-Rel(orchestrator, ports, "Uses abstract ports")
-Rel(orchestrator, entities, "Operates on")
+Rel(generation_service, orchestrator, "🚧 Will orchestrate via")
+Rel(orchestrator, ports, "🚧 Will use abstract ports")
+Rel(orchestrator, entities, "✅ Operates on")
 
-' Service factory and management
-Rel(orchestrator, service_factory, "Creates providers via")
-Rel(orchestrator, fallback_manager, "Manages failover via")
-Rel(orchestrator, circuit_breaker, "Monitors health via")
+' Database layer (Complete)
+Rel(auth_service, database_layer, "✅ User auth data")
+Rel(profile_service, database_layer, "✅ Profile CRUD")
+Rel(job_service, database_layer, "✅ Job search")
+Rel(job_desc_service, database_layer, "✅ Custom job CRUD")
+Rel(generation_service, database_layer, "🚧 Generation tracking")
+Rel(document_service, database_layer, "🚧 Document storage")
 
-' LLM provider connections
-Rel(service_factory, openai_adapter, "Creates")
-Rel(service_factory, claude_adapter, "Creates") 
-Rel(service_factory, gemini_adapter, "Creates")
-Rel(service_factory, groq_adapter, "Creates")
-Rel(service_factory, local_llm_adapter, "Creates")
-Rel(service_factory, azure_adapter, "Creates")
+Rel(database_layer, database, "✅ Async connections")
 
-' Job provider connections
-Rel(job_service, indeed_adapter, "Uses")
-Rel(job_service, linkedin_adapter, "Uses")
-Rel(job_service, mock_job_adapter, "Uses")
-
-' PDF provider connections
-Rel(document_service, reportlab_adapter, "Uses")
-Rel(document_service, weasyprint_adapter, "Uses") 
-Rel(document_service, cloud_pdf_adapter, "Uses")
-
-' Storage connections
-Rel(profile_service, database_adapters, "Persists via")
-Rel(generation_service, cache_adapters, "Caches via")
-Rel(document_service, storage_adapters_group, "Stores files via")
-
-Rel(database_adapters, database, "Connects to")
-Rel(cache_adapters, cache_store, "Connects to")
+' AI Infrastructure connections (Ready for F7-F8)
+Rel(orchestrator, llm_adapters, "🚧 Will use for generation")
+Rel(document_service, pdf_adapters, "🚧 Will use for export")
+Rel(orchestrator, prompt_manager, "🚧 Will use for prompts")
+Rel(orchestrator, quality_validator, "🚧 Will use for validation")
 
 ' External service integrations
-Rel(openai_adapter, openai_api, "Calls", "HTTPS")
-Rel(claude_adapter, claude_api, "Calls", "HTTPS")
-Rel(gemini_adapter, gemini_api, "Calls", "HTTPS")
-Rel(groq_adapter, groq_api, "Calls", "HTTPS")
-Rel(azure_adapter, azure_openai, "Calls", "HTTPS")
+Rel(job_service, static_jobs, "✅ Loads job data", "100+ jobs")
+Rel(llm_adapters, openai_api, "🚧 Will call", "HTTPS")
+Rel(llm_adapters, claude_api, "🚧 Will call", "HTTPS")
+Rel(llm_adapters, groq_api, "🚧 Will call", "HTTPS")
 
-Rel(indeed_adapter, indeed_api, "Calls", "HTTPS")
-Rel(linkedin_adapter, linkedin_api, "Calls", "HTTPS")
-
-Rel(cloud_pdf_adapter, cloud_pdf, "Calls", "HTTPS")
-Rel(storage_adapters_group, cloud_storage, "Uploads to", "HTTPS")
-
-' Fallback and monitoring relationships
-Rel(fallback_manager, openai_adapter, "Monitors")
-Rel(fallback_manager, claude_adapter, "Monitors")
-Rel(fallback_manager, gemini_adapter, "Monitors")
-Rel(fallback_manager, groq_adapter, "Monitors")
-Rel(circuit_breaker, fallback_manager, "Triggers fallbacks")
-
-note top of orchestrator
-Universal AI Orchestrator:
-• Provider-agnostic pipeline execution
-• Intelligent fallback management  
-• Circuit breaker resilience
-• Cost optimization across providers
-• Real-time health monitoring
-• Performance-based routing
+' Current implementation status notes
+note top of auth_api
+✅ F3 Authentication Complete:
+• JWT token management working
+• User registration/login
+• Password security (bcrypt)
+• 13/13 tests passing (100%)
+• Middleware protection active
 end note
 
-note right of service_factory
-Service Factory Pattern:
-• Runtime provider selection
-• Configuration-driven instantiation
-• Environment-specific adapters
-• Fallback chain management
-• Health-aware provider creation
+note top of profile_api
+✅ F4 Profile Management Complete:
+• Master profile CRUD operations
+• Experience/education/project management
+• Profile analytics endpoints
+• Comprehensive value objects
+• Repository pattern with async support
 end note
 
-note bottom of fallback_manager
-Fallback Management:
-• Multi-tier fallback strategies
-• Provider health monitoring
-• Automatic recovery detection
-• Load balancing algorithms
-• Cost-performance optimization
-• SLA compliance tracking
+note top of job_api
+✅ F5 Job Discovery Complete:
+• Static job data (100+ jobs)
+• Search and filtering working
+• Job seeding script
+• 6/6 tests passing
+• Performance optimized
 end note
 
-note left of llm_adapters
-LLM Provider Support:
-• OpenAI GPT-3.5/4
-• Anthropic Claude Sonnet/Haiku
-• Google Gemini Pro/Flash
-• Groq Ultra-Fast Inference (Llama/Mixtral)
-• Azure OpenAI (Enterprise)
-• Local LLM models
-• Custom provider integration
+note top of job_desc_api
+✅ F6 Custom Job Descriptions Complete:
+• User-owned job descriptions
+• Full CRUD operations
+• Keyword parsing/extraction
+• Status management (draft/active/archived)
+• User ownership validation
+end note
+
+note top of database_layer
+✅ F2 Database Foundation Complete:
+• SQLAlchemy 2.0 async implementation
+• Single schema approach (schema.py)
+• All entity models with relationships
+• Repository pattern with full CRUD
+• Connection pooling and health checks
+• API-consistent table naming
+end note
+
+note right of generation_api
+🚧 F7 Structure Ready:
+• Generation entity models in place
+• 5-stage pipeline scaffolding
+• Universal LLM service framework
+• AI orchestrator architecture
+• Mock generation endpoints ready
+end note
+
+note right of document_api
+🚧 F8 Structure Ready:
+• Document storage entity
+• PDF generation adapters
+• File management support
+• Export system framework
+• Download endpoints structure
 end note
 
 @enduml

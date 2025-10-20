@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 
 
 class UserRegisterRequest(BaseModel):
@@ -11,7 +11,8 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, description="User password")
     full_name: str = Field(..., min_length=1, max_length=100, description="User full name")
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password_strength(cls, v):
         """Validate password strength."""
         if len(v) < 8:
@@ -111,7 +112,8 @@ class PasswordChangeRequest(BaseModel):
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(..., min_length=8, description="New password")
 
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password_strength(cls, v):
         """Validate new password strength."""
         if len(v) < 8:
@@ -162,7 +164,8 @@ class PasswordResetConfirmRequest(BaseModel):
     token: str = Field(..., description="Reset token")
     new_password: str = Field(..., min_length=8, description="New password")
 
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_password_strength(cls, v):
         """Validate password strength."""
         if len(v) < 8:

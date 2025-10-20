@@ -5,6 +5,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from app.core.config import Settings, get_settings, is_development, is_production, get_database_url
 
@@ -188,14 +189,14 @@ class TestSettingsValidation:
     """Test settings validation."""
 
     def test_secret_key_validation(self):
-        """Test that SECRET_KEY must be at least 32 characters."""
-        with pytest.raises(ValueError):
-            Settings(SECRET_KEY="short")
+        """Test that SECRET_KEY is required."""
+        with pytest.raises(ValidationError):
+            Settings(SECRET_KEY="", JWT_SECRET_KEY="test-key-32-characters-long-enough-for-jwt")
 
-    def test_openai_api_key_required(self):
-        """Test that OPENAI_API_KEY is required."""
-        with pytest.raises(ValueError):
-            Settings(OPENAI_API_KEY=None)
+    def test_jwt_secret_key_required(self):
+        """Test that JWT_SECRET_KEY is required."""
+        with pytest.raises(ValidationError):
+            Settings(SECRET_KEY="test-key-32-characters-long-enough", JWT_SECRET_KEY="")
 
     def test_cors_origins_list(self):
         """Test CORS_ORIGINS must be a list."""

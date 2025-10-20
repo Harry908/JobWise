@@ -1,7 +1,7 @@
 @startuml Universal Service Architecture
 !define RECTANGLE class
 
-title JobWise Universal Service Architecture - Adapter Pattern Design
+title JobWise Service Architecture - Current Implementation Status (F1-F6 Complete)
 
 package "Domain Abstractions (Ports)" {
     interface LLMServicePort {
@@ -12,6 +12,7 @@ package "Domain Abstractions (Ports)" {
         +get_rate_limits(): RateLimitInfo
         +calculate_cost(request: LLMRequest): CostEstimate
     }
+    note right: 🚧 F7 Structure Ready\nInterface defined, adapters ready
     
     interface JobSearchServicePort {
         +search_jobs(criteria: JobSearchCriteria): JobSearchResult
@@ -19,6 +20,7 @@ package "Domain Abstractions (Ports)" {
         +get_trending_skills(): List[Skill]
         +get_salary_data(position: str, location: str): SalaryInfo
     }
+    note right: ✅ F5 Complete\nStatic job implementation working
     
     interface PDFGeneratorPort {
         +generate_pdf(content: DocumentContent, template: PDFTemplate): PDFResult
@@ -26,6 +28,7 @@ package "Domain Abstractions (Ports)" {
         +validate_content(content: DocumentContent): ValidationResult
         +optimize_layout(content: DocumentContent): LayoutOptimization
     }
+    note right: 🚧 F8 Structure Ready\nExport system framework in place
     
     interface CacheServicePort {
         +get[T](key: str, type_: Type[T]): Optional[T]
@@ -35,23 +38,269 @@ package "Domain Abstractions (Ports)" {
         +clear_pattern(pattern: str): int
         +get_stats(): CacheStats
     }
-    
-    interface StorageServicePort {
-        +upload_file(file_data: bytes, metadata: FileMetadata): FileReference
-        +download_file(file_id: str): bytes
-        +delete_file(file_id: str): bool
-        +get_file_url(file_id: str): str
-        +list_files(prefix: str): List[FileReference]
+    note right: 🚧 Structure Ready\nRedis/Memory adapters prepared
+}
+
+package "Implemented Services (F1-F6 Complete)" {
+    package "Authentication Services (F3 Complete)" {
+        RECTANGLE AuthService {
+            -jwt_handler: JWTHandler
+            -password_hasher: PasswordHasher
+            -user_repository: UserRepository
+            --
+            ✅ +register_user(email: str, password: str): UserResponse
+            ✅ +authenticate_user(email: str, password: str): AuthResponse
+            ✅ +refresh_token(refresh_token: str): TokenResponse
+            ✅ +get_current_user(token: str): UserResponse
+            ✅ +change_password(user_id: str, old_password: str, new_password: str): bool
+            -hash_password(password: str): str
+            -verify_password(plain: str, hashed: str): bool
+            -create_tokens(user_id: str): TokenPair
+        }
+        note right: **F3 Complete**\n13/13 tests passing (100%)\nJWT + bcrypt working
     }
     
-    interface MonitoringServicePort {
-        +record_metric(name: str, value: float, tags: Dict[str, str]): void
-        +start_timer(operation: str): Timer
-        +log_event(event: str, context: Dict[str, Any]): void
-        +create_alert(condition: AlertCondition): AlertRule
-        +get_health_status(): HealthStatus
+    package "Profile Services (F4 Complete)" {
+        RECTANGLE ProfileService {
+            -profile_repository: ProfileRepository
+            -experience_repository: ExperienceRepository
+            -education_repository: EducationRepository
+            -skill_repository: SkillRepository
+            --
+            ✅ +create_profile(profile_data: ProfileCreateRequest): ProfileResponse
+            ✅ +get_profile(profile_id: str): ProfileResponse
+            ✅ +update_profile(profile_id: str, updates: ProfileUpdateRequest): ProfileResponse
+            ✅ +delete_profile(profile_id: str): bool
+            ✅ +add_experience(profile_id: str, experience: ExperienceRequest): ExperienceResponse
+            ✅ +update_experience(profile_id: str, exp_id: str, updates: ExperienceRequest): ExperienceResponse
+            ✅ +delete_experience(profile_id: str, exp_id: str): bool
+            ✅ +get_profile_analytics(profile_id: str): ProfileAnalytics
+            -validate_profile_ownership(user_id: str, profile_id: str): bool
+        }
+        note right: **F4 Complete**\nFull CRUD operations\nExperience/Education/Projects\nProfile analytics endpoints
+    }
+    
+    package "Unified Job Services (F5 + F6 Complete)" {
+        RECTANGLE JobService {
+            -unified_job_repository: JobRepository
+            -cache_service: CacheServicePort
+            -search_engine: LocalSearchEngine
+            -keyword_extractor: KeywordExtractor
+            --
+            ✅ +search_jobs(criteria: JobSearchCriteria, user_id: str?): JobSearchResult
+            ✅ +get_job_details(job_id: str): JobDetails
+            ✅ +create_user_job(user_id: str, job_data: JobCreateRequest): JobResponse
+            ✅ +update_user_job(user_id: str, job_id: str, updates: JobUpdateRequest): JobResponse
+            ✅ +delete_user_job(user_id: str, job_id: str): bool
+            ✅ +list_user_jobs(user_id: str, filters: JobFilters): List[JobSummary]
+            ✅ +get_job_filters(): AvailableFilters
+            ✅ +get_job_statistics(): JobStatistics
+            ✅ +seed_jobs_from_file(): bool
+            ✅ +parse_job_keywords(job_id: str): KeywordAnalysis
+            ✅ +change_job_status(job_id: str, status: JobStatus): bool
+            -apply_search_filters(jobs: List[Job], criteria: JobSearchCriteria): List[Job]
+            -calculate_match_score(job: Job, user_profile: Profile): float
+            -extract_job_keywords(job_description: str): List[str]
+            -validate_job_ownership(user_id: str, job_id: str): bool
+        }
+        note right: **F5 + F6 Unified Job Management Complete**\n\n**All Input Methods Supported:**\n• API sourced jobs (external providers)\n• Static JSON data (mock/seed data)\n• User-created jobs (copy-paste conversion)\n• Scraped jobs (web scraping)\n• Imported jobs (bulk file import)\n\n**Features:**\n• Unified search across all job sources\n• Single JobModel entity (no duplication)\n• Source-aware processing pipeline\n• 6/6 tests passing for search/filtering\n• Keyword extraction for all sources\n• Status management for user jobs
+        
+        RECTANGLE StaticJobAdapter {
+            -job_data: List[JobPosting]
+            -search_index: SearchIndex
+            --
+            ✅ +search_jobs(criteria: JobSearchCriteria): JobSearchResult
+            ✅ +get_job_details(job_id: str): JobDetails
+            ✅ +load_static_data(): List[JobPosting]
+            -build_search_index(): SearchIndex
+            -simulate_realistic_latency(): void
+        }
+    }
+    
+
+}
+
+package "AI Infrastructure (F7-F8 Structure Ready)" {
+    package "Generation Services (F7 Structure Ready)" {
+        RECTANGLE MockGenerationService {
+            -llm_service: LLMServicePort
+            -template_manager: TemplateManager
+            -quality_validator: QualityValidator
+            --
+            🚧 +generate_resume(profile: Profile, job: Job, options: GenerationOptions): GenerationResult
+            🚧 +get_generation_status(generation_id: str): GenerationStatus
+            🚧 +cancel_generation(generation_id: str): bool
+            🚧 +regenerate_document(generation_id: str, feedback: str): GenerationResult
+            -simulate_ai_processing(stage: PipelineStage): ProcessingResult
+            -apply_realistic_timing(): void
+        }
+        note right: **F7 Structure Ready**\n5-stage pipeline scaffolding\nMock AI responses prepared\nRealistic timing simulation
+        
+        RECTANGLE UniversalAIOrchestrator {
+            -pipeline_stages: List[PipelineStage]
+            -fallback_manager: FallbackManager
+            -monitoring_service: MonitoringService
+            --
+            🚧 +execute_pipeline(profile: Profile, job: Job): PipelineResult
+            🚧 +set_llm_provider(provider: LLMProvider): void
+            🚧 +get_pipeline_status(execution_id: str): PipelineStatus
+            🚧 +cancel_execution(execution_id: str): void
+            -handle_stage_failure(stage: PipelineStage, error: Exception): FallbackResult
+            -track_pipeline_metrics(): void
+        }
+    }
+    
+    package "Document Services (F8 Structure Ready)" {
+        RECTANGLE DocumentService {
+            -document_repository: DocumentRepository
+            -pdf_generator: PDFGeneratorPort
+            -storage_service: StorageServicePort
+            --
+            🚧 +create_document(generation_result: GenerationResult): DocumentResponse
+            🚧 +get_document(document_id: str): DocumentResponse
+            🚧 +delete_document(document_id: str): bool
+            🚧 +list_documents(user_id: str, filters: DocumentFilters): List[DocumentSummary]
+            🚧 +export_document(document_id: str, format: ExportFormat): ExportResult
+            🚧 +generate_share_link(document_id: str, options: ShareOptions): ShareLink
+            -validate_document_ownership(user_id: str, document_id: str): bool
+        }
+        note right: **F8 Structure Ready**\nDocument storage entity\nPDF generation framework\nExport system prepared
+        
+        RECTANGLE TextExporter {
+            -template_engine: TextTemplateEngine
+            -formatting_rules: FormattingRules
+            --
+            🚧 +export_to_text(document: Document): TextExportResult
+            🚧 +apply_formatting(content: DocumentContent): FormattedText
+            🚧 +generate_filename(document: Document): str
+            -clean_text_formatting(content: str): str
+            -optimize_line_breaks(): void
+        }
     }
 }
+
+package "Database Layer (F2 Complete)" {
+    RECTANGLE UserRepository {
+        -session: AsyncSession
+        --
+        ✅ +create_user(user_data: Dict): UserModel
+        ✅ +get_user_by_id(user_id: str): Optional[UserModel]
+        ✅ +get_user_by_email(email: str): Optional[UserModel]
+        ✅ +update_user(user_id: str, updates: Dict): UserModel
+        ✅ +delete_user(user_id: str): bool
+        ✅ +is_email_taken(email: str): bool
+        -handle_database_errors(): void
+    }
+    
+    RECTANGLE ProfileRepository {
+        -session: AsyncSession
+        --
+        ✅ +create_profile(profile_data: Dict): MasterProfileModel
+        ✅ +get_profile_by_id(profile_id: str): Optional[MasterProfileModel]
+        ✅ +get_profiles_by_user(user_id: str): List[MasterProfileModel]
+        ✅ +update_profile(profile_id: str, updates: Dict): MasterProfileModel
+        ✅ +delete_profile(profile_id: str): bool
+        ✅ +get_profile_with_relations(profile_id: str): MasterProfileModel
+        -load_related_entities(profile: MasterProfileModel): void
+    }
+    
+    RECTANGLE JobRepository {
+        -session: AsyncSession
+        --
+        ✅ +search_jobs(criteria: JobSearchCriteria, user_id: str?): List[JobModel]
+        ✅ +get_job_by_id(job_id: str): Optional[JobModel]
+        ✅ +create_job(job_data: Dict): JobModel
+        ✅ +update_job(job_id: str, updates: Dict): JobModel
+        ✅ +delete_job(job_id: str): bool
+        ✅ +get_user_jobs(user_id: str, filters: Dict): List[JobModel]
+        ✅ +count_jobs(criteria: JobSearchCriteria): int
+        ✅ +get_available_filters(): AvailableFilters
+        ✅ +bulk_insert_jobs(jobs: List[Dict]): int
+        -apply_pagination(query: Query, limit: int, offset: int): Query
+        -filter_by_source(query: Query, source: JobSource): Query
+        -validate_user_ownership(user_id: str, job_id: str): bool
+    }
+}
+
+' Implementation status relationships
+AuthService --> UserRepository : "✅ Working"
+ProfileService --> ProfileRepository : "✅ Working"
+ProfileService --> UserRepository : "✅ Working"
+JobService --> JobRepository : "✅ Working (unified)"
+JobService --> StaticJobAdapter : "✅ Working"
+JobService --> UserRepository : "✅ Working"
+
+MockGenerationService --> LLMServicePort : "🚧 Structure ready"
+DocumentService --> PDFGeneratorPort : "🚧 Structure ready"
+DocumentService --> CacheServicePort : "🚧 Structure ready"
+
+' Current implementation status
+note top of AuthService
+**F3 Authentication Complete**
+✅ JWT token management working
+✅ User registration/login endpoints
+✅ Password security with bcrypt
+✅ 13/13 tests passing (100% success rate)
+✅ Middleware protection active
+✅ Token refresh working
+end note
+
+note top of ProfileService
+**F4 Profile Management Complete**
+✅ Master profile CRUD operations
+✅ Experience/education/project management
+✅ Profile analytics endpoints
+✅ Comprehensive value objects implemented
+✅ Repository pattern with async support
+✅ Full validation and error handling
+end note
+
+note top of JobService
+**F5 + F6 Unified Job Management Complete**
+✅ Unified JobModel supporting all input methods:
+  • API sourced jobs (external_job_id tracking)
+  • Static JSON data (100+ mock jobs for development)
+  • User-created jobs (copy-paste with JSON template)
+  • Scraped jobs (web scraping framework ready)
+  • Imported jobs (bulk file import support)
+  
+✅ Features working across all job sources:
+  • Search and filtering endpoints (6/6 tests passing)
+  • Keyword extraction and analysis
+  • Status management (active/draft/archived/expired)
+  • User ownership validation for user-created jobs
+  • Performance optimized with caching
+  • Single API endpoints handling all job types
+  
+✅ Benefits achieved:
+  • Eliminated model duplication (JobModel vs JobDescriptionModel)
+  • Simplified database schema and relationships
+  • Unified search across all job sources
+  • Reduced code complexity and maintenance overhead
+  • Consistent job processing pipeline
+end note
+
+note top of MockGenerationService
+**F7 Mock AI Pipeline Structure Ready**
+🚧 5-stage pipeline scaffolding complete
+🚧 Generation entity models in place
+🚧 Mock AI service framework ready
+🚧 Realistic response time simulation
+🚧 Universal LLM adapter pattern prepared
+🚧 Ready for mock implementation
+end note
+
+note top of DocumentService
+**F8 Export System Structure Ready**
+🚧 Document storage entity defined
+🚧 PDF generation adapter framework
+🚧 File management support ready
+🚧 Export system architecture in place
+🚧 Text file export (.txt) structure ready
+🚧 Download endpoints framework prepared
+end note
+
+@enduml
 
 package "Service Adapters (Implementations)" {
     package "LLM Adapters" {

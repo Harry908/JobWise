@@ -80,16 +80,17 @@ class JWTManager:
             expires_delta = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
 
         expire = datetime.utcnow() + expires_delta
+        issued_at = datetime.utcnow()
 
         payload = TokenData(
             user_id=user_id,
             exp=expire,
-            iat=datetime.utcnow(),
+            iat=issued_at,
             type="access"
         )
 
         token = jwt.encode(
-            payload.dict(),
+            payload.model_dump(),
             settings.JWT_SECRET_KEY,
             algorithm=settings.JWT_ALGORITHM
         )
@@ -109,7 +110,7 @@ class JWTManager:
         )
 
         token = jwt.encode(
-            payload.dict(),
+            payload.model_dump(),
             settings.JWT_SECRET_KEY,
             algorithm=settings.JWT_ALGORITHM
         )

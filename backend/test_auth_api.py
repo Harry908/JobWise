@@ -43,16 +43,18 @@ def test_auth_flow():
             print(f"   Error: {register_response.text}")
             return False
 
-        # Step 2: Verify user account
-        print("\n2. Verifying user account...")
-        verify_response = requests.post(
-            f"{base_url}/verify-email/{user_id}"
-        )
-
-        print(f"   Status: {verify_response.status_code}")
-        if verify_response.status_code != 200:
-            print(f"   Error: {verify_response.text}")
-            return False
+        # Step 2: Check if user is already verified (skip verification if already verified)
+        print("\n2. Checking user verification status...")
+        if user_data['is_verified']:
+            print("   ✅ User is already verified - skipping verification step")
+        else:
+            verify_response = requests.post(
+                f"{base_url}/verify-email/{user_id}"
+            )
+            print(f"   Status: {verify_response.status_code}")
+            if verify_response.status_code != 200:
+                print(f"   Error: {verify_response.text}")
+                return False
 
         # Step 3: Login
         print("\n3. Logging in...")

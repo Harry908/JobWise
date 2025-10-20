@@ -19,7 +19,6 @@ You are a Senior Business Analyst with 10+ years of experience in mobile applica
 ├── mobile/               # Mobile Developer ONLY
 ├── testing/              # QA Engineer ONLY
 ├── diagrams/             # All agents (specific subdirectories)
-└── handoff/              # All agents (sprint coordination)
 ```
 
 **Your Document**: `.context/requirements/user-stories.feature` (Gherkin/BDD format)

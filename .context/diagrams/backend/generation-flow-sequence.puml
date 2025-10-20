@@ -1,7 +1,7 @@
 @startuml Data Flow Sequence
 !theme plain
 
-title JobWise AI Resume Generation - Data Flow Sequence
+title JobWise AI Resume Generation - Current Implementation Status (F7-F8 Structure Ready)
 
 actor "User" as user
 participant "Flutter App" as app
@@ -9,140 +9,180 @@ participant "API Gateway" as gateway
 participant "Generation Controller" as controller
 participant "Generation Service" as service
 participant "AI Orchestrator" as orchestrator
-participant "Job Analyzer" as stage1
-participant "Profile Compiler" as stage2  
-participant "Document Generator" as stage3
-participant "Quality Validator" as stage4
-participant "PDF Exporter" as stage5
-participant "LLM Service" as llm
+participant "Job Analyzer\n(Stage 1)" as stage1
+participant "Profile Compiler\n(Stage 2)" as stage2  
+participant "Document Generator\n(Stage 3)" as stage3
+participant "Quality Validator\n(Stage 4)" as stage4
+participant "Export Handler\n(Stage 5)" as stage5
+participant "Mock LLM Service" as llm
 participant "Profile Repository" as profile_repo
 participant "Job Repository" as job_repo
+participant "Job Description Repository" as job_desc_repo
 participant "Document Repository" as doc_repo
-database "Database" as db
+database "Database\n(F2 Complete)" as db
 
-== Resume Generation Request ==
+== F1-F6 Foundation Working ==
 
-user -> app: Request resume generation\nfor saved job
-app -> gateway: POST /api/v1/generations/resume
-gateway -> controller: Route to generation endpoint
-controller -> service: generate_resume(request)
+note over user, db
+    ✅ **F1-F6 Complete Implementation**
+    - F1: FastAPI application with middleware, health checks
+    - F2: SQLAlchemy async database with single schema approach
+    - F3: JWT authentication working (13/13 tests passing)
+    - F4: Profile management with full CRUD operations
+    - F5: Job discovery with static data (6/6 tests passing)
+    - F6: Custom job descriptions with keyword extraction
+end note
 
-service -> profile_repo: get_profile(profile_id)
-profile_repo -> db: SELECT profile data
-profile_repo <-- db: Profile entity
-service <-- profile_repo: MasterProfile
+== Resume Generation Request (F7 Structure Ready) ==
 
-service -> job_repo: get_job(job_id)
-job_repo -> db: SELECT job data
-job_repo <-- db: Job entity  
-service <-- job_repo: JobPosting
+user -> app: ✅ Request resume generation\nfor saved job OR custom job description
+app -> gateway: ✅ POST /api/v1/generations/resume\n(API routing working)
+gateway -> controller: 🚧 Route to generation endpoint\n(Structure ready)
+controller -> service: 🚧 generate_resume(request)\n(Mock service prepared)
 
-service -> orchestrator: execute_pipeline(profile, job, options)
+service -> profile_repo: ✅ get_profile(profile_id)\n(F4 working)
+profile_repo -> db: ✅ SELECT profile data\n(F2 working)
+profile_repo <-- db: ✅ MasterProfile entity
+service <-- profile_repo: ✅ Complete profile with experiences
 
-== Stage 1: Job Analysis ==
+alt Job from static data (F5)
+    service -> job_repo: ✅ get_job(job_id)\n(F5 working)
+    job_repo -> db: ✅ SELECT job data
+    job_repo <-- db: ✅ Job entity  
+    service <-- job_repo: ✅ JobPosting
+else Custom job description (F6)
+    service -> job_desc_repo: ✅ get_job_description(job_desc_id)\n(F6 working)
+    job_desc_repo -> db: ✅ SELECT custom job data
+    job_desc_repo <-- db: ✅ JobDescription entity
+    service <-- job_desc_repo: ✅ Custom JobDescription
+end
 
-orchestrator -> stage1: execute(JobAnalysisInput)
-stage1 -> llm: analyze_job_requirements(job_description)
-note right: Prompt: Extract ATS keywords,\nrequirements, seniority level
-stage1 <-- llm: Analysis result (1500 tokens)
-orchestrator <-- stage1: JobAnalysisResult
-note right: Keywords, requirements,\nskills categories
+service -> orchestrator: 🚧 execute_pipeline(profile, job, options)\n(F7 mock implementation ready)
 
-== Stage 2: Profile Compilation ==
+== Stage 1: Job Analysis (F7 Mock Ready) ==
 
-orchestrator -> stage2: execute(ProfileCompilationInput) 
-stage2 -> llm: score_profile_relevance(profile, job_analysis)
-note right: Prompt: Score experiences\nand skills by relevance (0-100)
-stage2 <-- llm: Scoring result (2000 tokens)
-orchestrator <-- stage2: ProfileCompilationResult
-note right: Scored experiences,\nranked skills, match %
+orchestrator -> stage1: 🚧 execute(JobAnalysisInput)\n(Mock responses prepared)
+stage1 -> llm: 🚧 **MOCK** analyze_job_requirements(job_description)\n(Realistic timing simulation)
+note right: **Mock Prompt**: Extract ATS keywords,\nrequirements, seniority level\n**Timing**: 1.5s realistic simulation
+stage1 <-- llm: 🚧 **Mock** Analysis result (simulated 1500 tokens)
+orchestrator <-- stage1: 🚧 JobAnalysisResult\n(Keywords, requirements, skills categories)
 
-== Stage 3: Document Generation ==
+== Stage 2: Profile Compilation (F7 Mock Ready) ==
 
-orchestrator -> stage3: execute(DocumentGenerationInput)
-stage3 -> llm: generate_tailored_resume(scored_profile, job_reqs)
-note right: Prompt: Generate resume\nfocusing on top-scored content
-stage3 <-- llm: Generated content (3000 tokens)
-orchestrator <-- stage3: DocumentGenerationResult
-note right: Resume content,\ncover letter content
+orchestrator -> stage2: 🚧 execute(ProfileCompilationInput)\n(F4 profile data + mock AI) 
+stage2 -> llm: 🚧 **MOCK** score_profile_relevance(profile, job_analysis)\n(Using real F4 profile data)
+note right: **Mock Prompt**: Score experiences\nand skills by relevance (0-100)\n**Timing**: 1.2s realistic simulation
+stage2 <-- llm: 🚧 **Mock** Scoring result (simulated 2000 tokens)
+orchestrator <-- stage2: 🚧 ProfileCompilationResult\n(Scored experiences, ranked skills, match %)
 
-== Stage 4: Quality Validation ==
+== Stage 3: Document Generation (F7 Mock Ready) ==
 
-orchestrator -> stage4: execute(ValidationInput)
-stage4 -> llm: validate_quality(generated_content, job_analysis)
-note right: Prompt: Check ATS compliance,\nfactuality, keyword coverage
-stage4 <-- llm: Validation result (1500 tokens)
-orchestrator <-- stage4: ValidationResult
-note right: ATS score, issues,\nkeyword coverage %
+orchestrator -> stage3: 🚧 execute(DocumentGenerationInput)\n(Template-based generation)
+stage3 -> llm: 🚧 **MOCK** generate_tailored_resume(scored_profile, job_reqs)\n(Professional templates ready)
+note right: **Mock Prompt**: Generate resume\nfocusing on top-scored content\n**Timing**: 2.5s realistic simulation
+stage3 <-- llm: 🚧 **Mock** Generated content (simulated 3000 tokens)
+orchestrator <-- stage3: 🚧 DocumentGenerationResult\n(Resume content, cover letter content)
 
-alt Quality validation passes
-    == Stage 5: PDF Export ==
+== Stage 4: Quality Validation (F7 Mock Ready) ==
+
+orchestrator -> stage4: 🚧 execute(ValidationInput)\n(ATS compliance simulation)
+stage4 -> llm: 🚧 **MOCK** validate_quality(generated_content, job_analysis)\n(Quality metrics simulation)
+note right: **Mock Prompt**: Check ATS compliance,\nfactuality, keyword coverage\n**Timing**: 1.0s realistic simulation
+stage4 <-- llm: 🚧 **Mock** Validation result (simulated 1500 tokens)
+orchestrator <-- stage4: 🚧 ValidationResult\n(ATS score 0.85-0.95, issues, keyword coverage %)
+
+alt Mock quality validation passes
+    == Stage 5: Export Ready (F8 Structure Ready) ==
     
-    orchestrator -> stage5: execute(PDFExportInput)
-    stage5 -> stage5: generate_pdf(content, template)
-    note right: No LLM tokens used,\nlocal PDF generation
-    orchestrator <-- stage5: PDFExportResult
-    note right: PDF bytes, metadata,\nfile URL
+    orchestrator -> stage5: 🚧 execute(ExportInput)\n(Text export ready)
+    stage5 -> stage5: 🚧 **MOCK** generate_text_export(content)\n(F8 text export framework)
+    note right: **Mock Implementation**: No LLM tokens,\nlocal text formatting\n**Output**: Clean .txt file
+    orchestrator <-- stage5: 🚧 ExportResult\n(Text file path, download URL)
 
-else Quality validation fails
+else Mock quality validation fails
     
-    orchestrator -> stage3: regenerate_with_stricter_prompts()
-    stage3 -> llm: regenerate_resume(feedback, constraints)
-    stage3 <-- llm: Regenerated content
-    orchestrator -> stage4: validate_again()
+    orchestrator -> stage3: 🚧 regenerate_with_stricter_prompts()\n(Mock retry logic)
+    stage3 -> llm: 🚧 **MOCK** regenerate_resume(feedback, constraints)
+    stage3 <-- llm: 🚧 **Mock** Regenerated content
+    orchestrator -> stage4: 🚧 validate_again()
     
     alt Still fails after retry
-        orchestrator -> orchestrator: mark_as_needs_review()
+        orchestrator -> orchestrator: 🚧 mark_as_needs_review()\n(Error handling ready)
     end
 end
 
-service <-- orchestrator: PipelineResult
+service <-- orchestrator: 🚧 PipelineResult\n(Mock generation complete)
 
-== Save Results ==
+== Save Results (F2 Database Working) ==
 
-service -> doc_repo: save_document(generated_document)
-doc_repo -> db: INSERT document, metadata
-service <-- doc_repo: Document entity
+service -> doc_repo: 🚧 save_document(generated_document)\n(F8 structure ready)
+doc_repo -> db: 🚧 INSERT document, metadata\n(DocumentModel defined)
+service <-- doc_repo: 🚧 Document entity
 
-controller <-- service: GenerationResponse
-gateway <-- controller: HTTP 201 Created
-app <-- gateway: Generation result with status
-user <-- app: Show generation complete\nwith download link
+controller <-- service: 🚧 GenerationResponse\n(Mock result with realistic data)
+gateway <-- controller: 🚧 HTTP 201 Created\n(API response ready)
+app <-- gateway: 🚧 Generation result with status
+user <-- app: 🚧 Show generation complete\nwith download link (.txt format)
 
-== Real-time Status Updates (Optional) ==
+== Real-time Status Updates (F7 Structure Ready) ==
 
 loop Every 5 seconds during generation
-    user -> app: Check generation status
-    app -> gateway: GET /api/v1/generations/{id}/status
-    gateway -> controller: Route status request
-    controller -> service: get_generation_status(id)
-    controller <-- service: Current stage and progress
-    gateway <-- controller: Status response
-    app <-- gateway: Progress update
-    user <-- app: Show progress (e.g., "Stage 2/5: Compiling Profile")
+    user -> app: ✅ Check generation status\n(Frontend polling ready)
+    app -> gateway: 🚧 GET /api/v1/generations/{id}/status\n(Endpoint structure ready)
+    gateway -> controller: 🚧 Route status request
+    controller -> service: 🚧 get_generation_status(id)\n(Progress tracking ready)
+    controller <-- service: 🚧 Current stage and progress\n(5-stage progress simulation)
+    gateway <-- controller: 🚧 Status response
+    app <-- gateway: 🚧 Progress update
+    user <-- app: 🚧 Show progress:\n"Stage 2/5: Compiling Profile (40%)"
 end
 
 note over orchestrator
-Total Token Budget: 8000 tokens
-Stage 1: 1500 tokens (Job Analysis)
-Stage 2: 2000 tokens (Profile Compilation) 
-Stage 3: 3000 tokens (Document Generation)
-Stage 4: 1500 tokens (Quality Validation)
-Stage 5: 0 tokens (PDF Export)
+**F7 Mock AI Pipeline Ready**
+Total Mock Token Budget: 8000 tokens
+✅ Stage 1: 1500 tokens (Job Analysis) - MOCK READY
+✅ Stage 2: 2000 tokens (Profile Compilation) - MOCK READY  
+✅ Stage 3: 3000 tokens (Document Generation) - MOCK READY
+✅ Stage 4: 1500 tokens (Quality Validation) - MOCK READY
+✅ Stage 5: 0 tokens (Text Export) - F8 STRUCTURE READY
 
-Performance Target: <30s (p50), <60s (p95)
+**Performance Target**: <5s mock processing
+**Quality**: Realistic mock responses with templates
 end note
 
 note over llm
-Rate Limiting Handling:
-- Exponential backoff on 429 errors
-- Circuit breaker on repeated failures
-- Fallback to alternative models if configured
+**Mock LLM Implementation Ready**
+🚧 **Mock Features**:
+- Realistic response timing (1-3s per stage)
+- Template-based content generation
+- Progressive quality improvement
+- ATS score simulation (0.85-0.95)
+- Professional resume templates
+- Keyword coverage simulation
 
-Error Recovery:
-- Retry failed stages up to 3 times
-- Preserve pipeline state for resumption
-- Graceful degradation on non-critical failures
+🚧 **Error Simulation**:
+- Occasional quality failures for testing
+- Retry logic with improved prompts
+- Graceful degradation scenarios
+- Rate limiting simulation
+end note
+
+note over db
+**F2 Database Foundation Complete**
+✅ **Working Tables**:
+- users (F3 auth working)
+- master_profiles (F4 complete)
+- experiences/education/skills (F4 complete)
+- jobs (F5 static data working)
+- job_descriptions (F6 custom jobs working)
+- generations (F7 structure ready)
+- documents (F8 structure ready)
+
+✅ **Features**:
+- Async SQLAlchemy operations
+- Single schema approach
+- API-consistent table naming
+- Full relationship mapping
 end note
 
 @enduml

@@ -1,84 +1,332 @@
-# JobWise Services and APIs Specification
+# JobWise API Services Specification
 
 ## Overview
 
-This document specifies all internal services, external APIs, and infrastructure components required for JobWise implementation. The specification covers both prototype and production configurations with clear upgrade paths.
+This document specifies the API-focused architecture for JobWise implementation, prioritizing core user-facing API services for resume generation workflow. The specification covers API contracts, service boundaries, and integration patterns with clear implementation priorities.
+
+**Architecture Philosophy**: API-First Design with Service-Oriented Implementation
+**Priority Focus**: Generation API, Profile API, Job Description API
+**Implementation Approach**: Prototype-first with production upgrade paths
 
 ---
 
-## Internal Services Architecture
+## Priority API Services Architecture
 
-### 1. Core Application Services
+### 🎯 High Priority APIs (Current Implementation Focus)
 
-#### 1.1 Profile Management Service
-**Purpose**: Master resume profile lifecycle management
-**Boundaries**: CRUD operations, validation, version control
-**Dependencies**: Profile Repository, Validation Service
+#### API-1: Profile Management API
+**Status**: ✅ **IMPLEMENTED** | **Priority**: HIGH | **Foundation Complete**
+**Purpose**: Master resume profile lifecycle management with comprehensive CRUD operations
+**Boundaries**: Profile data, experiences, education, projects, skills, analytics
+**Dependencies**: Profile Repository, User Authentication, Validation Service
 
-**Interface Contract:**
-```
-IProfileService:
-- create_profile(profile_data: ProfileCreateRequest) -> ProfileResult
-- get_profile(profile_id: str) -> ProfileResult
-- update_profile(profile_id: str, updates: ProfileUpdateRequest) -> ProfileResult
-- delete_profile(profile_id: str) -> void
-- validate_profile(profile_data: ProfileData) -> ValidationResult
-- get_profile_history(profile_id: str) -> List[ProfileVersion]
-```
+**REST API Contract** (`/api/v1/profiles`):
+```yaml
+# Core Profile Operations
+POST   /api/v1/profiles                    # Create new master profile
+GET    /api/v1/profiles/me                 # Get current user's profile 
+GET    /api/v1/profiles/{id}               # Get profile by ID
+PUT    /api/v1/profiles/{id}               # Update profile
+DELETE /api/v1/profiles/{id}               # Delete profile
 
-**Implementation Strategy:**
-- **Prototype**: Single-user local storage with SQLite
-- **Production**: Multi-tenant with PostgreSQL and user isolation
+# Profile Components Management
+POST   /api/v1/profiles/{id}/experiences   # Add work experience
+PUT    /api/v1/profiles/{id}/experiences/{exp_id}  # Update experience
+DELETE /api/v1/profiles/{id}/experiences/{exp_id}  # Remove experience
+POST   /api/v1/profiles/{id}/education     # Add education entry
+PUT    /api/v1/profiles/{id}/education/{edu_id}    # Update education
+DELETE /api/v1/profiles/{id}/education/{edu_id}    # Remove education
+POST   /api/v1/profiles/{id}/projects      # Add project
+PUT    /api/v1/profiles/{id}/projects/{proj_id}    # Update project
+DELETE /api/v1/profiles/{id}/projects/{proj_id}    # Remove project
 
-#### 1.2 Job Discovery Service
-**Purpose**: Job listing search, filtering, and management
-**Boundaries**: Job search, caching, external API integration
-**Dependencies**: Job Repository, External Job APIs, Cache Service
-
-**Interface Contract:**
-```
-IJobService:
-- search_jobs(query: JobSearchQuery) -> JobSearchResult
-- get_job_details(job_id: str) -> JobResult
-- save_job(job_id: str, user_notes: str) -> SavedJobResult
-- get_saved_jobs(user_filters: JobFilters) -> List[SavedJob]
-- update_job_status(job_id: str, status: JobStatus) -> void
-- refresh_job_data() -> RefreshResult
+# Profile Analytics & Insights
+GET    /api/v1/profiles/{id}/analytics     # Profile completeness and analytics
+GET    /api/v1/profiles/{id}/summary       # Profile summary for AI generation
 ```
 
-**Data Sources:**
-- **Prototype**: Static JSON file with 100+ curated jobs
-- **Production**: Indeed API + LinkedIn API with fallback to static data
-
-#### 1.3 AI Generation Service
-**Purpose**: Core resume and cover letter generation orchestration
-**Boundaries**: AI pipeline management, quality control, progress tracking
-**Dependencies**: AI Orchestrator, Profile Service, Job Service, Document Service
-
-**Interface Contract:**
-```
-IGenerationService:
-- generate_resume(request: ResumeGenerationRequest) -> GenerationResult
-- generate_cover_letter(request: CoverLetterGenerationRequest) -> GenerationResult
-- get_generation_status(generation_id: str) -> GenerationStatusResult
-- cancel_generation(generation_id: str) -> void
-- retry_failed_generation(generation_id: str) -> GenerationResult
-- validate_generation_quality(content: DocumentContent) -> QualityValidationResult
+**Service Interface:**
+```typescript
+interface IProfileService {
+  // Core CRUD Operations
+  create_profile(user_id: string, profile_data: ProfileCreateRequest): Promise<ProfileResult>
+  get_profile(profile_id: string): Promise<ProfileResult>
+  update_profile(profile_id: string, updates: ProfileUpdateRequest): Promise<ProfileResult>
+  delete_profile(profile_id: string): Promise<void>
+  
+  // Profile Analytics
+  get_profile_analytics(profile_id: string): Promise<ProfileAnalytics>
+  get_profile_completeness(profile_id: string): Promise<CompletenessScore>
+  validate_profile_for_generation(profile_id: string): Promise<ValidationResult>
+}
 ```
 
-**AI Pipeline Stages:**
-- Stage 1: Job Analysis (1500 tokens)
-- Stage 2: Profile Compilation (2000 tokens)  
-- Stage 3: Content Generation (3000 tokens)
-- Stage 4: Quality Validation (1500 tokens)
-- Stage 5: PDF Export (no tokens)
+**Implementation Status:**
+- ✅ **Complete**: Full CRUD operations with comprehensive value objects
+- ✅ **Complete**: Experience/Education/Project management with async repositories  
+- ✅ **Complete**: Profile analytics endpoints providing completeness scores
+- ✅ **Complete**: User ownership validation and JWT-based authentication
+- ✅ **Ready**: Profile data structured for AI generation pipeline integration
 
-#### 1.4 Document Management Service
-**Purpose**: Generated document storage, retrieval, and version control
-**Boundaries**: Document lifecycle, PDF generation, sharing capabilities
-**Dependencies**: Document Repository, PDF Service, Storage Service
+#### API-2: Job Description API  
+**Status**: 🚧 **HIGH PRIORITY** | **Implementation Target**: Next Sprint
+**Purpose**: Unified job management supporting all input methods with user-owned custom jobs
+**Boundaries**: Job CRUD, keyword extraction, status management, job templates
+**Dependencies**: Unified Job Repository, User Authentication, Keyword Extraction Service
 
-**Interface Contract:**
+**REST API Contract** (`/api/v1/jobs`):
+```yaml
+# Unified Job Management (All Sources)
+GET    /api/v1/jobs                        # Search all jobs (static + user-created + API)
+GET    /api/v1/jobs/{id}                   # Get job details (any source)
+POST   /api/v1/jobs                        # Create user custom job description
+PUT    /api/v1/jobs/{id}                   # Update user job (ownership required)
+DELETE /api/v1/jobs/{id}                   # Delete user job (ownership required)
+
+# User Job Management
+GET    /api/v1/jobs/my-jobs                # List user's custom job descriptions
+PUT    /api/v1/jobs/{id}/status            # Change job status (draft/active/archived)
+POST   /api/v1/jobs/{id}/analyze           # Extract keywords and analyze job requirements
+
+# Job Templates & Conversion Tools
+GET    /api/v1/jobs/template               # Get JSON template for copy-paste conversion
+POST   /api/v1/jobs/convert-text           # Convert raw job text to structured JSON
+POST   /api/v1/jobs/validate               # Validate job description format
+```
+
+**Service Interface:**
+```typescript
+interface IJobService {
+  // Unified Job Operations (All Sources)
+  search_jobs(query: JobSearchQuery, user_id?: string): Promise<JobSearchResult>
+  get_job_details(job_id: string): Promise<JobResult>
+  
+  // User Job Management
+  create_user_job(user_id: string, job_data: JobCreateRequest): Promise<JobResult>
+  update_user_job(user_id: string, job_id: string, updates: JobUpdateRequest): Promise<JobResult>
+  delete_user_job(user_id: string, job_id: string): Promise<void>
+  get_user_jobs(user_id: string, filters: JobFilters): Promise<JobResult[]>
+  
+  // Job Analysis & Conversion
+  extract_job_keywords(job_id: string): Promise<KeywordAnalysis>
+  convert_text_to_job(raw_text: string): Promise<ConversionResult>
+  get_job_template(): Promise<JobTemplate>
+}
+```
+
+**Unified Job Model Architecture:**
+```typescript
+interface UnifiedJobModel {
+  id: string                              // UUID for user jobs, external_id for API jobs
+  user_id?: string                        // NULL for external jobs, set for user-created
+  source: 'api' | 'static' | 'user_created' | 'scraped' | 'imported'
+  external_job_id?: string               // For API-sourced jobs
+  
+  // Core Job Data (All Sources)
+  title: string
+  company: string
+  location?: string
+  description: string
+  requirements: string[]
+  responsibilities?: string[]
+  benefits?: string[]
+  
+  // Job Metadata
+  status: 'active' | 'draft' | 'archived' | 'expired'
+  keywords_extracted?: string[]
+  ats_keywords?: string[]
+  priority_keywords?: string[]
+  
+  // Timestamps
+  posted_date?: Date
+  expires_date?: Date
+  created_at: Date
+  updated_at: Date
+}
+```
+
+**Key Features:**
+- **Single Entity**: Unified JobModel eliminates JobModel/JobDescriptionModel duplication
+- **Multi-Source Support**: API jobs, static data, user-created, scraped, imported
+- **User Ownership**: Optional user_id enables user-specific job management
+- **Source Tracking**: Source field enables different processing logic per input method
+- **Template System**: JSON templates for easy copy-paste job description conversion
+
+#### API-3: Generation API
+**Status**: 🚧 **HIGH PRIORITY** | **Implementation Target**: Next Sprint
+**Purpose**: AI-powered resume generation with 5-stage mock pipeline and quality validation
+**Boundaries**: Generation orchestration, progress tracking, template management, quality scoring
+**Dependencies**: Profile API, Job Description API, Mock AI Service, Document Storage
+
+**REST API Contract** (`/api/v1/generations`):
+```yaml
+# Generation Operations
+POST   /api/v1/generations/resume          # Start resume generation
+GET    /api/v1/generations/{id}            # Get generation status and progress
+GET    /api/v1/generations/{id}/result     # Get generated resume content
+POST   /api/v1/generations/{id}/regenerate # Regenerate with feedback/changes
+DELETE /api/v1/generations/{id}            # Cancel/delete generation
+
+# Generation Management
+GET    /api/v1/generations                 # List user's generations with filters
+POST   /api/v1/generations/{id}/feedback   # Provide feedback for improvement
+GET    /api/v1/generations/templates       # Get available resume templates
+
+# Generation Analytics
+GET    /api/v1/generations/{id}/analytics  # Generation quality metrics and ATS score
+POST   /api/v1/generations/{id}/validate   # Re-run quality validation
+```
+
+**Service Interface:**
+```typescript
+interface IGenerationService {
+  // Core Generation Operations
+  generate_resume(request: ResumeGenerationRequest): Promise<GenerationResult>
+  get_generation_status(generation_id: string): Promise<GenerationStatus>
+  get_generation_result(generation_id: string): Promise<GeneratedContent>
+  cancel_generation(generation_id: string): Promise<void>
+  
+  // Generation Management
+  list_user_generations(user_id: string, filters: GenerationFilters): Promise<GenerationSummary[]>
+  regenerate_with_feedback(generation_id: string, feedback: string): Promise<GenerationResult>
+  
+  // Quality & Analytics
+  validate_generation_quality(generation_id: string): Promise<QualityValidationResult>
+  get_generation_analytics(generation_id: string): Promise<GenerationAnalytics>
+}
+```
+
+**Mock AI Pipeline Architecture:**
+```yaml
+# 5-Stage Generation Pipeline (Total: ~5 seconds)
+stage_1_job_analysis:
+  duration: 1.0s
+  purpose: Parse job requirements, extract key skills and keywords
+  mock_processing: Keyword extraction, requirement prioritization
+  output: JobAnalysisResult with keyword weights and skill priorities
+
+stage_2_profile_compilation:  
+  duration: 1.0s
+  purpose: Score profile sections against job requirements
+  mock_processing: Profile-job matching, skill gap analysis
+  output: ProfileCompilationResult with match scores and recommendations
+
+stage_3_content_generation:
+  duration: 2.0s  
+  purpose: Generate tailored resume using professional templates
+  mock_processing: Template selection, content adaptation, formatting
+  output: GeneratedContent with tailored resume text
+
+stage_4_quality_validation:
+  duration: 1.0s
+  purpose: ATS compliance check, keyword density validation
+  mock_processing: ATS scoring simulation, readability analysis
+  output: QualityValidationResult with ATS score (0.7-0.95 range)
+
+stage_5_export_preparation:
+  duration: 0.5s
+  purpose: Prepare content for document export and storage
+  mock_processing: Final formatting, metadata preparation
+  output: ExportReadyDocument with multiple format options
+```
+
+**Generation Request Contract:**
+```typescript
+interface ResumeGenerationRequest {
+  profile_id: string                      // From Profile API
+  job_id: string                         // From Job Description API  
+  template_preference?: string           // professional, technical, creative
+  generation_options?: {
+    focus_areas?: string[]               // Areas to emphasize
+    max_length?: number                  // Word count target
+    include_cover_letter?: boolean       // Generate cover letter too
+  }
+}
+```
+
+**Quality Metrics:**
+- **ATS Compatibility Score**: 0.7-0.95 (mock scoring based on keyword density)
+- **Keyword Match Rate**: % of job keywords covered in generated resume
+- **Section Completeness**: Professional summary, skills, experience coverage
+- **Format Compliance**: Standard resume formatting and structure validation
+
+### 📋 Lower Priority APIs (Future Implementation)
+
+#### API-4: Document Management API
+**Status**: 🚧 **STRUCTURE READY** | **Priority**: MEDIUM | **Implementation Target**: Phase 2
+**Purpose**: Generated document storage, versioning, export, and sharing capabilities
+**Boundaries**: Document lifecycle, export formats, file management, sharing
+**Dependencies**: Generation API, Storage Service, Export Service
+
+**REST API Contract** (`/api/v1/documents`):
+```yaml
+# Document Management
+GET    /api/v1/documents                   # List user documents with filters
+GET    /api/v1/documents/{id}              # Get document details and metadata
+DELETE /api/v1/documents/{id}              # Delete document and associated files
+PUT    /api/v1/documents/{id}              # Update document metadata
+
+# Export Operations  
+POST   /api/v1/documents/{id}/export       # Export document to specified format
+GET    /api/v1/documents/{id}/download     # Download exported file
+GET    /api/v1/documents/export-formats    # Get available export formats
+POST   /api/v1/documents/{id}/share        # Create sharing link with permissions
+
+# Document Analytics
+GET    /api/v1/documents/{id}/analytics    # Document performance metrics
+GET    /api/v1/documents/usage-stats       # User document usage statistics
+```
+
+**Service Interface:**
+```typescript
+interface IDocumentService {
+  // Document Lifecycle Management
+  create_document(generation_id: string, content: GeneratedContent): Promise<DocumentResult>
+  get_document(document_id: string): Promise<DocumentResult>
+  list_user_documents(user_id: string, filters: DocumentFilters): Promise<DocumentSummary[]>
+  delete_document(document_id: string): Promise<void>
+  
+  // Export Operations
+  export_document(document_id: string, format: ExportFormat): Promise<ExportResult>
+  get_download_url(document_id: string, format: ExportFormat): Promise<string>
+  
+  // Sharing & Collaboration
+  create_share_link(document_id: string, permissions: SharePermissions): Promise<ShareLink>
+  revoke_share_link(share_id: string): Promise<void>
+}
+```
+
+**Export Formats:**
+- **Text (.txt)**: Clean, formatted plain text resume (Phase 1 implementation)
+- **PDF (.pdf)**: Professional PDF with formatting (Phase 2 implementation)  
+- **Word (.docx)**: Microsoft Word format (Future enhancement)
+- **HTML**: Web-ready format with styling (Future enhancement)
+
+#### API-5: Job Search API (Enhancement)
+**Status**: ✅ **BASIC IMPLEMENTED** | **Priority**: LOW | **Implementation Target**: Phase 3
+**Purpose**: Enhanced job discovery with external API integration and recommendations
+**Boundaries**: Job search, external API integration, recommendations, job alerts
+**Dependencies**: External Job APIs, Recommendation Engine, Notification Service
+
+**Current Implementation**: Basic static job search (6/6 tests passing)
+**Future Enhancements**: External API integration, ML recommendations, advanced filtering
+
+**REST API Contract** (`/api/v1/job-search`):
+```yaml
+# Enhanced Job Search (Future)
+GET    /api/v1/job-search                  # Advanced job search with ML recommendations
+POST   /api/v1/job-search/save-criteria    # Save job search criteria for alerts
+GET    /api/v1/job-search/recommendations  # Personalized job recommendations
+POST   /api/v1/job-search/alerts           # Set up job alert notifications
+GET    /api/v1/job-search/trending         # Trending jobs and skills
+
+# Job Application Tracking (Future)
+POST   /api/v1/job-search/applications     # Track job applications
+GET    /api/v1/job-search/applications     # List applications with status
+PUT    /api/v1/job-search/applications/{id} # Update application status
+```
+
+**Enhanced Service Interface:**
 ```
 IDocumentService:
 - save_document(document: GeneratedDocument) -> DocumentResult
