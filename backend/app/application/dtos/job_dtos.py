@@ -260,6 +260,11 @@ class AnalyzeJobResponseDTO(BaseModel):
     match_difficulty: Optional[float] = None
 
 
+class StatusUpdateDTO(BaseModel):
+    """DTO for updating job status"""
+    status: str = Field(..., pattern="^(draft|active|archived)$", description="New job status")
+
+
 class UserJobListDTO(BaseModel):
     items: List[JobDTO]
     total: int

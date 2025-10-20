@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 import uuid
 
-from app.application.dtos.job_dtos import JobDTO, JobFiltersDTO
+from app.application.dtos.job_dtos import JobDTO, JobFiltersDTO, SalaryRangeDTO
 
 
 class JobRepositoryInterface(ABC):
@@ -103,7 +103,10 @@ class DatabaseJobRepository(JobRepositoryInterface):
         await self.session.execute(stmt)
         await self.session.commit()
 
-        return await self.get_job_by_id(job_id)
+        created_job = await self.get_job_by_id(job_id)
+        if created_job is None:
+            raise ValueError("Failed to create job")
+        return created_job
 
     async def get_all_jobs(self) -> List[JobDTO]:
         q = await self.session.execute(select(JobPostingModel))
@@ -250,7 +253,7 @@ class DatabaseJobRepository(JobRepositoryInterface):
             keywords=keywords,
             technical_skills=tech,
             soft_skills=soft,
-            experience_level=model.experience_level,
+            experience_level=str(model.experience_level.value) if model.experience_level else None,
             match_difficulty=difficulty
         )
 
@@ -279,23 +282,27 @@ class DatabaseJobRepository(JobRepositoryInterface):
             return None
         salary = None
         if model.salary_min or model.salary_max:
-            salary = {"min": model.salary_min or 0, "max": model.salary_max or 0, "currency": model.salary_currency}
+            salary = SalaryRangeDTO(
+                min=model.salary_min or 0,
+                max=model.salary_max or 0,
+                currency=model.salary_currency or "USD"
+            )
 
         return JobDTO(
             id=model.id,
             title=model.title,
             company=model.company,
             location=model.location,
-            job_type=str(model.job_type),
-            experience_level=str(model.experience_level),
+            job_type=str(model.job_type.value) if model.job_type else "full-time",
+            experience_level=str(model.experience_level.value) if model.experience_level else "entry",
             salary_range=salary,
             description=model.description,
             requirements=model.requirements or [],
             benefits=[],
             posted_date=model.posted_date,
             application_deadline=model.expires_date,
-            company_size="",
-            industry="",
+            company_size="50-200",  # Default valid value
+            industry="Technology",  # Default valid value
             remote_work_policy=("remote" if model.remote else "onsite"),
             tags=[]
         )
@@ -351,9 +358,6 @@ class StaticJobRepository(JobRepositoryInterface):
         }
 
     # Backwards-compat alias
-    async def get_filter_options(self):
-        return await self.get_job_filters()
-
     async def get_filter_options(self):
         return await self.get_job_filters()
 

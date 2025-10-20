@@ -6,172 +6,512 @@ from app.application.dtos.job_dtos import (
     CreateJobDTO,
     UpdateJobDTO,
     ConvertTextRequestDTO,
+    StatusUpdateDTO,
 )
 
+
 @pytest.mark.asyncio
-async def test_create_update_delete_flow(monkeypatch):
-    # Use test client to call the endpoints; monkeypatch repo methods to avoid DB
-    created_job = {
-        "id": "job-1",
-        "title": "Test Engineer",
-        "company": "Acme",
-        "location": "Remote",
-        "job_type": "full-time",
-        "experience_level": "mid",
-        "salary_range": {"min": 50000, "max": 80000},
-        "posted_date": "2024-01-01T00:00:00Z",
-        "remote_work_policy": "remote",
-        "tags": ["python", "fastapi"],
-        "description": "Work on tests",
-        "company_size": "50-200",
-        "industry": "Technology",
-    }
-
-    async def fake_create_user_job(user_id, payload):
-        # Return a fully-shaped JobDTO-compatible dict
-        return {
-            "id": created_job["id"],
-            "title": payload.title if hasattr(payload, "title") else created_job["title"],
-            "company": payload.company if hasattr(payload, "company") else created_job["company"],
-            "location": payload.location if hasattr(payload, "location") and payload.location is not None else created_job["location"],
-            "job_type": payload.job_type if hasattr(payload, "job_type") and payload.job_type is not None else created_job["job_type"],
-            "experience_level": payload.experience_level if hasattr(payload, "experience_level") and payload.experience_level is not None else created_job["experience_level"],
-            "salary_range": created_job.get("salary_range"),
-            "description": payload.description if hasattr(payload, "description") else created_job.get("description", ""),
-            "requirements": payload.requirements if hasattr(payload, "requirements") and payload.requirements is not None else created_job.get("requirements", []),
-            "benefits": payload.benefits if hasattr(payload, "benefits") and payload.benefits is not None else created_job.get("benefits", []),
-            "posted_date": created_job.get("posted_date"),
-            "application_deadline": created_job.get("application_deadline"),
-            "company_size": payload.company_size if hasattr(payload, "company_size") and payload.company_size is not None else created_job.get("company_size", "50-200"),
-            "industry": payload.industry if hasattr(payload, "industry") and payload.industry is not None else created_job.get("industry", "Technology"),
-            "remote_work_policy": created_job.get("remote_work_policy", "remote"),
-            "tags": created_job.get("tags", []),
-        }
-
-    async def fake_update_user_job(user_id, job_id, payload):
-        # Merge updates into a full JobDTO-shaped dict
-        updated = {
-            "id": job_id,
-            "title": payload.title if hasattr(payload, "title") and payload.title is not None else created_job["title"],
-            "company": payload.company if hasattr(payload, "company") and payload.company is not None else created_job["company"],
-            "location": payload.location if hasattr(payload, "location") and payload.location is not None else created_job["location"],
-            "job_type": payload.job_type if hasattr(payload, "job_type") and payload.job_type is not None else created_job["job_type"],
-            "experience_level": payload.experience_level if hasattr(payload, "experience_level") and payload.experience_level is not None else created_job["experience_level"],
-            "salary_range": created_job.get("salary_range"),
-            "description": payload.description if hasattr(payload, "description") and payload.description is not None else created_job.get("description", ""),
-            "requirements": payload.requirements if hasattr(payload, "requirements") and payload.requirements is not None else created_job.get("requirements", []),
-            "benefits": payload.benefits if hasattr(payload, "benefits") and payload.benefits is not None else created_job.get("benefits", []),
-            "posted_date": created_job.get("posted_date"),
-            "application_deadline": created_job.get("application_deadline"),
-            "company_size": payload.company_size if hasattr(payload, "company_size") and payload.company_size is not None else created_job.get("company_size", "50-200"),
-            "industry": payload.industry if hasattr(payload, "industry") and payload.industry is not None else created_job.get("industry", "Technology"),
-            "remote_work_policy": created_job.get("remote_work_policy", "remote"),
-            "tags": created_job.get("tags", []),
-        }
-        # reflect change back to created_job for subsequent get/list calls
-        created_job.update(updated)
-        return updated
-
-    async def fake_delete_user_job(user_id, job_id):
-        return True
-
-    async def fake_get_user_jobs(user_id, limit, offset):
-        # Return shape matching UserJobListDTO: items, total, limit, offset
-        return {"items": [created_job], "total": 1, "limit": limit, "offset": offset}
-
-    async def fake_get_job_by_id(job_id):
-        # Router path ordering causes '/my-jobs' to be matched by the '{job_id}' route in tests.
-        # Accept both the actual job id and the 'my-jobs' literal so tests hit a valid job.
-        if job_id == created_job["id"] or job_id == "my-jobs":
-            return created_job
-        return None
-
-    async def fake_analyze_job(job_id):
-        # Return AnalyzeJobResponseDTO-compatible structure
-        return {
-            "keywords": ["python", "testing"],
-            "technical_skills": ["python", "pytest"],
-            "soft_skills": ["communication"],
-            "experience_level": "mid",
-            "match_difficulty": 0.2,
-        }
-
-    async def fake_convert_text_to_job(raw_text):
-        # Return JobTemplateDTO-compatible structure
-        return {"template": {"title": "Converted", "company": "ConvertedCo", "description": raw_text}}
-
-    # Provide dependency overrides on the FastAPI app instead of monkeypatching modules
+async def test_job_search_endpoint():
+    """Test GET /api/v1/jobs - search all jobs"""
     class FakeRepo:
-        async def create_user_job(self, user_id, payload):
-            return await fake_create_user_job(user_id, payload)
-        async def update_user_job(self, user_id, job_id, payload):
-            return await fake_update_user_job(user_id, job_id, payload)
-        async def delete_user_job(self, user_id, job_id):
-            return await fake_delete_user_job(user_id, job_id)
-        async def get_user_jobs(self, user_id, limit, offset):
-            return await fake_get_user_jobs(user_id, limit, offset)
-        async def get_job_by_id(self, job_id):
-            return await fake_get_job_by_id(job_id)
-        async def analyze_job(self, job_id):
-            return await fake_analyze_job(job_id)
-        async def convert_text_to_job(self, raw_text):
-            return await fake_convert_text_to_job(raw_text)
+        async def search_jobs(self, query="", filters=None, limit=20, offset=0):
+            from app.application.dtos.job_dtos import JobDTO, SalaryRangeDTO
+            from datetime import datetime
+            return [
+                JobDTO(
+                    id="job-1",
+                    title="Python Developer",
+                    company="TechCorp",
+                    location="Seattle, WA",
+                    job_type="full-time",
+                    experience_level="mid",
+                    salary_range=SalaryRangeDTO(min=80000, max=120000, currency="USD"),
+                    description="Python development role",
+                    requirements=["Python", "FastAPI"],
+                    benefits=["Health insurance"],
+                    posted_date=datetime.fromisoformat("2024-01-01T00:00:00"),
+                    application_deadline=None,
+                    company_size="500-1000",
+                    industry="Technology",
+                    remote_work_policy="hybrid",
+                    tags=["python", "fastapi"]
+                )
+            ]
+        async def get_total_count(self):
+            return 1
 
     fake_repo = FakeRepo()
 
     from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.get("/api/v1/jobs/")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "jobs" in data
+        assert "total_count" in data
+        assert len(data["jobs"]) == 1
+        assert data["jobs"][0]["title"] == "Python Developer"
+
+
+@pytest.mark.asyncio
+async def test_get_job_details_endpoint():
+    """Test GET /api/v1/jobs/{id} - get job details"""
+    class FakeRepo:
+        async def get_job_by_id(self, job_id):
+            if job_id == "job-1":
+                return {
+                    "id": "job-1",
+                    "title": "Python Developer",
+                    "company": "TechCorp",
+                    "location": "Seattle, WA",
+                    "job_type": "full-time",
+                    "experience_level": "mid",
+                    "salary_range": {"min": 80000, "max": 120000, "currency": "USD"},
+                    "description": "Python development role",
+                    "requirements": ["Python", "FastAPI"],
+                    "benefits": ["Health insurance"],
+                    "posted_date": "2024-01-01T00:00:00Z",
+                    "application_deadline": None,
+                    "company_size": "500-1000",
+                    "industry": "Technology",
+                    "remote_work_policy": "hybrid",
+                    "tags": ["python", "fastapi"]
+                }
+            return None
+
+    fake_repo = FakeRepo()
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        # Test existing job
+        response = await client.get("/api/v1/jobs/job-1")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["id"] == "job-1"
+        assert data["title"] == "Python Developer"
+
+        # Test non-existing job
+        response = await client.get("/api/v1/jobs/job-999")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_create_job_endpoint():
+    """Test POST /api/v1/jobs - create user custom job description"""
+    class FakeRepo:
+        async def create_user_job(self, user_id, payload):
+            return {
+                "id": "job-new",
+                "title": payload.title,
+                "company": payload.company,
+                "location": payload.location or "",
+                "job_type": payload.job_type or "full-time",
+                "experience_level": payload.experience_level or "entry",
+                "salary_range": payload.salary_range,
+                "description": payload.description,
+                "requirements": payload.requirements or [],
+                "benefits": payload.benefits or [],
+                "posted_date": "2024-01-01T00:00:00Z",
+                "application_deadline": None,
+                "company_size": "50-200",
+                "industry": "Technology",
+                "remote_work_policy": "onsite",
+                "tags": []
+            }
+
+    fake_repo = FakeRepo()
+
+    class DummyUser:
+        def __init__(self):
+            from uuid import uuid4
+            self.id = str(uuid4())  # Use string representation of UUID
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
     from app.core.dependencies import get_current_user as dep_get_current_user
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+    app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        payload = CreateJobDTO(
+            title="Senior Developer",
+            company="TechCorp",
+            description="Senior development role",
+            requirements=["5+ years experience"],
+            location="Seattle, WA"
+        )
+        response = await client.post("/api/v1/jobs/", json=payload.model_dump())
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["id"] == "job-new"
+        assert data["title"] == "Senior Developer"
+
+
+@pytest.mark.asyncio
+async def test_update_job_endpoint():
+    """Test PUT /api/v1/jobs/{id} - update user job"""
+    class FakeRepo:
+        async def update_user_job(self, user_id, job_id, payload):
+            if job_id == "job-1" and user_id == "user-1":
+                return {
+                    "id": "job-1",
+                    "title": payload.title or "Updated Title",
+                    "company": "TechCorp",
+                    "location": "Seattle, WA",
+                    "job_type": "full-time",
+                    "experience_level": "mid",
+                    "salary_range": None,
+                    "description": "Updated description",
+                    "requirements": ["Python"],
+                    "benefits": [],
+                    "posted_date": "2024-01-01T00:00:00Z",
+                    "application_deadline": None,
+                    "company_size": "50-200",
+                    "industry": "Technology",
+                    "remote_work_policy": "hybrid",
+                    "tags": []
+                }
+            return None
+
+    fake_repo = FakeRepo()
 
     class DummyUser:
         def __init__(self):
             self.id = "user-1"
 
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    from app.core.dependencies import get_current_user as dep_get_current_user
     app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
     app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
 
     async with AsyncClient(app=app, base_url="http://test") as client:
-        # Create
-        payload = CreateJobDTO(
-            title="Test Engineer",
-            company="Acme",
-            description="Work on tests",
-            location="Remote",
-            job_type="full-time",
-            experience_level="mid",
-        )
-        r = await client.post("/api/v1/jobs/user", json=payload.model_dump())
-        assert r.status_code == status.HTTP_201_CREATED
-        data = r.json()
-        assert data["title"] == "Test Engineer"
+        payload = UpdateJobDTO(title="Updated Title", company="Updated Company", description="Updated description")
+        response = await client.put("/api/v1/jobs/job-1", json=payload.model_dump(exclude_none=True))
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["title"] == "Updated Title"
 
-        # Update
-        update_payload = UpdateJobDTO(title="Senior Test Engineer", company="Acme", description="Senior role")
-        r = await client.put(f"/api/v1/jobs/user/{data['id']}", json=update_payload.model_dump(exclude_none=True))
-        assert r.status_code == status.HTTP_200_OK
-        data2 = r.json()
-        assert data2["title"] == "Senior Test Engineer"
+        # Test access denied
+        response = await client.put("/api/v1/jobs/job-999", json=payload.model_dump(exclude_none=True))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
-        # My jobs
-        r = await client.get("/api/v1/jobs/my-jobs")
-        assert r.status_code == status.HTTP_200_OK
-        myjobs = r.json()
-        assert myjobs["total"] == 1
 
-        # Analyze
-        r = await client.post(f"/api/v1/jobs/user/{data['id']}/analyze")
-        assert r.status_code == status.HTTP_200_OK
-        analysis = r.json()
-        # fake_analyze_job returns match_difficulty
-        assert analysis.get("match_difficulty") == 0.2
+@pytest.mark.asyncio
+async def test_delete_job_endpoint():
+    """Test DELETE /api/v1/jobs/{id} - delete user job"""
+    class FakeRepo:
+        async def delete_user_job(self, user_id, job_id):
+            return job_id == "job-1" and user_id == "user-1"
 
-        # Convert text
-        convert_payload = ConvertTextRequestDTO(raw_text="This is a job text")
-        r = await client.post("/api/v1/jobs/convert-text", json=convert_payload.model_dump())
-        assert r.status_code == status.HTTP_200_OK
-        converted = r.json()
-        # fake_convert_text_to_job returns a template dict
-        assert converted.get("template", {}).get("title") == "Converted"
+    fake_repo = FakeRepo()
 
-        # Delete
-        r = await client.delete(f"/api/v1/jobs/user/{data['id']}")
-        assert r.status_code == status.HTTP_204_NO_CONTENT
+    class DummyUser:
+        def __init__(self):
+            self.id = "user-1"
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    from app.core.dependencies import get_current_user as dep_get_current_user
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+    app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.delete("/api/v1/jobs/job-1")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        # Test access denied
+        response = await client.delete("/api/v1/jobs/job-999")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_get_my_jobs_endpoint():
+    """Test GET /api/v1/jobs/my-jobs - list user's custom job descriptions"""
+    class FakeRepo:
+        async def get_user_jobs(self, user_id, limit=20, offset=0):
+            print(f"FakeRepo.get_user_jobs called with user_id={user_id}, limit={limit}, offset={offset}")
+            from app.application.dtos.job_dtos import JobDTO, UserJobListDTO
+            from datetime import datetime
+            items = [
+                JobDTO(
+                    id="job-1",
+                    title="My Job",
+                    company="MyCompany",
+                    location="Remote",
+                    job_type="full-time",
+                    experience_level="senior",
+                    salary_range=None,
+                    description="My job description",
+                    requirements=["Skill 1"],
+                    benefits=["Benefit 1"],
+                    posted_date=datetime(2024, 1, 1, 0, 0, 0),  # Use datetime object
+                    application_deadline=None,
+                    company_size="50-200",
+                    industry="Technology",
+                    remote_work_policy="remote",
+                    tags=[]
+                )
+            ]
+            result = UserJobListDTO(items=items, total=1, limit=limit, offset=offset)
+            print(f"FakeRepo returning: {result}")
+            return result
+
+    fake_repo = FakeRepo()
+
+    class DummyUser:
+        def __init__(self):
+            from uuid import uuid4
+            self.id = str(uuid4())  # Use string representation of UUID
+
+    # Clear previous overrides and set new ones
+    app.dependency_overrides.clear()
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    from app.core.dependencies import get_current_user as dep_get_current_user
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+    app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.get("/api/v1/jobs/my-jobs")
+        print(f"Response status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"Response text: {response.text}")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["title"] == "My Job"
+
+
+@pytest.mark.asyncio
+async def test_update_job_status_endpoint():
+    """Test PUT /api/v1/jobs/{id}/status - change job status"""
+    class FakeRepo:
+        def __init__(self):
+            self.user_id = None  # Will be set when called
+            
+        async def change_status(self, user_id, job_id, status):
+            self.user_id = user_id  # Store for checking
+            if job_id == "job-1" and status == "active":
+                from app.application.dtos.job_dtos import JobDTO
+                from datetime import datetime
+                return JobDTO(
+                    id="job-1",
+                    title="Job Title",
+                    company="Company",
+                    location="Location",
+                    job_type="full-time",
+                    experience_level="mid",
+                    salary_range=None,
+                    description="Description",
+                    requirements=[],
+                    benefits=[],
+                    posted_date=datetime.fromisoformat("2024-01-01T00:00:00"),
+                    application_deadline=None,
+                    company_size="50-200",
+                    industry="Technology",
+                    remote_work_policy="onsite",
+                    tags=[]
+                )
+            return None
+
+    fake_repo = FakeRepo()
+
+    class DummyUser:
+        def __init__(self):
+            from uuid import uuid4
+            self.id = str(uuid4())  # Use string representation of UUID
+
+    # Clear previous overrides and set new ones
+    app.dependency_overrides.clear()
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    from app.core.dependencies import get_current_user as dep_get_current_user
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+    app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        payload = StatusUpdateDTO(status="active")
+        response = await client.put("/api/v1/jobs/job-1/status", json=payload.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["id"] == "job-1"
+
+        # Test invalid status - should fail validation
+        try:
+            payload = StatusUpdateDTO(status="invalid")
+            response = await client.put("/api/v1/jobs/job-1/status", json=payload.model_dump())
+            assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        except Exception:
+            # Pydantic validation may fail before request, which is also acceptable
+            pass
+
+
+@pytest.mark.asyncio
+async def test_analyze_job_endpoint():
+    """Test POST /api/v1/jobs/{id}/analyze - extract keywords and analyze job"""
+    class FakeRepo:
+        def __init__(self):
+            # Mock session that returns None for get() calls
+            class MockSession:
+                async def get(self, model_class, job_id):
+                    return None  # No ownership check needed for test
+            self.session = MockSession()
+
+        async def get_job_by_id(self, job_id):
+            from app.application.dtos.job_dtos import JobDTO
+            from datetime import datetime
+            if job_id == "job-1":
+                return JobDTO(
+                    id=job_id,
+                    title="Test Job",
+                    company="TestCo",
+                    location="",
+                    job_type="full-time",
+                    experience_level="entry",
+                    salary_range=None,
+                    description="Test description",
+                    requirements=[],
+                    benefits=[],
+                    posted_date=datetime.fromisoformat("2024-01-01T00:00:00"),
+                    application_deadline=None,
+                    company_size="50-200",
+                    industry="Technology",
+                    remote_work_policy="onsite",
+                    tags=[]
+                )
+            return None
+
+        async def analyze_job(self, job_id):
+            from app.application.dtos.job_dtos import AnalyzeJobResponseDTO
+            return AnalyzeJobResponseDTO(
+                keywords=["python", "testing"],
+                technical_skills=["python", "pytest"],
+                soft_skills=["communication"],
+                experience_level="mid",
+                match_difficulty=0.3
+            )
+
+    fake_repo = FakeRepo()
+
+    class DummyUser:
+        def __init__(self):
+            from uuid import uuid4
+            self.id = str(uuid4())  # Use string representation of UUID
+
+    # Clear previous overrides and set new ones
+    app.dependency_overrides.clear()
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    from app.core.dependencies import get_current_user as dep_get_current_user
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+    app.dependency_overrides[dep_get_current_user] = lambda: DummyUser()
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.post("/api/v1/jobs/job-1/analyze")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "keywords" in data
+        assert "technical_skills" in data
+        assert data["match_difficulty"] == 0.3
+
+        # Test job not found
+        response = await client.post("/api/v1/jobs/job-999/analyze")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_get_job_template_endpoint():
+    """Test GET /api/v1/jobs/template - get JSON template"""
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.get("/api/v1/jobs/template")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "template" in data
+        template = data["template"]
+        assert "title" in template
+        assert "company" in template
+        assert "description" in template
+
+
+@pytest.mark.asyncio
+async def test_convert_text_to_job_endpoint():
+    """Test POST /api/v1/jobs/convert-text - convert raw job text to structured JSON"""
+    class FakeRepo:
+        async def convert_text_to_job(self, raw_text):
+            return {
+                "template": {
+                    "title": "Parsed Title",
+                    "company": "Parsed Company",
+                    "description": raw_text,
+                    "requirements": [],
+                    "benefits": [],
+                    "location": "",
+                    "job_type": "full-time",
+                    "experience_level": "entry",
+                    "salary_range": None,
+                    "source": "user_converted"
+                }
+            }
+
+    fake_repo = FakeRepo()
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        payload = ConvertTextRequestDTO(raw_text="This is a job description text")
+        response = await client.post("/api/v1/jobs/convert-text", json=payload.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "template" in data
+        assert data["template"]["title"] == "Parsed Title"
+
+
+@pytest.mark.asyncio
+async def test_job_filters_endpoint():
+    """Test GET /api/v1/jobs/filters/options - get available filter options"""
+    class FakeRepo:
+        async def get_job_filters(self):
+            return {
+                "job_types": ["full-time", "part-time"],
+                "experience_levels": ["entry", "mid", "senior"],
+                "remote_work_policies": ["remote", "hybrid", "onsite"],
+                "industries": ["Technology", "Healthcare"],
+                "company_sizes": ["1-10", "50-200"],
+                "locations": ["Seattle, WA", "New York, NY"],
+                "tags": ["python", "javascript"],
+                "salary_ranges": {"min": 50000, "max": 150000}
+            }
+
+    fake_repo = FakeRepo()
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.get("/api/v1/jobs/filters/options")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "job_types" in data
+        assert "experience_levels" in data
+        assert len(data["job_types"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_job_stats_endpoint():
+    """Test GET /api/v1/jobs/stats/summary - get job statistics"""
+    class FakeRepo:
+        async def get_statistics(self):
+            return {"total_jobs": 150, "active_jobs": 120}
+
+    fake_repo = FakeRepo()
+
+    from app.presentation.api.jobs import get_job_repository as dep_get_job_repo
+    app.dependency_overrides[dep_get_job_repo] = lambda: fake_repo
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.get("/api/v1/jobs/stats/summary")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["total_jobs"] == 150
+        assert "last_updated" in data

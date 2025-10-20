@@ -16,3 +16,21 @@ Added user-job endpoints in `app/presentation/api/jobs.py` (create, update, dele
   - **Reason:** Provide unit/integration test coverage for new endpoints.
 
 ---
+## Interaction 2
+
+### User Request
+Test job API, investigate KeyError 'total' on `/api/v1/jobs/my-jobs`, and debug route capture issues.
+
+### Response Summary
+Reordered and cleaned `app/presentation/api/jobs.py` to ensure the static `/my-jobs` route is declared before the dynamic `/{job_id}` route. Added a small inspection script to reproduce the test client call and validated the `tests/test_jobs_api.py::test_create_update_delete_flow` passes in isolation.
+
+### Actions Taken
+- **File:** `app/presentation/api/jobs.py`
+  - **Change:** Cleaned router file; ensured `/my-jobs` route appears before `/{job_id}`, removed duplicate handlers and fixed ordering.
+  - **Reason:** Prevent `/{job_id}` dynamic route from capturing static `/my-jobs` path which caused the test to see the wrong handler response.
+- **File:** `scripts/inspect_my_jobs.py`
+  - **Change:** New helper script to call `/api/v1/jobs/my-jobs` with test overrides and print response.
+  - **Reason:** Reproduce and verify the endpoint response during debugging.
+
+
+---

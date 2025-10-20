@@ -4,7 +4,7 @@ from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl, validator, ConfigDict
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 
 
 # Value Object DTOs
@@ -23,10 +23,11 @@ class JobDescriptionMetadataDTO(BaseModel):
     location: Optional[str] = Field(None, max_length=200)
     created_from_url: Optional[HttpUrl] = None
 
-    @validator('salary_range_max')
-    def validate_salary_range(cls, v, values):
-        if v is not None and values.get('salary_range_min') is not None:
-            if v < values['salary_range_min']:
+    @field_validator('salary_range_max')
+    @classmethod
+    def validate_salary_range(cls, v, info):
+        if v is not None and info.data.get('salary_range_min') is not None:
+            if v < info.data['salary_range_min']:
                 raise ValueError('salary_range_max must be greater than or equal to salary_range_min')
         return v
 
