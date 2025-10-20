@@ -1,11 +1,10 @@
 # Job DTOs
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Annotated
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
-from pydantic.types import constr
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class SalaryRangeDTO(BaseModel):
@@ -33,10 +32,10 @@ class JobSummaryDTO(BaseModel):
     salary_range: Optional[SalaryRangeDTO] = Field(None, description="Salary range")
     posted_date: datetime = Field(..., description="Job posting date")
     remote_work_policy: str = Field(..., pattern="^(remote|hybrid|onsite)$", description="Remote work policy")
-    tags: List[str] = Field(default_factory=list, max_items=10, description="Job tags")
+    tags: List[str] = Field(default_factory=list, description="Job tags")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440001",
                 "title": "Senior Python Backend Developer",
@@ -54,7 +53,7 @@ class JobSummaryDTO(BaseModel):
                 "tags": ["python", "fastapi", "postgresql"]
             }
         }
-
+    )
 
 class JobDTO(BaseModel):
     """Complete job details DTO"""
@@ -66,17 +65,17 @@ class JobDTO(BaseModel):
     experience_level: str = Field(..., pattern="^(entry|mid|senior)$", description="Experience level")
     salary_range: Optional[SalaryRangeDTO] = Field(None, description="Salary range")
     description: str = Field(..., max_length=5000, description="Job description")
-    requirements: List[str] = Field(default_factory=list, max_items=20, description="Job requirements")
-    benefits: List[str] = Field(default_factory=list, max_items=20, description="Job benefits")
+    requirements: List[str] = Field(default_factory=list, description="Job requirements")
+    benefits: List[str] = Field(default_factory=list, description="Job benefits")
     posted_date: datetime = Field(..., description="Job posting date")
     application_deadline: Optional[datetime] = Field(None, description="Application deadline")
     company_size: str = Field(..., pattern="^(1-10|10-50|50-200|200-500|500-1000|1000\\+)$", description="Company size range")
     industry: str = Field(..., max_length=50, description="Industry")
     remote_work_policy: str = Field(..., pattern="^(remote|hybrid|onsite)$", description="Remote work policy")
-    tags: List[str] = Field(default_factory=list, max_items=10, description="Job tags")
+    tags: List[str] = Field(default_factory=list, description="Job tags")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440001",
                 "title": "Senior Python Backend Developer",
@@ -106,7 +105,7 @@ class JobDTO(BaseModel):
                 "tags": ["python", "fastapi", "postgresql"]
             }
         }
-
+    )
 
 class JobSearchRequestDTO(BaseModel):
     """Job search request DTO"""
@@ -117,14 +116,14 @@ class JobSearchRequestDTO(BaseModel):
     remote_work_policy: Optional[str] = Field(None, pattern="^(remote|hybrid|onsite)$", description="Remote work policy filter")
     industry: Optional[str] = Field(None, max_length=50, description="Industry filter")
     company_size: Optional[str] = Field(None, pattern="^(1-10|10-50|50-200|200-500|500-1000|1000\\+)$", description="Company size filter")
-    tags: Optional[List[str]] = Field(None, max_items=10, description="Tag filters")
+    tags: Optional[List[str]] = Field(None, description="Tag filters")
     min_salary: Optional[int] = Field(None, ge=0, description="Minimum salary filter")
     max_salary: Optional[int] = Field(None, ge=0, description="Maximum salary filter")
     limit: int = Field(default=20, ge=1, le=100, description="Results per page")
     offset: int = Field(default=0, ge=0, description="Pagination offset")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "query": "python backend",
                 "location": "Seattle",
@@ -139,7 +138,7 @@ class JobSearchRequestDTO(BaseModel):
                 "offset": 0
             }
         }
-
+    )
 
 class JobSearchResponseDTO(BaseModel):
     """Job search response DTO"""
@@ -149,8 +148,8 @@ class JobSearchResponseDTO(BaseModel):
     offset: int = Field(..., ge=0, description="Pagination offset")
     has_more: bool = Field(..., description="Whether there are more results")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "jobs": [
                     {
@@ -176,7 +175,7 @@ class JobSearchResponseDTO(BaseModel):
                 "has_more": False
             }
         }
-
+    )
 
 class JobFiltersDTO(BaseModel):
     """Available job filters DTO"""
@@ -189,8 +188,8 @@ class JobFiltersDTO(BaseModel):
     tags: List[str] = Field(..., description="Available tags")
     salary_ranges: Dict[str, Any] = Field(..., description="Salary range statistics")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "job_types": ["full-time", "part-time", "contract"],
                 "experience_levels": ["entry", "mid", "senior"],
@@ -206,3 +205,4 @@ class JobFiltersDTO(BaseModel):
                 }
             }
         }
+    )

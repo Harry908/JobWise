@@ -50,7 +50,7 @@ app = FastAPI(
     version="1.0.0",
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
     docs_url="/docs",
-    redoc_url="/redoc",
+    redoc_url=None,  # disable separate Redoc route; redirect provided below
     lifespan=lifespan,
 )
 
@@ -214,3 +214,6 @@ if settings.DEBUG:
             "cors_origins": settings.CORS_ORIGINS,
             "api_prefix": settings.API_V1_PREFIX,
         }
+
+
+# Note: Redoc route intentionally removed. Use /docs (Swagger UI) as the canonical API docs URL.

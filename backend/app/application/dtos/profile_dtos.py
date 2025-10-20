@@ -4,7 +4,7 @@ from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, EmailStr, HttpUrl, validator
+from pydantic import BaseModel, Field, EmailStr, HttpUrl, field_validator, ConfigDict
 
 
 # Value Object DTOs
@@ -30,15 +30,17 @@ class ExperienceDTO(BaseModel):
     description: str = Field(..., min_length=1, max_length=2000)
     achievements: List[str] = Field(default_factory=list)
 
-    @validator('end_date')
-    def validate_end_date(cls, v, values):
-        if v and 'start_date' in values and v < values['start_date']:
+    @field_validator('end_date')
+    @classmethod
+    def validate_end_date(cls, v, info):
+        if v and info.data.get('start_date') and v < info.data['start_date']:
             raise ValueError('end_date must be after start_date')
         return v
 
-    @validator('is_current')
-    def validate_current_position(cls, v, values):
-        if v and 'end_date' in values and values.get('end_date') is not None:
+    @field_validator('is_current')
+    @classmethod
+    def validate_current_position(cls, v, info):
+        if v and info.data.get('end_date') is not None:
             raise ValueError('current position cannot have end_date')
         return v
 
@@ -53,9 +55,10 @@ class EducationDTO(BaseModel):
     gpa: Optional[float] = Field(None, ge=0.0, le=4.0)
     honors: List[str] = Field(default_factory=list)
 
-    @validator('end_date')
-    def validate_end_date(cls, v, values):
-        if v and 'start_date' in values and v < values['start_date']:
+    @field_validator('end_date')
+    @classmethod
+    def validate_end_date(cls, v, info):
+        if v and info.data.get('start_date') and v < info.data['start_date']:
             raise ValueError('end_date must be after start_date')
         return v
 
@@ -63,7 +66,7 @@ class EducationDTO(BaseModel):
 class LanguageDTO(BaseModel):
     """DTO for language proficiency."""
     name: str = Field(..., min_length=1, max_length=50)
-    proficiency: str = Field(..., regex=r'^(beginner|intermediate|advanced|native)$')
+    proficiency: str = Field(..., pattern=r'^(beginner|intermediate|advanced|fluent|native)$')
 
 
 class CertificationDTO(BaseModel):
@@ -75,9 +78,10 @@ class CertificationDTO(BaseModel):
     credential_id: Optional[str] = Field(None, max_length=100)
     verification_url: Optional[HttpUrl] = None
 
-    @validator('expiry_date')
-    def validate_expiry_date(cls, v, values):
-        if v and 'date_obtained' in values and v < values['date_obtained']:
+    @field_validator('expiry_date')
+    @classmethod
+    def validate_expiry_date(cls, v, info):
+        if v and info.data.get('date_obtained') and v < info.data['date_obtained']:
             raise ValueError('expiry_date must be after date_obtained')
         return v
 
@@ -99,9 +103,10 @@ class ProjectDTO(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
-    @validator('end_date')
-    def validate_end_date(cls, v, values):
-        if v and 'start_date' in values and values.get('start_date') and v < values['start_date']:
+    @field_validator('end_date')
+    @classmethod
+    def validate_end_date(cls, v, info):
+        if v and info.data.get('start_date') and v < info.data['start_date']:
             raise ValueError('end_date must be after start_date')
         return v
 
@@ -141,9 +146,9 @@ class ProfileDTO(BaseModel):
     created_at: str  # ISO format datetime string
     updated_at: str  # ISO format datetime string
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(
+    from_attributes = True
+    )
 
 class ProfileSummaryDTO(BaseModel):
     """DTO for profile summary (list view)."""

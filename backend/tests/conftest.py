@@ -3,12 +3,19 @@ Pytest configuration and fixtures for JobWise backend tests.
 """
 import asyncio
 import os
+import sys
+from pathlib import Path
 from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+
+# Add the backend directory to Python path for proper imports
+backend_dir = Path(__file__).parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 from app.core.config import Settings, get_settings
 from app.infrastructure.database.connection import get_database_session_dependency
@@ -19,7 +26,8 @@ from app.main import app
 test_settings = Settings(
     ENVIRONMENT="testing",
     DATABASE_URL="sqlite+aiosqlite:///./test_jobwise.db",
-    SECRET_KEY="test-secret-key-for-testing-purposes-only",
+    SECRET_KEY="test-secret-key-for-testing-purposes-only-32-chars-long",
+    JWT_SECRET_KEY="test-jwt-secret-key-for-testing-purposes-only-32-chars",
     OPENAI_API_KEY="test-openai-key",
     DEBUG=True,
 )
@@ -84,7 +92,7 @@ async def drop_tables(engine):
 
 
 @pytest.fixture
-def db_session(test_db_engine):
+def db_session(test_db_engine, event_loop):
     """Create test database session."""
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,8 +104,45 @@ def db_session(test_db_engine):
     )
 
     session = async_session()
+    
+    # Clear all data before each test
+    event_loop.run_until_complete(clear_database(session))
+    
     yield session
-    # Note: We can't await close() in a sync fixture, but that's ok for testing
+    
+    # Clean up after test
+    event_loop.run_until_complete(session.close())
+
+
+async def clear_database(session):
+    """Clear all data from database tables."""
+    from app.infrastructure.database.models import (
+        UserModel, MasterProfileModel, ExperienceModel, EducationModel,
+        SkillModel, LanguageModel, CertificationModel, ProjectModel,
+        JobPostingModel, JobDescriptionModel, GenerationModel,
+        GenerationResultModel, JobApplicationModel, UserSessionModel,
+        AuditLogModel
+    )
+    
+    # Delete in reverse order of dependencies using sqlalchemy.text()
+    from sqlalchemy import text
+
+    await session.execute(text("DELETE FROM audit_logs"))
+    await session.execute(text("DELETE FROM user_sessions"))
+    await session.execute(text("DELETE FROM saved_jobs"))
+    await session.execute(text("DELETE FROM documents"))
+    await session.execute(text("DELETE FROM generations"))
+    await session.execute(text("DELETE FROM job_descriptions"))
+    await session.execute(text("DELETE FROM jobs"))
+    await session.execute(text("DELETE FROM projects"))
+    await session.execute(text("DELETE FROM certifications"))
+    await session.execute(text("DELETE FROM languages"))
+    await session.execute(text("DELETE FROM skills"))
+    await session.execute(text("DELETE FROM education"))
+    await session.execute(text("DELETE FROM experiences"))
+    await session.execute(text("DELETE FROM master_profiles"))
+    await session.execute(text("DELETE FROM users"))
+    await session.commit()
 
 
 @pytest.fixture

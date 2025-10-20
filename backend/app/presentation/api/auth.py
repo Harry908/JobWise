@@ -1,5 +1,6 @@
 """Authentication API endpoints."""
 
+import logging
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +19,17 @@ from ...application.dtos.auth_dtos import (
     PasswordResetRequest,
     PasswordResetConfirmRequest
 )
-from ...core.exceptions import ValidationException
+from ...core.exceptions import (
+    ValidationException,
+    AuthenticationException,
+    NotFoundError,
+    ConflictError,
+    DatabaseError,
+    JobWiseException
+)
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Create auth router
 router = APIRouter()
@@ -45,14 +56,34 @@ async def register_user(
     try:
         return await auth_service.register_user(request)
     except ValidationException as ve:
+        logger.warning(f"Registration validation failed: {ve.message}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ve)
+            status_code=ve.status_code,
+            detail=ve.message
         )
-    except Exception as e:
+    except ConflictError as ce:
+        logger.warning(f"Registration conflict: {ce.message}")
+        raise HTTPException(
+            status_code=ce.status_code,
+            detail=ce.message
+        )
+    except DatabaseError as de:
+        logger.error(f"Database error during registration: {de.message}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred."
+            detail="Registration temporarily unavailable. Please try again later."
+        )
+    except JobWiseException as jwe:
+        logger.error(f"JobWise error during registration: {jwe.message}")
+        raise HTTPException(
+            status_code=jwe.status_code,
+            detail=jwe.message
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during registration")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration."
         )
 
 
@@ -69,10 +100,41 @@ async def login_user(
     """Authenticate user and return tokens."""
     try:
         return await auth_service.authenticate_user(request)
-    except Exception as e:
+    except AuthenticationException as ae:
+        logger.warning(f"Authentication failed for email: {request.email}")
+        raise HTTPException(
+            status_code=ae.status_code,
+            detail=ae.message
+        )
+    except NotFoundError as nfe:
+        logger.warning(f"User not found during login: {request.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail="Invalid email or password"
+        )
+    except ValidationException as ve:
+        logger.warning(f"Login validation failed: {ve.message}")
+        raise HTTPException(
+            status_code=ve.status_code,
+            detail=ve.message
+        )
+    except DatabaseError as de:
+        logger.error(f"Database error during login: {de.message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login temporarily unavailable. Please try again later."
+        )
+    except JobWiseException as jwe:
+        logger.error(f"JobWise error during login: {jwe.message}")
+        raise HTTPException(
+            status_code=jwe.status_code,
+            detail=jwe.message
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during login")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during login."
         )
 
 
@@ -89,10 +151,29 @@ async def refresh_token(
     """Refresh access token."""
     try:
         return await auth_service.refresh_access_token(request)
+    except AuthenticationException as ae:
+        logger.warning("Token refresh authentication failed")
+        raise HTTPException(
+            status_code=ae.status_code,
+            detail=ae.message
+        )
+    except ValidationException as ve:
+        logger.warning(f"Token refresh validation failed: {ve.message}")
+        raise HTTPException(
+            status_code=ve.status_code,
+            detail=ve.message
+        )
+    except JobWiseException as jwe:
+        logger.error(f"JobWise error during token refresh: {jwe.message}")
+        raise HTTPException(
+            status_code=jwe.status_code,
+            detail=jwe.message
+        )
     except Exception as e:
+        logger.exception("Unexpected error during token refresh")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail="Token refresh failed. Please login again."
         )
 
 
@@ -109,10 +190,29 @@ async def get_current_user(
     """Get current user information."""
     try:
         return await auth_service.get_current_user(user_id)
-    except Exception as e:
+    except NotFoundError as nfe:
+        logger.warning(f"Current user not found: {user_id}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            status_code=nfe.status_code,
+            detail=nfe.message
+        )
+    except DatabaseError as de:
+        logger.error(f"Database error fetching current user: {de.message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to fetch user information. Please try again later."
+        )
+    except JobWiseException as jwe:
+        logger.error(f"JobWise error fetching current user: {jwe.message}")
+        raise HTTPException(
+            status_code=jwe.status_code,
+            detail=jwe.message
+        )
+    except Exception as e:
+        logger.exception("Unexpected error fetching current user")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
         )
 
 

@@ -56,6 +56,27 @@ The project emphasizes the **job search to application workflow**, with focus on
 
 ---
 
+## Recent updates (Oct 19, 2025)
+
+- Removed legacy Redoc redirect and consolidated API documentation: Swagger UI is now the canonical docs at `/docs`. The backend no longer exposes a `/redoc` convenience redirect.
+- Updated `start-server.bat` to advertise only `/docs` and simplified startup messaging.
+- Profile API tests: `tests/test_profile_api.py` (12 tests) pass locally; full-repo test coverage is currently ~55% and the repository enforces an 80% coverage gate.
+
+Quick run & test (backend)
+
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1  # or call venv\Scripts\activate.bat in CMD
+.\start-server.bat
+
+# Run profile-only tests
+pytest tests/test_profile_api.py -q --maxfail=1
+
+# Run full test suite with coverage (may fail the coverage gate until more tests are added)
+pytest --cov=. --maxfail=1 -q
+```
+
+
 ## 🏗️ Technical Architecture
 
 ### Technology Stack

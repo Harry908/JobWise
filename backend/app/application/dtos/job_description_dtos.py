@@ -4,7 +4,7 @@ from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, validator, ConfigDict
 
 
 # Value Object DTOs
@@ -70,9 +70,7 @@ class JobDescriptionDTO(BaseModel):
     created_at: str  # ISO format datetime string
     updated_at: str  # ISO format datetime string
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 class JobDescriptionSummaryDTO(BaseModel):
     """DTO for job description summary (list view)."""

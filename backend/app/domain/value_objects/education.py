@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass(frozen=True)
@@ -14,7 +14,7 @@ class Education:
     start_date: date
     end_date: Optional[date]
     gpa: Optional[float]
-    honors: Optional[str]
+    honors: List[str]
 
     def __post_init__(self):
         """Validate education."""

@@ -17,7 +17,7 @@ from sqlalchemy.sql import func
 from ...domain.entities.job import JobType, ExperienceLevel
 from ...domain.entities.generation import GenerationStatus, DocumentType
 from ...domain.entities.job_description import JobDescriptionStatus, JobDescriptionSource
-from ...domain.value_objects import ProficiencyLevel, SkillCategory
+from ...domain.value_objects import ProficiencyLevel, SkillCategory, LanguageProficiency
 
 # Base class for all models
 Base = declarative_base()
@@ -346,7 +346,7 @@ class LanguageModel(Base, TimestampMixin):
     
     # Language fields
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    proficiency: Mapped[ProficiencyLevel] = mapped_column(SQLEnum(ProficiencyLevel), nullable=False)
+    proficiency: Mapped[str] = mapped_column(String(20), nullable=False)
     
     # Display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

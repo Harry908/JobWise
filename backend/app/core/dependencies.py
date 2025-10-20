@@ -49,12 +49,26 @@ async def get_current_user(
         user_repo = repo_factory.create_user_repository()
 
         # Get user by ID
-        user = await user_repo.get_by_id(user_id)
-        if not user:
+        user_model = await user_repo.get_by_id(user_id)
+        if not user_model:
             raise AuthenticationException("User not found")
 
-        if not user.is_active:
+        if not user_model.is_active:
             raise AuthenticationException("User account is deactivated")
+
+        # Convert UserModel to User entity
+        from uuid import UUID
+        user = User(
+            id=UUID(user_model.id),
+            email=user_model.email,
+            hashed_password=user_model.password_hash,  # Map password_hash to hashed_password
+            full_name=f"{user_model.first_name or ''} {user_model.last_name or ''}".strip(),  # Combine first/last name
+            is_active=user_model.is_active,
+            is_verified=user_model.is_verified,
+            created_at=user_model.created_at,
+            updated_at=user_model.updated_at,
+            last_login_at=user_model.last_active_at  # Map last_active_at to last_login_at
+        )
 
         return user
 

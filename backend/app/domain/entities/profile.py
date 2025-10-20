@@ -45,7 +45,7 @@ class MasterProfile:
             professional_summary=professional_summary,
             experiences=experiences or [],
             education=education or [],
-            skills=skills or Skills(),
+            skills=skills or Skills.create_empty(),
             projects=projects or [],
             version=1,
             created_at=now,

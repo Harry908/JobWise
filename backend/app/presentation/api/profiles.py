@@ -29,7 +29,7 @@ from ...infrastructure.repositories.profile_repository import ProfileRepository
 
 from ...domain.value_objects import PersonalInfo, Experience, Education, Skills, Project, Language, LanguageProficiency, Certification
 
-router = APIRouter(prefix="/profiles", tags=["profiles"])
+router = APIRouter(tags=["profiles"])
 
 
 # Dependency to get profile service
@@ -57,15 +57,15 @@ async def create_profile(
     """
     try:
 
-        personal_info = PersonalInfo(**profile_data.personal_info.dict())
+        personal_info = PersonalInfo(**profile_data.personal_info.model_dump())
 
         experiences = [
-            Experience(**exp.dict())
+            Experience(**exp.model_dump())
             for exp in profile_data.experiences
         ] if profile_data.experiences else None
 
         education = [
-            Education(**edu.dict())
+            Education(**edu.model_dump())
             for edu in profile_data.education
         ] if profile_data.education else None
 
@@ -90,7 +90,7 @@ async def create_profile(
         ) if profile_data.skills else None
 
         projects = [
-            Project(**proj.dict())
+            Project(**proj.model_dump())
             for proj in profile_data.projects
         ] if profile_data.projects else None
 
@@ -186,19 +186,19 @@ async def update_profile(
 
         personal_info = None
         if profile_data.personal_info:
-            personal_info = PersonalInfo(**profile_data.personal_info.dict())
+            personal_info = PersonalInfo(**profile_data.personal_info.model_dump())
 
         experiences = None
         if profile_data.experiences:
             experiences = [
-                Experience(**exp.dict())
+                Experience(**exp.model_dump())
                 for exp in profile_data.experiences
             ]
 
         education = None
         if profile_data.education:
             education = [
-                Education(**edu.dict())
+                Education(**edu.model_dump())
                 for edu in profile_data.education
             ]
 
@@ -227,7 +227,7 @@ async def update_profile(
         projects = None
         if profile_data.projects:
             projects = [
-                Project(**proj.dict())
+                Project(**proj.model_dump())
                 for proj in profile_data.projects
             ]
 
@@ -304,7 +304,7 @@ async def add_experience(
 
     try:
         from ...domain.value_objects import Experience
-        experience = Experience(**experience_data.experience.dict())
+        experience = Experience(**experience_data.experience.model_dump())
 
         updated_profile = await service.add_experience(profile_id, experience)
         return ProfileDTO(**updated_profile.to_dict())
@@ -334,7 +334,7 @@ async def update_experience(
 
     try:
         from ...domain.value_objects import Experience
-        experience = Experience(**experience_data.experience.dict())
+        experience = Experience(**experience_data.experience.model_dump())
 
         updated_profile = await service.update_experience(
             profile_id, experience_data.index, experience
@@ -396,7 +396,7 @@ async def add_education(
 
     try:
         from ...domain.value_objects import Education
-        education = Education(**education_data.education.dict())
+        education = Education(**education_data.education.model_dump())
 
         updated_profile = await service.add_education(profile_id, education)
         return ProfileDTO(**updated_profile.to_dict())
@@ -426,7 +426,7 @@ async def update_education(
 
     try:
         from ...domain.value_objects import Education
-        education = Education(**education_data.education.dict())
+        education = Education(**education_data.education.model_dump())
 
         updated_profile = await service.update_education(
             profile_id, education_data.index, education
@@ -488,7 +488,7 @@ async def add_project(
 
     try:
         from ...domain.value_objects import Project
-        project = Project(**project_data.project.dict())
+        project = Project(**project_data.project.model_dump())
 
         updated_profile = await service.add_project(profile_id, project)
         return ProfileDTO(**updated_profile.to_dict())
@@ -518,7 +518,7 @@ async def update_project(
 
     try:
         from ...domain.value_objects import Project
-        project = Project(**project_data.project.dict())
+        project = Project(**project_data.project.model_dump())
 
         updated_profile = await service.update_project(
             profile_id, project_data.index, project

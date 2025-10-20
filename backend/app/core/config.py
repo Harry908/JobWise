@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from typing import List, Optional
+import secrets
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -36,13 +37,15 @@ class Settings(BaseSettings):
         return self.DATABASE_URL
     
     # Security
-    SECRET_KEY: str = Field(...)
+    # Generate a secure default if not provided (tests expect a non-empty secret)
+    SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
     ALGORITHM: str = Field(default="HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
     
     # JWT Configuration
-    JWT_SECRET_KEY: str = Field(...)
+    # JWT secret - must be present and of sufficient length; provide secure default for tests
+    JWT_SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)

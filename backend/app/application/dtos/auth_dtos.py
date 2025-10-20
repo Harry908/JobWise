@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 
 
 class UserRegisterRequest(BaseModel):
@@ -25,14 +25,15 @@ class UserRegisterRequest(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "password": "SecurePass123",
                 "full_name": "John Doe"
             }
         }
+    )
 
 
 class UserLoginRequest(BaseModel):
@@ -40,14 +41,14 @@ class UserLoginRequest(BaseModel):
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., description="User password")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "password": "SecurePass123"
             }
         }
-
+    )
 
 class TokenResponse(BaseModel):
     """Response DTO for token generation."""
@@ -57,8 +58,8 @@ class TokenResponse(BaseModel):
     expires_in: int = Field(..., description="Token expiration time in seconds")
     user_id: str = Field(..., description="User ID")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -67,19 +68,19 @@ class TokenResponse(BaseModel):
                 "user_id": "123e4567-e89b-12d3-a456-426614174000"
             }
         }
-
+    )
 
 class RefreshTokenRequest(BaseModel):
     """Request DTO for token refresh."""
     refresh_token: str = Field(..., description="Refresh token")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             }
         }
-
+    )
 
 class UserResponse(BaseModel):
     """Response DTO for user information."""
@@ -92,8 +93,8 @@ class UserResponse(BaseModel):
     updated_at: datetime = Field(..., description="Account last update timestamp")
     last_login_at: Optional[datetime] = Field(None, description="Last login timestamp")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "email": "user@example.com",
@@ -105,7 +106,7 @@ class UserResponse(BaseModel):
                 "last_login_at": "2024-01-01T12:00:00Z"
             }
         }
-
+    )
 
 class PasswordChangeRequest(BaseModel):
     """Request DTO for password change."""
@@ -126,38 +127,38 @@ class PasswordChangeRequest(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "current_password": "OldSecurePass123",
                 "new_password": "NewSecurePass456"
             }
         }
-
+    )
 
 class EmailVerificationRequest(BaseModel):
     """Request DTO for email verification."""
     email: EmailStr = Field(..., description="Email to verify")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com"
             }
         }
-
+    )
 
 class PasswordResetRequest(BaseModel):
     """Request DTO for password reset."""
     email: EmailStr = Field(..., description="Email for password reset")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com"
             }
         }
-
+    )
 
 class PasswordResetConfirmRequest(BaseModel):
     """Request DTO for password reset confirmation."""
@@ -178,10 +179,11 @@ class PasswordResetConfirmRequest(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "token": "reset_token_here",
                 "new_password": "NewSecurePass123"
             }
         }
+    )
