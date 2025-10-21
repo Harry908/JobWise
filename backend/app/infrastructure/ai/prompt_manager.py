@@ -1,1 +1,0 @@
-# Prompt manager - Provider-agnostic prompt templates
