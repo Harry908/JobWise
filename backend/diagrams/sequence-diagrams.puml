@@ -1,0 +1,331 @@
+@startuml User_Authentication_Flow
+
+title User Authentication Flow (Login)
+
+actor User
+participant "API Gateway" as API
+participant "Auth API" as AuthAPI
+participant "Auth Service" as AuthSvc
+participant "User Repository" as UserRepo
+participant "Database" as DB
+participant "JWT Service" as JWT
+
+User -> API: POST /api/v1/auth/login\n{email, password}
+activate API
+
+API -> AuthAPI: Validate request
+activate AuthAPI
+
+AuthAPI -> AuthSvc: authenticate_user(email, password)
+activate AuthSvc
+
+AuthSvc -> UserRepo: get_by_email(email)
+activate UserRepo
+
+UserRepo -> DB: SELECT * FROM users WHERE email=?
+activate DB
+DB --> UserRepo: UserModel
+deactivate DB
+
+UserRepo --> AuthSvc: User entity
+deactivate UserRepo
+
+AuthSvc -> AuthSvc: verify_password(password, user.password_hash)
+note right: bcrypt.verify()
+
+alt Password Valid
+    AuthSvc -> JWT: create_access_token(user_id, email)
+    activate JWT
+    JWT --> AuthSvc: JWT token
+    deactivate JWT
+
+    AuthSvc -> UserRepo: update_last_active(user_id)
+    activate UserRepo
+    UserRepo -> DB: UPDATE users SET last_active_at=?
+    DB --> UserRepo: Success
+    deactivate UserRepo
+    deactivate DB
+
+    AuthSvc --> AuthAPI: {user, token}
+    deactivate AuthSvc
+
+    AuthAPI --> API: 200 OK\n{user, access_token, expires_in}
+    deactivate AuthAPI
+
+    API --> User: Success response
+    deactivate API
+else Password Invalid
+    AuthSvc --> AuthAPI: AuthenticationError
+    deactivate AuthSvc
+    AuthAPI --> API: 401 Unauthorized
+    deactivate AuthAPI
+    API --> User: Error: Invalid credentials
+    deactivate API
+end
+
+@enduml
+
+@startuml Resume_Generation_Flow
+
+title Resume Generation Flow (Sprint 2 - Mock Pipeline)
+
+actor User
+participant "Generation API" as GenAPI
+participant "Generation Service" as GenSvc
+participant "Job Analyzer" as JobAnalyzer
+participant "Profile Compiler" as ProfileCompiler
+participant "Content Generator" as ContentGen
+participant "Quality Validator" as QualityVal
+participant "Repository" as Repo
+participant "Database" as DB
+
+User -> GenAPI: POST /api/v1/generations/resume\n{profile_id, job_id, template_id}
+activate GenAPI
+
+GenAPI -> GenSvc: create_generation(request)
+activate GenSvc
+
+GenSvc -> Repo: create_generation(status=PENDING)
+activate Repo
+Repo -> DB: INSERT INTO generations
+DB --> Repo: Generation ID
+Repo --> GenSvc: Generation created
+deactivate Repo
+
+GenSvc --> GenAPI: 201 Created {id, status: "pending"}
+deactivate GenSvc
+GenAPI --> User: Generation created
+deactivate GenAPI
+
+note over GenSvc: Async background processing starts
+
+activate GenSvc
+GenSvc -> Repo: update_status(id, "generating", stage="analyzing")
+GenSvc -> JobAnalyzer: analyze_job(job_id)
+activate JobAnalyzer
+note right: Extract keywords\nIdentify requirements\nParse responsibilities\n~1 second
+JobAnalyzer --> GenSvc: JobAnalysis{keywords, requirements}
+deactivate JobAnalyzer
+
+GenSvc -> Repo: update_progress(id, stage="compiling", progress=20%)
+GenSvc -> ProfileCompiler: compile_profile(profile_id, job_analysis)
+activate ProfileCompiler
+note right: Score experiences\nMatch skills\nSelect relevant sections\n~1 second
+ProfileCompiler --> GenSvc: ProfileCompilation{scored_sections}
+deactivate ProfileCompiler
+
+GenSvc -> Repo: update_progress(id, stage="generating", progress=40%)
+GenSvc -> ContentGen: generate_content(compilation, template)
+activate ContentGen
+note right: Mock LLM call\nGenerate tailored content\nApply template\n~2 seconds
+ContentGen --> GenSvc: GeneratedContent{resume_text}
+deactivate ContentGen
+
+GenSvc -> Repo: update_progress(id, stage="validating", progress=70%)
+GenSvc -> QualityVal: validate_quality(content, job_analysis)
+activate QualityVal
+note right: ATS compliance check\nKeyword density\nFormat validation\n~1 second
+QualityVal --> GenSvc: ValidationResult{ats_score, issues}
+deactivate QualityVal
+
+GenSvc -> Repo: update_progress(id, stage="export_prep", progress=90%)
+GenSvc -> GenSvc: prepare_export(content, metadata)
+note right: Format for export\nPrepare metadata\n~0.5 seconds
+
+GenSvc -> Repo: save_result(id, content, status="completed")
+activate Repo
+Repo -> DB: UPDATE generations\nINSERT INTO documents
+DB --> Repo: Success
+Repo --> GenSvc: Saved
+deactivate Repo
+
+GenSvc -> Repo: update_status(id, "completed", progress=100%)
+deactivate GenSvc
+
+...User polls for result...
+
+User -> GenAPI: GET /api/v1/generations/{id}/result
+activate GenAPI
+GenAPI -> GenSvc: get_generation_result(id)
+activate GenSvc
+GenSvc -> Repo: get_generation_with_result(id)
+activate Repo
+Repo -> DB: SELECT * FROM generations\nJOIN documents
+DB --> Repo: Generation + Document
+Repo --> GenSvc: Result
+deactivate Repo
+GenSvc --> GenAPI: GenerationResult
+deactivate GenSvc
+GenAPI --> User: 200 OK {content, ats_score, metadata}
+deactivate GenAPI
+
+@enduml
+
+@startuml PDF_Export_Flow
+
+title PDF Export Flow (Sprint 2)
+
+actor User
+participant "Document API" as DocAPI
+participant "Document Service" as DocSvc
+participant "PDF Generator" as PDFGen
+participant "Storage Service" as Storage
+participant "Repository" as Repo
+participant "Database" as DB
+
+User -> DocAPI: POST /api/v1/documents/{id}/export\n{format: "pdf", template: "professional"}
+activate DocAPI
+
+DocAPI -> DocSvc: export_document(id, options)
+activate DocSvc
+
+DocSvc -> Repo: get_document_by_id(id)
+activate Repo
+Repo -> DB: SELECT * FROM documents WHERE id=?
+DB --> Repo: DocumentModel
+Repo --> DocSvc: Document
+deactivate Repo
+
+DocSvc -> DocSvc: verify_ownership(document, user_id)
+
+alt User owns document
+    DocSvc -> PDFGen: generate_pdf(content, template_options)
+    activate PDFGen
+
+    note right of PDFGen: ReportLab PDF generation\n- Apply template\n- Format content\n- Add metadata\n~1-2 seconds
+
+    PDFGen -> PDFGen: apply_template(template_id)
+    PDFGen -> PDFGen: render_content(document.content)
+    PDFGen -> PDFGen: add_metadata(title, author)
+
+    PDFGen --> DocSvc: PDF bytes
+    deactivate PDFGen
+
+    DocSvc -> Storage: save_file(pdf_bytes, file_path)
+    activate Storage
+
+    note right of Storage: Local file system\n(Sprint 2)\nS3 in production
+
+    Storage -> Storage: write_to_disk(file_path, bytes)
+    Storage --> DocSvc: File saved {path, size}
+    deactivate Storage
+
+    DocSvc -> Repo: update_document_metadata(id, pdf_info)
+    activate Repo
+    Repo -> DB: UPDATE documents\nSET pdf_file_path=?,\npdf_size_bytes=?,\nupdated_at=?
+    DB --> Repo: Success
+    Repo --> DocSvc: Updated
+    deactivate Repo
+
+    DocSvc --> DocAPI: ExportResult{download_url, expires_at}
+    deactivate DocSvc
+
+    DocAPI --> User: 200 OK\n{download_url, file_size, format}
+    deactivate DocAPI
+
+    ...User downloads file...
+
+    User -> DocAPI: GET /api/v1/documents/{id}/download
+    activate DocAPI
+
+    DocAPI -> DocSvc: get_download_file(id, user_id)
+    activate DocSvc
+
+    DocSvc -> Repo: get_document_by_id(id)
+    activate Repo
+    Repo -> DB: SELECT * FROM documents
+    DB --> Repo: Document
+    Repo --> DocSvc: Document
+    deactivate Repo
+
+    DocSvc -> DocSvc: verify_ownership(document, user_id)
+
+    DocSvc -> Storage: read_file(pdf_file_path)
+    activate Storage
+    Storage --> DocSvc: PDF bytes
+    deactivate Storage
+
+    DocSvc --> DocAPI: File bytes + metadata
+    deactivate DocSvc
+
+    DocAPI --> User: 200 OK\nContent-Type: application/pdf\nPDF file download
+    deactivate DocAPI
+
+else Unauthorized
+    DocSvc --> DocAPI: 403 Forbidden
+    deactivate DocSvc
+    DocAPI --> User: Error: Not authorized
+    deactivate DocAPI
+end
+
+@enduml
+
+@startuml Complete_User_Journey
+
+title Complete User Journey - Job Application Workflow
+
+actor User
+
+box "Authentication" #LightBlue
+    participant "Auth API" as Auth
+end box
+
+box "Profile Management" #LightGreen
+    participant "Profile API" as Profile
+end box
+
+box "Job Management" #LightYellow
+    participant "Job API" as Job
+end box
+
+box "AI Generation" #LightCoral
+    participant "Generation API" as Gen
+end box
+
+box "Document Export" #LightPink
+    participant "Document API" as Doc
+end box
+
+== Phase 1: User Setup ==
+
+User -> Auth: POST /auth/register
+Auth --> User: 201 Created {user, token}
+
+User -> Profile: POST /profiles\n{full_name, email, experiences, education, skills}
+Profile --> User: 201 Created {profile_id}
+
+== Phase 2: Job Search & Save ==
+
+User -> Job: GET /jobs?q=software engineer
+Job --> User: 200 OK {jobs[]}
+
+User -> Job: POST /jobs\n{title, company, description}\n(copy-paste custom job)
+Job --> User: 201 Created {job_id}
+
+== Phase 3: Generate Tailored Resume ==
+
+User -> Gen: POST /generations/resume\n{profile_id, job_id, template: "professional"}
+Gen --> User: 201 Created {generation_id, status: "pending"}
+
+note over Gen: Background processing\n5-stage pipeline\n~5.5 seconds
+
+User -> Gen: GET /generations/{id}
+Gen --> User: 200 OK {status: "generating", progress: 60%}
+
+User -> Gen: GET /generations/{id}
+Gen --> User: 200 OK {status: "completed", progress: 100%}
+
+User -> Gen: GET /generations/{id}/result
+Gen --> User: 200 OK {content, ats_score: 0.87}
+
+== Phase 4: Export to PDF ==
+
+User -> Doc: POST /documents/{id}/export\n{format: "pdf"}
+Doc --> User: 200 OK {download_url}
+
+User -> Doc: GET /documents/{id}/download
+Doc --> User: 200 OK\nContent-Type: application/pdf\n[PDF file]
+
+note over User: Download complete!\nReady to apply
+
+@enduml

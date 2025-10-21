@@ -855,11 +855,7 @@ paths:
 # Component Definitions
 components:
   securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
@@ -1006,6 +1002,19 @@ components:
       required: [error, message]
 
     # Authentication Schemas
+    UserRegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+      required: [email, password, full_name]
+
     LoginRequest:
       type: object
       properties:
@@ -1024,6 +1033,22 @@ components:
           type: string
       required: [refresh_token]
 
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: "bearer"
+        expires_in:
+          type: integer
+        user_id:
+          type: string
+      required: [access_token, refresh_token, expires_in, user_id]
+
     AuthResponse:
       type: object
       properties:
@@ -1040,6 +1065,31 @@ components:
         user:
           $ref: '#/components/schemas/UserInfo'
       required: [access_token, token_type, expires_in]
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        is_active:
+          type: boolean
+        is_verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_login_at:
+          type: string
+          format: date-time
+      required: [id, email, full_name]
 
     UserInfo:
       type: object
@@ -1208,7 +1258,52 @@ components:
           format: uri
       required: [name, issuer, date_obtained]
 
-    ProfileCreateRequest:
+    CreateProfileDTO:
+      type: object
+      properties:
+        personal_info:
+          $ref: '#/components/schemas/PersonalInfo'
+        professional_summary:
+          type: string
+          maxLength: 1000
+        experiences:
+          type: array
+          items:
+            $ref: '#/components/schemas/Experience'
+        education:
+          type: array
+          items:
+            $ref: '#/components/schemas/Education'
+        skills:
+          $ref: '#/components/schemas/Skills'
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+      required: [personal_info]
+
+    UpdateProfileDTO:
+      type: object
+      properties:
+        personal_info:
+          $ref: '#/components/schemas/PersonalInfo'
+        professional_summary:
+          type: string
+          maxLength: 1000
+        experiences:
+          type: array
+          items:
+            $ref: '#/components/schemas/Experience'
+        education:
+          type: array
+          items:
+            $ref: '#/components/schemas/Education'
+        skills:
+          $ref: '#/components/schemas/Skills'
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
       type: object
       properties:
         personal_info:
@@ -1264,6 +1359,27 @@ components:
     ProfileUpdateRequest:
       allOf:
         - $ref: '#/components/schemas/ProfileCreateRequest'
+
+    ProfileDTO:
+      allOf:
+        - $ref: '#/components/schemas/CreateProfileDTO'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            user_id:
+              type: string
+              format: uuid
+            version:
+              type: integer
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+          required: [id, user_id, version, created_at, updated_at]
 
     ProfileResponse:
       allOf:
@@ -1377,6 +1493,52 @@ components:
           default: USD
       required: [currency]
 
+    JobDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        job_type:
+          type: string
+        experience_level:
+          type: string
+        salary_range:
+          $ref: '#/components/schemas/SalaryRange'
+        description:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        benefits:
+          type: array
+          items:
+            type: string
+        posted_date:
+          type: string
+          format: date-time
+        application_deadline:
+          type: string
+          format: date-time
+          nullable: true
+        company_size:
+          type: string
+        industry:
+          type: string
+        remote_work_policy:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [id, title, company, location, job_type, description, posted_date]
+
     JobResponse:
       type: object
       properties:
@@ -1422,6 +1584,23 @@ components:
           type: string
           description: Data source (e.g., "indeed", "linkedin", "static")
       required: [id, title, company, location, job_type, description, posted_date]
+
+    JobSearchResponseDTO:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobDTO'
+        total_count:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        has_more:
+          type: boolean
+      required: [jobs, total_count, limit, offset, has_more]
 
     JobSearchResponse:
       type: object
@@ -1556,7 +1735,7 @@ components:
           maxLength: 500
           description: Additional instructions for AI generation
 
-    ResumeGenerationRequest:
+  ResumeGenerationRequest:
       type: object
       properties:
         profile_id:
@@ -1752,7 +1931,7 @@ components:
           format: date-time
       required: [url, size_bytes, page_count]
 
-    DocumentResponse:
+  DocumentResponse:
       type: object
       properties:
         id:

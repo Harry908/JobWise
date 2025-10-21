@@ -1454,3 +1454,16 @@ Successfully retested API-1 (Profile API) and API-2 (Job Description API), ident
   - **Reason:** Maintain comprehensive audit trail of testing and bug fixes
 
 ---
+
+## Interaction 31: Generate comprehensive API contract (OpenAPI)
+
+### User Request
+Generate a comprehensive API contract document for the codebase (OpenAPI spec) reflecting current endpoints and DTOs.
+
+### Response Summary
+Created an initial OpenAPI 3.0 specification file at `.context/api/openapi-spec.yaml` that lists the major endpoints, security schemes, and core DTO schemas for Auth, Jobs, Profiles, Generations, and Documents. The spec is aligned with current FastAPI routes and Pydantic DTOs, and will be iteratively refined to include full examples and all schema details.
+
+### Actions Taken
+- **File:** `.context/api/openapi-spec.yaml`
+  - **Change:** Created initial OpenAPI 3.0 YAML documenting primary routes and core DTO schemas.
+  - **Reason:** Provide a machine-readable API contract for clients and documentation.

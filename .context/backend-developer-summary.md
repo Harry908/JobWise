@@ -38,6 +38,9 @@
 - **Bug Fixes Applied**: ✅ **RESOLVED** - Pydantic V1→V2 migration complete, SQLAlchemy import warnings fixed, all deprecation warnings eliminated
 - **Test Infrastructure**: ✅ **COMPLETE** - All 24 endpoints tested with proper fake repositories and dependency overrides
 
+## API Contract
+- **OpenAPI spec**: `.context/api/openapi-spec.yaml` has been created to capture the current API contract and will be iteratively expanded to include complete DTO schemas and examples.
+
 ## Recommendations
 1. **Priority 1**: ✅ **COMPLETED** - API-1 & API-2 fully implemented and tested with 100% endpoint coverage
 2. **Priority 2**: Implement **API-3 Generation API** - Mock AI pipeline with 5-stage processing (2-3 days)
