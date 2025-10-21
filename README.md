@@ -59,20 +59,24 @@ The project emphasizes the **job search to application workflow**, with focus on
 
 ## Recent updates (Oct 20, 2025)
 
-**🎉 Sprint 1 Successfully Completed!** The backend foundation is fully operational with comprehensive API services.
+**Sprint 1 Complete + Job API Redesigned**
 
 ### Sprint 1 Achievements
-- **Backend Foundation Complete**: F1 (Environment & Setup), F2 (Database Foundation), F3 (Authentication System) - All passing tests
-- **Profile API**: Fully implemented with 12/12 tests passing - Master resume CRUD, analytics, and component management
-- **Job Description API**: Fully implemented - Unified job model supporting all input sources with keyword extraction
-- **Documentation**: Comprehensive technical specs, ADRs, architecture diagrams, and multi-agent coordination protocols
-- **Test Coverage**: ~55% overall (working towards 80% gate)
+- **Backend Foundation Complete**: Authentication (JWT), Profile API, Database layer
+- **Profile API**: 12/12 tests passing - Master resume CRUD with components
+- **Job API Redesign**: Simplified CRUD with text parsing
+  - Single unified job_descriptions table
+  - Accepts raw text (auto-parsed) or structured data
+  - Text parser extracts title, company, requirements, benefits
+  - 5 simple endpoints: POST, GET, GET/:id, PUT/:id, DELETE/:id
+- **Architecture Simplification**: Removed 40% redundant files, clean adapter pattern
+- **Test Coverage**: 133 tests, 47% coverage
 
-### Sprint 2 Ready to Launch (Oct 21-27, 2025)
-- **Generation API (API-3)**: 5-stage mock AI pipeline for resume generation
-- **Document Export API (API-4)**: Professional PDF export with 3 templates
-- **40-hour implementation plan**: Detailed in `docs/sprint2/sprint2-plan.md`
-- **Target**: 53+ new tests, 65%+ coverage, 19 new endpoints
+### Sprint 2 In Progress (Oct 21-27, 2025)
+- **Job API**: Complete (redesigned CRUD with parsing)
+- **Generation API**: Pending (5-stage mock AI pipeline)
+- **Document Export API**: Pending (PDF export)
+- **Target**: 65%+ coverage, full end-to-end flow
 
 ### Quick Start (Backend)
 

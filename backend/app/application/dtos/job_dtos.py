@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any, Annotated
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class SalaryRangeDTO(BaseModel):
@@ -209,20 +209,35 @@ class JobFiltersDTO(BaseModel):
 
 
 class CreateJobDTO(BaseModel):
-    """DTO to create a user job description via API"""
-    title: str = Field(..., max_length=200)
-    company: str = Field(..., max_length=200)
-    description: str = Field(..., max_length=5000)
-    requirements: Optional[List[str]] = Field(default_factory=list)
-    benefits: Optional[List[str]] = Field(default_factory=list)
-    location: Optional[str] = None
-    remote: Optional[bool] = False
-    job_type: Optional[str] = None
-    experience_level: Optional[str] = None
-    industry: Optional[str] = None
-    company_size: Optional[str] = None
-    salary_range: Optional[Dict[str, int]] = None
-    source: Optional[str] = Field(default="user_created")
+    """DTO to create a user job description via API - supports raw text or structured data"""
+    # Option 1: Raw text (user copy-paste)
+    raw_text: Optional[str] = Field(None, max_length=20000, description="Raw job posting text to be parsed")
+    
+    # Option 2: Structured data (or override for raw_text)
+    title: Optional[str] = Field(None, max_length=200, description="Job title")
+    company: Optional[str] = Field(None, max_length=200, description="Company name")
+    description: Optional[str] = Field(None, max_length=5000, description="Job description")
+    requirements: Optional[List[str]] = Field(default_factory=list, description="Job requirements")
+    benefits: Optional[List[str]] = Field(default_factory=list, description="Job benefits")
+    location: Optional[str] = Field(None, max_length=200, description="Job location")
+    remote: Optional[bool] = Field(False, description="Remote work availability")
+    job_type: Optional[str] = Field(None, description="Job type")
+    experience_level: Optional[str] = Field(None, description="Experience level")
+    industry: Optional[str] = Field(None, description="Industry")
+    company_size: Optional[str] = Field(None, description="Company size")
+    salary_range: Optional[Dict[str, Any]] = Field(None, description="Salary range with min/max/currency")
+    source: str = Field(default="user_created", description="Job source")
+    
+    @model_validator(mode='after')
+    def validate_data(self):
+        """Ensure either raw_text or (title + company + description) provided"""
+        has_raw_text = bool(self.raw_text and self.raw_text.strip())
+        has_structured = bool(self.title and self.company and self.description)
+        
+        if not has_raw_text and not has_structured:
+            raise ValueError("Either raw_text or structured data (title, company, description) must be provided")
+        
+        return self
 
 
 class UpdateJobDTO(BaseModel):

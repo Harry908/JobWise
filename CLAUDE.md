@@ -93,6 +93,16 @@ mypy app/
 flake8 app/ tests/
 ```
 
+**Windows-Specific Notes**:
+```powershell
+# If you get execution policy errors with .bat files
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Alternative activation methods if script fails
+python -m venv venv  # Create venv
+venv\Scripts\python.exe -m pip install --upgrade pip  # Direct Python invocation
+```
+
 ### Mobile App (Flutter)
 
 **Location**: `mobile_app/` directory
@@ -163,6 +173,8 @@ backend/app/
 ├── domain/              # Core business logic (no external dependencies)
 │   ├── entities/        # Business entities (User, Profile, Job, Generation)
 │   ├── value_objects/   # Complex types (Experience, Education, Skills)
+│   ├── services/        # Domain services (business logic)
+│   │   └── stages/      # Generation pipeline stages
 │   └── ports/           # Interfaces for external services (adapter pattern)
 │       ├── llm_service_port.py     # LLM provider interface
 │       ├── pdf_generator_port.py   # PDF export interface
@@ -171,12 +183,12 @@ backend/app/
 ├── infrastructure/      # Adapter implementations
 │   ├── adapters/        # Concrete adapter implementations
 │   │   ├── llm/
-│   │   │   └── mock_llm.py         # Sprint 2 mock implementation
-│   │   │   # openai.py (Sprint 3+), claude.py (Sprint 4+)
+│   │   │   └── openai_adapter.py   # Sprint 2 (stub classes only)
+│   │   │   # Implementation pending Sprint 2
 │   │   ├── pdf/
-│   │   │   └── reportlab.py        # Sprint 2 PDF generation
+│   │   │   └── reportlab_adapter.py # Sprint 2 PDF generation
 │   │   └── storage/
-│   │       └── local_storage.py    # Sprint 2 file storage
+│   │       └── local_file_adapter.py # Sprint 2 file storage
 │   ├── repositories/    # Repository implementations
 │   │   ├── profile_repository.py
 │   │   ├── job_repository.py
@@ -276,7 +288,7 @@ Profile API (API-1) ──> Job Description API (API-2) ──> Generation API (
 ### Testing Strategy
 - **pytest** with async support (`pytest-asyncio`)
 - **Test Markers**: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.slow`, `@pytest.mark.ai`
-- **Coverage Target**: 80%+ (currently ~55%, target 65% by end of Sprint 2)
+- **Coverage Target**: 80%+ (currently 45.78%, 133 tests passing)
 - **Test Database**: Separate SQLite database (`test_jobwise.db`) with fixtures in `tests/conftest.py`
 - **Factory Pattern**: Use `factory-boy` for test data generation
 
@@ -442,9 +454,24 @@ if not resource:
 - `backend/tests/conftest.py` - Pytest fixtures and test configuration
 - `backend/pyproject.toml` - Test configuration (pytest, coverage, markers)
 
+### Current Codebase Stats (October 2025)
+- **Total Tests**: 133 tests across 12 test files
+- **Test Coverage**: 45.78% (target: 80%)
+- **API Endpoints**: Profile API (12 endpoints), Job API (5 endpoints), Auth API (8 endpoints)
+- **Backend LOC**: ~3,500 lines (app/ directory)
+- **Sprint Progress**: Sprint 1 complete (Auth + Profile + Job APIs), Sprint 2 pending
+
 ## Sprint Context
 
 **Current Sprint**: Sprint 2 (Week 11) - Generation & Document Export APIs
+
+**Status**: NOT STARTED - Sprint 1 complete, Sprint 2 planned but not yet implemented
+
+**Evidence**:
+- No `test_generation_api.py` or `test_document_api.py` files exist yet
+- Generation and Document API endpoints created but not fully implemented
+- 133 tests passing (all Sprint 1 tests)
+- Adapter files exist in `infrastructure/adapters/` but contain only empty stub classes
 
 **Sprint 2 Goals**:
 - Implement Generation API (API-3) with 5-stage mock pipeline
@@ -530,6 +557,29 @@ async def test_api_endpoint(async_client, auth_headers):
 - **PDF Export**: <2s per document
 - **Database Queries**: Use indexes, avoid N+1 queries, use `selectinload()` for relationships
 
+## Quick Diagnostic Commands
+
+### Check Current Status
+```powershell
+# See what tests exist
+cd backend && python -m pytest --collect-only -q | tail -5
+
+# Check test coverage quickly
+cd backend && python -m pytest --cov=app --cov-report=term-missing -q
+
+# List all API endpoints
+cd backend && python -c "from app.main import app; print('\n'.join([r.path for r in app.routes]))"
+
+# Check database schema
+cd backend && python -c "from app.infrastructure.database.models import Base; print([t.name for t in Base.metadata.sorted_tables])"
+
+# Count lines of code
+cd backend && find app -name "*.py" -not -path "*__pycache__*" | xargs wc -l | tail -1
+
+# Check which tests are failing
+cd backend && python -m pytest --tb=no -q
+```
+
 ## Architecture Simplification (Recent Change)
 
 ### What We Removed
@@ -548,6 +598,13 @@ The architecture was previously over-engineered with many empty adapter stubs. W
 - **Domain entities and value objects** (core business logic)
 - **Repository pattern** (clean data access)
 - **Service layer** (business logic orchestration)
+
+**Current State of Adapters (October 2025)**:
+- Adapter files exist in `infrastructure/adapters/` but contain only empty stub classes
+- `llm/openai_adapter.py`: Contains empty OpenAI, Claude, Gemini, Groq, Azure, Local adapter classes
+- `pdf/reportlab_adapter.py`: Exists but implementation pending Sprint 2
+- `storage/local_file_adapter.py`: Exists but implementation pending Sprint 2
+- These will be implemented as part of Sprint 2 work
 
 ### When to Add Complexity Back
 
@@ -583,6 +640,9 @@ def get_llm_service() -> ILLMService:
 7. **Windows Paths**: Use forward slashes or raw strings for file paths in tests
 8. **Adapter Pattern**: Only used for external services (LLM, PDF, storage) - not for repositories
 9. **Domain Ports**: Interface files in domain/ports/, implementations in infrastructure/adapters/
+10. **Empty Adapter Stubs**: Files in `infrastructure/adapters/` exist but contain only empty class definitions - implementation pending Sprint 2
+11. **Test Count Discrepancy**: CLAUDE.md may reference outdated test counts - always run `pytest --collect-only` to verify current count
+12. **Coverage Measurement**: Coverage tool excludes `__pycache__`, `tests/`, and `alembic/` directories by default (see `pyproject.toml`)
 
 ## Future Considerations
 

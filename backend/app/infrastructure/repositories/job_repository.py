@@ -80,23 +80,44 @@ class DatabaseJobRepository(JobRepositoryInterface):
 
     async def create_user_job(self, user_id: str, job: CreateJobDTO) -> JobDTO:
         """Insert a new user-created job into jobs table."""
+        from ...application.services.job_description_parser import JobDescriptionParser
+        
         job_id = str(uuid.uuid4())
+        
+        # Parse raw text if provided
+        if job.raw_text:
+            parser = JobDescriptionParser()
+            parsed = parser.parse(job.raw_text)
+            
+            # Merge parsed data with provided structured data (structured data wins)
+            job_data = {
+                **parsed,  # Parsed from text
+                **job.model_dump(exclude={"raw_text"}, exclude_none=True),  # Override
+            }
+            job_data["raw_text"] = job.raw_text
+        else:
+            # Use structured data directly
+            job_data = job.model_dump(exclude_none=True)
+        
+        # Extract salary range
+        salary_range = job_data.get("salary_range", {})
+        
         stmt = insert(JobPostingModel).values(
             id=job_id,
-            title=job.title,
-            company=job.company,
-            location=job.location or "",
-            description=job.description,
-            requirements=job.requirements or [],
-            salary_min=(job.salary_range or {}).get('min') if job.salary_range else None,
-            salary_max=(job.salary_range or {}).get('max') if job.salary_range else None,
-            salary_currency=(job.salary_range or {}).get('currency', 'USD') if job.salary_range else 'USD',
-            remote=job.remote if job.remote is not None else False,
-            job_type=job.job_type or 'full_time',
-            experience_level=job.experience_level or 'entry',
+            title=job_data.get("title", ""),
+            company=job_data.get("company", ""),
+            location=job_data.get("location", ""),
+            description=job_data.get("description", ""),
+            requirements=job_data.get("requirements", []),
+            salary_min=salary_range.get('min') if salary_range else None,
+            salary_max=salary_range.get('max') if salary_range else None,
+            salary_currency=salary_range.get('currency', 'USD') if salary_range else 'USD',
+            remote=job_data.get("remote", False),
+            job_type=job_data.get("job_type", 'full_time'),
+            experience_level=job_data.get("experience_level", 'entry'),
             posted_date=func.now(),
             application_url=None,
-            source=job.source or 'user_created',
+            source=job_data.get("source", 'user_created'),
             user_id=user_id,
             status='draft'
         )

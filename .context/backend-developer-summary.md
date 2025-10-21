@@ -35,6 +35,9 @@
 ## API-1 & API-2 Implementation Status
 - **API-1 Profile API**: ✅ **FULLY TESTED** - 12/12 tests passing, complete CRUD operations, analytics endpoints, experience/education/project management, database persistence working
 - **API-2 Job Description API**: ✅ **FULLY TESTED** - 12/12 tests passing, unified job model, custom job CRUD, keyword extraction, status management, JSON template conversion
+	- **Design Update:** Job deletions will be hard deletes (jobs removed immediately). The `source` field is now a free-form string to support provider names (e.g., `indeed`, `linkedin`) and must be supplied by the POST request to correctly identify the job origin. The text parser can optionally leverage the `ILLMService` adapter for improved extraction quality on ambiguous descriptions (LLM usage is opt-in and rate-limited).
+		- **OpenAPI Update:** `.context/api/openapi-spec.yaml` updated with `JobCreateRequest` schema and POST `/jobs` operation requiring `source`. `JobResponse` now includes `source` in the required fields.
+		- **Generation Contract:** Generation API updated in design doc: Each generation uses one `profile_id` and one `job_id` as inputs. LLM may be used for analysis and generation. Generated resume/cover letters are persisted and linked to the source job description.
 - **Bug Fixes Applied**: ✅ **RESOLVED** - Pydantic V1→V2 migration complete, SQLAlchemy import warnings fixed, all deprecation warnings eliminated
 - **Test Infrastructure**: ✅ **COMPLETE** - All 24 endpoints tested with proper fake repositories and dependency overrides
 

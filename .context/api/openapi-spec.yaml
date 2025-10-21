@@ -825,77 +825,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /documents/{document_id}/share:
-    post:
-      tags:
-        - Documents
-      summary: Generate shareable link
-      description: Create temporary shareable link for document
-      parameters:
-        - $ref: '#/components/parameters/DocumentId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShareDocumentRequest'
-            example:
-              expires_in_hours: 24
-              password_protected: false
-              download_limit: 10
-      responses:
-        '201':
-          description: Share link created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShareLinkResponse'
-
-# Component Definitions
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  parameters:
-    ProfileId:
-      name: profile_id
-      in: path
-      required: true
-      description: Profile unique identifier
-      schema:
-        type: string
-        format: uuid
-        example: "550e8400-e29b-41d4-a716-446655440000"
-    
-    JobId:
-      name: job_id
-      in: path
-      required: true
-      description: Job unique identifier
-      schema:
-        type: string
-        example: "job_123"
-    
-    SavedJobId:
-      name: saved_job_id
-      in: path
-      required: true
-      description: Saved job unique identifier
-      schema:
-        type: string
-        format: uuid
-    
-    GenerationId:
-      name: generation_id
-      in: path
-      required: true
-      description: Generation process unique identifier
-      schema:
-        type: string
-        format: uuid
+  # POST /documents is handled above at /documents path
     
     DocumentId:
       name: document_id
@@ -1889,6 +1819,21 @@ components:
           type: integer
         generation_time:
           type: number
+
+    DocumentGenerationRequest:
+      type: object
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+        options:
+          $ref: '#/components/schemas/GenerationOptions'
+        include_cover_letter:
+          type: boolean
+          default: false
+      required: [profile_id, job_id]
 
     PDFInfo:
       type: object

@@ -2,6 +2,111 @@
 
 ---
 
+## Interaction [43]
+
+### User Request
+Read the old architecture design and put everything in 1 markdown file with mermaid diagrams.
+
+### Response Summary
+Consolidated all PlantUML architecture diagrams from `.context/diagrams/backend/` into the main design document (`backend/BACKEND_DESIGN_DOCUMENT.md`) using Mermaid diagrams. Replaced ASCII art diagrams with professional Mermaid visualizations for better maintainability and inline rendering support.
+
+### Actions Taken
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Replaced high-level architecture ASCII diagram with Mermaid flowchart showing Client → FastAPI layers → Database/External APIs
+  - **Reason:** Improve diagram readability and enable inline rendering in modern markdown viewers
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Replaced dependency flow ASCII diagram with Mermaid graph showing Presentation → Application → Domain ← Infrastructure
+  - **Reason:** Visualize clean architecture dependency rule with clear layer separation
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Added comprehensive Entity Relationship Diagram (ERD) in Mermaid format showing all database entities (UserModel, MasterProfileModel, JobModel, GenerationModel, DocumentModel, SavedJobModel) with relationships and field details
+  - **Reason:** Provide complete database schema visualization with cardinality and field specifications
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Replaced User Registration Flow ASCII sequence diagram with Mermaid sequenceDiagram
+  - **Reason:** Modernize sequence visualization with proper participant formatting
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Replaced Resume Generation Flow ASCII sequence diagram with Mermaid sequenceDiagram showing async pipeline stages
+  - **Reason:** Clearly visualize 5-stage generation pipeline with async processing and polling pattern
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Replaced PDF Export Flow ASCII sequence diagram with Mermaid sequenceDiagram
+  - **Reason:** Show document export workflow with ReportLab integration and file storage
+
+**Diagrams Consolidated:**
+- High-level system architecture (Client → FastAPI → Database)
+- Clean architecture dependency flow (4 layers)
+- Complete database ERD (7 core entities with relationships)
+- User registration sequence
+- Resume generation sequence (5-stage pipeline)
+- PDF export sequence
+
+**Benefits:**
+- Single source of truth for all architecture documentation
+- Mermaid diagrams render inline in GitHub, VS Code, and modern markdown viewers
+- Easier to maintain (no separate PlantUML files)
+- Consistent visual styling across all diagrams
+- Better version control (text-based diagram definitions)
+
+---
+
+## 32. Job API: Hard Delete and LLM Parsing Update
+
+### User Request
+I want job api delete to be hard delete. Text parser can use llm service. job source can be user create or API name like Indeed, linkedin, ... Update my design doc
+
+### Response Summary
+Updated the backend design document to switch job deletions to hard deletes, expand the `source` field to support specific third-party provider names (e.g., `indeed`, `linkedin`), and document that the job description text parser may optionally use the LLM service via the `ILLMService` port for improved extraction quality.
+
+### Actions Taken
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Updated `JobModel` source enum to include provider names and clarified source filtering parameters
+  - **Reason:** Provide explicit support for provider-based job sources and consistent filtering
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Changed Job Description API delete behavior to hard delete and documented the rationale
+  - **Reason:** Implement hard delete semantics for job lifecycle simplification
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Added documentation describing LLM-assisted parsing as an opt-in fallback for the text parser
+  - **Reason:** Allow text parser to leverage LLM for ambiguous or complex parsing scenarios while controlling costs via rate limits
+
+
+## 33. Job Source Type Simplification
+
+### User Request
+Make job `source` a simple string and require `source` in POST requests.
+
+### Response Summary
+Updated design doc to treat the `source` field as a string and document that POST requests must include the `source` field specifying the job origin.
+
+### Actions Taken
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Updated `JobModel.source` to be a string and the POST `/` description to require `source` in the request body.
+  - **Reason:** Simplify source handling and make provider names extensible without schema changes.
+
+## 34. API Contract: Job Create `source` Requirement
+
+### User Request
+Update API contract to require job `source` in the POST payload and reflect changes in design docs and OpenAPI spec.
+
+### Response Summary
+Updated the OpenAPI spec and design documentation to require `source` in the POST `/jobs` request. Added `JobCreateRequest` schema and ensured `/jobs` POST returns `201` with `JobResponse` including `source`.
+
+### Actions Taken
+- **File:** `.context/api/openapi-spec.yaml`
+  - **Change:** Added `JobCreateRequest` schema and POST `/jobs` operation; added `source` to `JobResponse` required fields.
+  - **Reason:** Align API contract with design and make job source explicit in requests.
+
+## 35. Generation API: Single Job & Profile Responsibility
+
+### User Request
+Generation API must analyze one profile and one job description, then generate a tailored resume and optionally a cover letter tied to that job.
+
+### Response Summary
+Updated the design document to explicitly state the generation API responsibilities: fetch and analyze one profile and one job, compile the profile, generate documents via LLM, validate quality, persist results, and link each generated resume/cover letter to the source job description.
+
+### Actions Taken
+- **File:** `backend/BACKEND_DESIGN_DOCUMENT.md`
+  - **Change:** Added a detailed description of generation pipeline responsibilities, single-profile/single-job contract, and operational notes about LLM usage and async behavior.
+  - **Reason:** Clarify behavior and traceability of generated documents; align documentation with orchestration design.
+
+
 ## 11. API-2 Job Description API Implementation & Debugging
 
 ### User Request
