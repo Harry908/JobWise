@@ -16,7 +16,7 @@ from .profiles import router as profiles_router
 
 api_router.include_router(auth_router, prefix="/auth", tags=["authentication"])
 api_router.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
-api_router.include_router(job_descriptions_router, prefix="/job-descriptions", tags=["job-descriptions"])
+api_router.include_router(job_descriptions_router)  # Prefix defined in router
 api_router.include_router(profiles_router, prefix="/profiles", tags=["profiles"])
 # api_router.include_router(generation_router, prefix="/generations", tags=["generation"])
 # api_router.include_router(documents_router, prefix="/documents", tags=["documents"])

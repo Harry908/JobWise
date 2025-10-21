@@ -1,200 +1,182 @@
-"""Job description repository for data access operations."""
+"""Job Description Repository - CRUD operations for job descriptions"""
 
+import uuid
+from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
 
-from sqlalchemy import select, update, delete, func, and_, or_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...domain.entities.job_description import JobDescription, JobDescriptionMetadata, JobDescriptionStatus, JobDescriptionSource
+from ...application.dtos.job_description_dtos import (
+    CreateJobDescriptionRequest,
+    UpdateJobDescriptionRequest,
+    JobDescriptionResponse
+)
+from ...application.services.job_description_parser import JobDescriptionParser
 from ...infrastructure.database.models import JobDescriptionModel
 
 
 class JobDescriptionRepository:
-    """Repository for job description data access operations using the database."""
+    """Repository for job description CRUD operations"""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, parser: JobDescriptionParser):
         self.session = session
+        self.parser = parser
 
-    async def create(self, job_description: JobDescription) -> JobDescription:
-        """Persist a new JobDescription to the database and return the domain entity with IDs/timestamps."""
-        model = JobDescriptionModel(
-            id=str(job_description.id),
-            user_id=str(job_description.user_id),
-            title=job_description.title,
-            company=job_description.company,
-            description=job_description.description,
-            requirements=job_description.requirements,
-            benefits=job_description.benefits,
-            status=JobDescriptionStatus.DRAFT,
-            source=job_description.source if isinstance(job_description.source, JobDescriptionSource) else JobDescriptionSource.MANUAL,
-            keywords=job_description.metadata.keywords if job_description.metadata else [],
-            technical_skills=job_description.metadata.technical_skills if job_description.metadata else [],
-            soft_skills=job_description.metadata.soft_skills if job_description.metadata else [],
-            experience_level=job_description.metadata.experience_level if job_description.metadata else "",
-            industry=job_description.metadata.industry if job_description.metadata else None,
-            company_size=job_description.metadata.company_size if job_description.metadata else None,
-            remote_policy=job_description.metadata.remote_policy if job_description.metadata else None,
-            salary_range_min=job_description.metadata.salary_range_min if job_description.metadata else None,
-            salary_range_max=job_description.metadata.salary_range_max if job_description.metadata else None,
-            salary_currency=job_description.metadata.salary_currency if job_description.metadata else "USD",
-            location=job_description.metadata.location if job_description.metadata else None,
-            created_from_url=job_description.metadata.created_from_url if job_description.metadata else None,
-            version=job_description.version,
+    async def create(
+        self,
+        user_id: str,
+        data: CreateJobDescriptionRequest
+    ) -> JobDescriptionResponse:
+        """
+        Create job description from raw text or structured data.
+
+        If raw_text is provided, parse it first and merge with structured data.
+        """
+
+        # Parse raw text if provided
+        if data.raw_text:
+            parsed = self.parser.parse(data.raw_text)
+
+            # Merge parsed data with provided structured data (structured data wins)
+            job_data = {
+                **parsed,  # Parsed from text
+                **data.model_dump(exclude={"raw_text"}, exclude_none=True),  # Override
+            }
+            job_data["raw_text"] = data.raw_text
+        else:
+            # Use structured data directly
+            job_data = data.model_dump(exclude_none=True)
+
+        # Validate required fields after parsing
+        if not job_data.get("title"):
+            raise ValueError("Could not extract title from text")
+        if not job_data.get("company"):
+            raise ValueError("Could not extract company from text")
+        if not job_data.get("description"):
+            raise ValueError("Could not extract description from text")
+
+        # Create database model
+        job_desc = JobDescriptionModel(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            **job_data
         )
 
-        self.session.add(model)
-        await self.session.flush()
+        self.session.add(job_desc)
+        await self.session.commit()
+        await self.session.refresh(job_desc)
 
-        # refresh model to get timestamps
-        await self.session.refresh(model)
+        return JobDescriptionResponse.model_validate(job_desc)
 
-        # Map back to domain entity
-        job_description.created_at = model.created_at
-        job_description.updated_at = model.updated_at
-
-        return job_description
-
-    async def _row_to_entity(self, row: JobDescriptionModel) -> JobDescription:
-        """Convert DB model row to domain JobDescription entity."""
-        from ...domain.entities.job_description import JobDescription, JobDescriptionMetadata
-
-        metadata = JobDescriptionMetadata(
-            keywords=row.keywords or [],
-            technical_skills=row.technical_skills or [],
-            soft_skills=row.soft_skills or [],
-            experience_level=row.experience_level or "",
-            industry=row.industry,
-            company_size=row.company_size,
-            remote_policy=row.remote_policy,
-            salary_range_min=row.salary_range_min,
-            salary_range_max=row.salary_range_max,
-            salary_currency=row.salary_currency or "USD",
-            location=row.location,
-            created_from_url=row.created_from_url,
+    async def get_by_id(self, job_id: str) -> Optional[JobDescriptionResponse]:
+        """Get job description by ID"""
+        result = await self.session.execute(
+            select(JobDescriptionModel).where(JobDescriptionModel.id == job_id)
         )
+        job_desc = result.scalar_one_or_none()
 
-        return JobDescription(
-            id=UUID(row.id),
-            user_id=UUID(row.user_id),
-            title=row.title,
-            company=row.company,
-            description=row.description,
-            requirements=row.requirements or [],
-            benefits=row.benefits or [],
-            status=row.status,
-            source=row.source,
-            metadata=metadata,
-            version=row.version,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-        )
+        if job_desc:
+            return JobDescriptionResponse.model_validate(job_desc)
+        return None
 
-    async def get_by_id(self, job_description_id: UUID) -> Optional[JobDescription]:
-        query = select(JobDescriptionModel).where(JobDescriptionModel.id == str(job_description_id))
-        result = await self.session.execute(query)
-        row = result.scalar_one_or_none()
-        if not row:
-            return None
-        return await self._row_to_entity(row)
-
-    async def get_by_user_id(self, user_id: UUID) -> List[JobDescription]:
-        query = select(JobDescriptionModel).where(JobDescriptionModel.user_id == str(user_id))
-        result = await self.session.execute(query)
-        rows = result.scalars().all()
-        return [await self._row_to_entity(r) for r in rows]
-
-    async def get_active_by_user_id(self, user_id: UUID) -> List[JobDescription]:
+    async def list_by_user(
+        self,
+        user_id: str,
+        status: Optional[str] = None,
+        source: Optional[str] = None,
+        limit: int = 20,
+        offset: int = 0
+    ) -> List[JobDescriptionResponse]:
+        """List user's job descriptions with filters"""
         query = select(JobDescriptionModel).where(
-            JobDescriptionModel.user_id == str(user_id),
-            JobDescriptionModel.status == JobDescriptionStatus.ACTIVE,
+            JobDescriptionModel.user_id == user_id
         )
+
+        # Filter by status (exclude deleted by default)
+        if status:
+            query = query.where(JobDescriptionModel.status == status)
+        else:
+            query = query.where(JobDescriptionModel.status != "deleted")
+
+        # Filter by source
+        if source:
+            query = query.where(JobDescriptionModel.source == source)
+
+        query = query.order_by(JobDescriptionModel.created_at.desc())
+        query = query.limit(limit).offset(offset)
+
         result = await self.session.execute(query)
-        rows = result.scalars().all()
-        return [await self._row_to_entity(r) for r in rows]
+        jobs = result.scalars().all()
 
-    async def update(self, job_description: JobDescription) -> JobDescription:
+        return [JobDescriptionResponse.model_validate(j) for j in jobs]
+
+    async def count_by_user(
+        self,
+        user_id: str,
+        status: Optional[str] = None,
+        source: Optional[str] = None
+    ) -> int:
+        """Count user's job descriptions"""
+        query = select(func.count(JobDescriptionModel.id)).where(
+            JobDescriptionModel.user_id == user_id
+        )
+
+        # Filter by status (exclude deleted by default)
+        if status:
+            query = query.where(JobDescriptionModel.status == status)
+        else:
+            query = query.where(JobDescriptionModel.status != "deleted")
+
+        # Filter by source
+        if source:
+            query = query.where(JobDescriptionModel.source == source)
+
+        result = await self.session.execute(query)
+        return result.scalar_one()
+
+    async def update(
+        self,
+        job_id: str,
+        data: UpdateJobDescriptionRequest
+    ) -> JobDescriptionResponse:
+        """Update job description"""
+        job_desc = await self.session.get(JobDescriptionModel, job_id)
+
+        if not job_desc:
+            raise ValueError("Job description not found")
+
         # Update fields
-        update_values = {
-            'title': job_description.title,
-            'company': job_description.company,
-            'description': job_description.description,
-            'requirements': job_description.requirements,
-            'benefits': job_description.benefits,
-            'status': job_description.status,
-            'source': job_description.source,
-            'keywords': job_description.metadata.keywords if job_description.metadata else [],
-            'technical_skills': job_description.metadata.technical_skills if job_description.metadata else [],
-            'soft_skills': job_description.metadata.soft_skills if job_description.metadata else [],
-            'experience_level': job_description.metadata.experience_level if job_description.metadata else "",
-            'industry': job_description.metadata.industry if job_description.metadata else None,
-            'company_size': job_description.metadata.company_size if job_description.metadata else None,
-            'remote_policy': job_description.metadata.remote_policy if job_description.metadata else None,
-            'salary_range_min': job_description.metadata.salary_range_min if job_description.metadata else None,
-            'salary_range_max': job_description.metadata.salary_range_max if job_description.metadata else None,
-            'salary_currency': job_description.metadata.salary_currency if job_description.metadata else "USD",
-            'location': job_description.metadata.location if job_description.metadata else None,
-            'created_from_url': job_description.metadata.created_from_url if job_description.metadata else None,
-            'version': job_description.version,
-        }
+        update_data = data.model_dump(exclude_none=True)
+        for field, value in update_data.items():
+            setattr(job_desc, field, value)
 
-        await self.session.execute(
-            update(JobDescriptionModel)
-            .where(JobDescriptionModel.id == str(job_description.id))
-            .values(**update_values)
-        )
-        await self.session.flush()
+        job_desc.updated_at = datetime.utcnow()
 
-        # Reload row
-        updated = await self.get_by_id(job_description.id)
-        if not updated:
-            raise ValueError("Failed to update job description")
-        return updated
+        await self.session.commit()
+        await self.session.refresh(job_desc)
 
-    async def delete(self, job_description_id: UUID) -> bool:
-        await self.session.execute(
-            delete(JobDescriptionModel).where(JobDescriptionModel.id == str(job_description_id))
-        )
-        await self.session.flush()
+        return JobDescriptionResponse.model_validate(job_desc)
+
+    async def delete(self, job_id: str) -> bool:
+        """Soft delete job description (set status to deleted)"""
+        job_desc = await self.session.get(JobDescriptionModel, job_id)
+
+        if not job_desc:
+            return False
+
+        job_desc.status = "deleted"
+        job_desc.updated_at = datetime.utcnow()
+
+        await self.session.commit()
         return True
 
-    async def exists(self, job_description_id: UUID) -> bool:
-        query = select(func.count()).select_from(JobDescriptionModel).where(JobDescriptionModel.id == str(job_description_id))
-        result = await self.session.execute(query)
-        return result.scalar_one() > 0
-
-    async def count_by_user_id(self, user_id: UUID) -> int:
-        query = select(func.count()).select_from(JobDescriptionModel).where(JobDescriptionModel.user_id == str(user_id))
-        result = await self.session.execute(query)
-        return int(result.scalar_one() or 0)
-
-    async def search_by_user_id(
-        self,
-        user_id: UUID,
-        query: Optional[str] = None,
-        status: Optional[str] = None,
-        limit: int = 20,
-        offset: int = 0,
-    ) -> List[JobDescription]:
-        stmt = select(JobDescriptionModel).where(JobDescriptionModel.user_id == str(user_id))
-
-        if status:
-            try:
-                stmt = stmt.where(JobDescriptionModel.status == JobDescriptionStatus(status))
-            except Exception:
-                pass
-
-        if query:
-            q = f"%{query.lower()}%"
-            stmt = stmt.where(
-                or_(
-                    func.lower(JobDescriptionModel.title).like(q),
-                    func.lower(JobDescriptionModel.company).like(q),
-                    func.lower(JobDescriptionModel.description).like(q),
-                )
+    async def verify_ownership(self, job_id: str, user_id: str) -> bool:
+        """Verify that the job belongs to the user"""
+        result = await self.session.execute(
+            select(JobDescriptionModel).where(
+                JobDescriptionModel.id == job_id,
+                JobDescriptionModel.user_id == user_id
             )
-
-        stmt = stmt.order_by(JobDescriptionModel.created_at.desc()).limit(limit).offset(offset)
-        result = await self.session.execute(stmt)
-        rows = result.scalars().all()
-        return [await self._row_to_entity(r) for r in rows]
+        )
+        return result.scalar_one_or_none() is not None

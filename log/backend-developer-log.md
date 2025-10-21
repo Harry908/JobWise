@@ -1467,3 +1467,6 @@ Created an initial OpenAPI 3.0 specification file at `.context/api/openapi-spec.
 - **File:** `.context/api/openapi-spec.yaml`
   - **Change:** Created initial OpenAPI 3.0 YAML documenting primary routes and core DTO schemas.
   - **Reason:** Provide a machine-readable API contract for clients and documentation.
+
+### Follow-up
+- Next steps: expand spec with full schema details for all DTOs, add examples for each route, and hook into CI to validate OpenAPI against running app.

@@ -514,7 +514,7 @@ class JobPostingModel(Base, TimestampMixin):
 
 
 class JobDescriptionModel(Base, TimestampMixin):
-    """Custom job description model for user-created job postings."""
+    """Simplified job description model for all user job data."""
 
     __tablename__ = "job_descriptions"
 
@@ -533,42 +533,42 @@ class JobDescriptionModel(Base, TimestampMixin):
         index=True
     )
 
-    # Job description fields
+    # Core job fields
     title: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     company: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    location: Mapped[Optional[str]] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, nullable=False)
     requirements: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
     benefits: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
 
-    # Status and source
-    status: Mapped[JobDescriptionStatus] = mapped_column(
-        SQLEnum(JobDescriptionStatus),
+    # Optional metadata
+    job_type: Mapped[Optional[str]] = mapped_column(String(50))
+    experience_level: Mapped[Optional[str]] = mapped_column(String(50))
+    salary_min: Mapped[Optional[int]] = mapped_column(Integer)
+    salary_max: Mapped[Optional[int]] = mapped_column(Integer)
+    salary_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    remote_work: Mapped[Optional[str]] = mapped_column(String(20))
+
+    # Source tracking
+    source: Mapped[str] = mapped_column(
+        String(20),
         nullable=False,
-        default=JobDescriptionStatus.DRAFT,
+        default="user_created",
         index=True
     )
-    source: Mapped[JobDescriptionSource] = mapped_column(
-        SQLEnum(JobDescriptionSource),
+    external_id: Mapped[Optional[str]] = mapped_column(String(100))
+    external_url: Mapped[Optional[str]] = mapped_column(String(500))
+
+    # Original text (for reference)
+    raw_text: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Status
+    status: Mapped[str] = mapped_column(
+        String(20),
         nullable=False,
-        default=JobDescriptionSource.MANUAL
+        default="active",
+        index=True
     )
-
-    # Metadata fields
-    keywords: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
-    technical_skills: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
-    soft_skills: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
-    experience_level: Mapped[str] = mapped_column(String(50), nullable=False, default="")
-    industry: Mapped[Optional[str]] = mapped_column(String(100))
-    company_size: Mapped[Optional[str]] = mapped_column(String(50))
-    remote_policy: Mapped[Optional[str]] = mapped_column(String(50))
-    salary_range_min: Mapped[Optional[int]] = mapped_column(Integer)
-    salary_range_max: Mapped[Optional[int]] = mapped_column(Integer)
-    salary_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
-    location: Mapped[Optional[str]] = mapped_column(String(200))
-    created_from_url: Mapped[Optional[str]] = mapped_column(String(500))
-
-    # Version control
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="job_descriptions")
@@ -579,13 +579,13 @@ class JobDescriptionModel(Base, TimestampMixin):
 
     # Constraints
     __table_args__ = (
-        CheckConstraint("version > 0"),
-        CheckConstraint("salary_range_min IS NULL OR salary_range_min > 0"),
-        CheckConstraint("salary_range_max IS NULL OR salary_range_max > 0"),
-        CheckConstraint("salary_range_min IS NULL OR salary_range_max IS NULL OR salary_range_min <= salary_range_max"),
-        Index("idx_job_desc_user", "user_id", "status"),
+        CheckConstraint("source IN ('user_created', 'saved_external')"),
+        CheckConstraint("status IN ('active', 'archived', 'deleted')"),
+        CheckConstraint("salary_min IS NULL OR salary_min > 0"),
+        CheckConstraint("salary_max IS NULL OR salary_max > 0"),
+        CheckConstraint("salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max"),
+        Index("idx_job_desc_user_status", "user_id", "status", "created_at"),
         Index("idx_job_desc_title_company", "title", "company"),
-        Index("idx_job_desc_created", "created_at"),
     )
 
 

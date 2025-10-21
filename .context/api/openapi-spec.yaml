@@ -34,8 +34,7 @@ servers:
     description: Production server
 
 security:
-  - ApiKeyAuth: []
-  - BearerAuth: []
+  - bearerAuth: []
 
 paths:
   # Health Check
@@ -154,7 +153,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProfileCreateRequest'
+              $ref: '#/components/schemas/CreateProfileDTO'
             example:
               personal_info:
                 full_name: "John Doe"
@@ -210,7 +209,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileResponse'
+                $ref: '#/components/schemas/ProfileDTO'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -230,7 +229,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileResponse'
+                $ref: '#/components/schemas/ProfileDTO'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -248,14 +247,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProfileUpdateRequest'
+              $ref: '#/components/schemas/UpdateProfileDTO'
       responses:
         '200':
           description: Profile updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileResponse'
+                $ref: '#/components/schemas/ProfileDTO'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1304,31 +1303,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Project'
-      type: object
-      properties:
-        personal_info:
-          $ref: '#/components/schemas/PersonalInfo'
-        professional_summary:
-          type: string
-          maxLength: 500
-        experiences:
-          type: array
-          items:
-            $ref: '#/components/schemas/Experience'
-          maxItems: 20
-        education:
-          type: array
-          items:
-            $ref: '#/components/schemas/Education'
-          maxItems: 10
-        skills:
-          $ref: '#/components/schemas/Skills'
-        projects:
-          type: array
-          items:
-            $ref: '#/components/schemas/Project'
-          maxItems: 10
-      required: [personal_info]
 
     Project:
       type: object
@@ -1735,7 +1709,7 @@ components:
           maxLength: 500
           description: Additional instructions for AI generation
 
-  ResumeGenerationRequest:
+    ResumeGenerationRequest:
       type: object
       properties:
         profile_id:
@@ -1931,7 +1905,7 @@ components:
           format: date-time
       required: [url, size_bytes, page_count]
 
-  DocumentResponse:
+    DocumentResponse:
       type: object
       properties:
         id:

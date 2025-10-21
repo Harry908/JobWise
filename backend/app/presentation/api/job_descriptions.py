@@ -1,437 +1,236 @@
-"""Job description API endpoints."""
+"""Job Description API - Simplified CRUD endpoints"""
 
-from typing import List, Optional
-from uuid import UUID
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...application.dtos.job_description_dtos import (
-    CreateJobDescriptionDTO,
-    UpdateJobDescriptionDTO,
-    JobDescriptionDTO,
-    JobDescriptionSummaryDTO,
-    JobDescriptionListDTO,
-    JobDescriptionSearchDTO,
-    JobDescriptionAnalyticsDTO,
-    ParseJobDescriptionDTO,
-    ActivateJobDescriptionDTO,
-    ArchiveJobDescriptionDTO,
-    JobDescriptionMetadataDTO,
-    CreateJobDescriptionDTO,
+    CreateJobDescriptionRequest,
+    UpdateJobDescriptionRequest,
+    JobDescriptionResponse,
+    JobDescriptionListResponse
 )
-from ...application.services.job_description_service import JobDescriptionService
+from ...application.services.job_description_parser import JobDescriptionParser
 from ...core.dependencies import get_db_session, get_current_user
 from ...domain.entities.user import User
 from ...infrastructure.repositories.job_description_repository import JobDescriptionRepository
 
-from ...domain.entities.job_description import JobDescriptionSource, JobDescriptionMetadata
-
-router = APIRouter(prefix="/job-descriptions", tags=["job-descriptions"])
+router = APIRouter(prefix="/job-descriptions", tags=["Job Descriptions"])
 
 
-# Dependency to get job description service
-async def get_job_description_service(session: AsyncSession = Depends(get_db_session)) -> JobDescriptionService:
-    """Get job description service instance."""
-    repository = JobDescriptionRepository(session)
-    return JobDescriptionService(repository)
+# Dependency to get repository with parser
+async def get_job_description_repository(
+    session: AsyncSession = Depends(get_db_session)
+) -> JobDescriptionRepository:
+    """Get job description repository instance with parser"""
+    parser = JobDescriptionParser()
+    return JobDescriptionRepository(session, parser)
 
 
-@router.post("", response_model=JobDescriptionDTO, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=JobDescriptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_job_description(
-    job_description_data: CreateJobDescriptionDTO,
+    request: CreateJobDescriptionRequest,
     current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
+    repo: JobDescriptionRepository = Depends(get_job_description_repository)
+):
     """
-    Create a new custom job description.
+    Create job description from raw text or structured data.
 
-    - **title**: Job title (required)
-    - **company**: Company name (required)
-    - **description**: Job description text (required)
-    - **requirements**: List of job requirements (optional)
-    - **benefits**: List of job benefits (optional)
-    - **source**: Source of the job description (manual, scraped, uploaded)
-    - **metadata**: Additional metadata (optional)
-    - **created_from_url**: URL where job was found (optional)
+    Accepts:
+    1. raw_text: Plain text job posting (will be auto-parsed)
+    2. Structured fields: Pre-parsed job details
+
+    **Use case 1 - User copy-paste:**
+    ```json
+    {
+      "raw_text": "Senior Engineer\\nTechCorp\\nSan Francisco...",
+      "source": "user_created"
+    }
+    ```
+
+    **Use case 2 - External API save:**
+    ```json
+    {
+      "title": "Senior Engineer",
+      "company": "TechCorp",
+      "description": "...",
+      "source": "saved_external",
+      "external_id": "indeed_12345"
+    }
+    ```
     """
     try:
-        # Convert source string to enum
-        source_enum = JobDescriptionSource(job_description_data.source)
-
-        # Convert metadata DTO to domain metadata if provided
-        metadata_domain = None
-        if job_description_data.metadata is not None:
-            md = job_description_data.metadata
-            metadata_domain = JobDescriptionMetadata(
-                keywords=md.keywords,
-                technical_skills=md.technical_skills,
-                soft_skills=md.soft_skills,
-                experience_level=md.experience_level,
-                industry=md.industry,
-                company_size=md.company_size,
-                remote_policy=md.remote_policy,
-                salary_range_min=md.salary_range_min,
-                salary_range_max=md.salary_range_max,
-                salary_currency=md.salary_currency,
-                location=md.location,
-                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
-            )
-
-        job_description = await service.create_job_description(
-            user_id=current_user.id,
-            title=job_description_data.title,
-            company=job_description_data.company,
-            description=job_description_data.description,
-            requirements=job_description_data.requirements,
-            benefits=job_description_data.benefits,
-            source=source_enum,
-            metadata=metadata_domain,
-            created_from_url=str(job_description_data.created_from_url) if job_description_data.created_from_url else None,
-        )
-
-        return JobDescriptionDTO(**job_description.to_dict())
-
+        job_desc = await repo.create(user_id=str(current_user.id), data=request)
+        return job_desc
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.post("/upload-json", response_model=JobDescriptionDTO, status_code=status.HTTP_201_CREATED)
-async def upload_json_job_description(
-    payload: CreateJobDescriptionDTO,
-    current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
-    """
-    Upload a JSON job description, convert it and store as a JobDescription.
-
-    The payload should match the `CreateJobDescriptionDTO` shape. The endpoint
-    accepts a raw JSON object, validates and converts nested metadata if present,
-    then calls the JobDescriptionService to persist the job description.
-    """
-    try:
-        # Convert source string to enum
-        source_enum = JobDescriptionSource(payload.source)
-
-        # Convert metadata DTO to domain metadata if provided
-        metadata_domain = None
-        if payload.metadata is not None:
-            md = payload.metadata
-            metadata_domain = JobDescriptionMetadata(
-                keywords=md.keywords,
-                technical_skills=md.technical_skills,
-                soft_skills=md.soft_skills,
-                experience_level=md.experience_level,
-                industry=md.industry,
-                company_size=md.company_size,
-                remote_policy=md.remote_policy,
-                salary_range_min=md.salary_range_min,
-                salary_range_max=md.salary_range_max,
-                salary_currency=md.salary_currency,
-                location=md.location,
-                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
-            )
-
-        job_description = await service.create_job_description(
-            user_id=current_user.id,
-            title=payload.title,
-            company=payload.company,
-            description=payload.description,
-            requirements=payload.requirements,
-            benefits=payload.benefits,
-            source=source_enum,
-            metadata=metadata_domain,
-            created_from_url=(str(payload.created_from_url) if payload.created_from_url else None),
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create job description: {str(e)}"
         )
 
-        return JobDescriptionDTO(**job_description.to_dict())
 
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.get("", response_model=JobDescriptionListDTO)
+@router.get("/", response_model=JobDescriptionListResponse)
 async def list_job_descriptions(
+    status_filter: Optional[str] = Query(None, pattern="^(active|archived)$", description="Filter by status"),
+    source: Optional[str] = Query(None, pattern="^(user_created|saved_external)$", description="Filter by source"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
     current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-    query: Optional[str] = Query(None, description="Search query"),
-    status_filter: Optional[str] = Query(None, description="Filter by status (draft, active, archived)"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items to return"),
-    offset: int = Query(0, ge=0, description="Number of items to skip"),
-    include_archived: bool = Query(False, description="Include archived job descriptions"),
-) -> JobDescriptionListDTO:
+    repo: JobDescriptionRepository = Depends(get_job_description_repository)
+):
     """
-    List user's job descriptions with optional filtering and pagination.
+    List user's job descriptions with optional filters.
 
-    - **query**: Search in title, company, and description
-    - **status_filter**: Filter by status
-    - **limit**: Maximum number of results (1-100)
-    - **offset**: Number of results to skip
-    - **include_archived**: Include archived job descriptions
+    Query parameters:
+    - **status**: Filter by status (active, archived)
+    - **source**: Filter by source (user_created, saved_external)
+    - **limit**: Items per page (1-100, default: 20)
+    - **offset**: Pagination offset (default: 0)
     """
     try:
-        # Get job descriptions
-        if query or status_filter:
-            job_descriptions = await service.search_job_descriptions(
-                user_id=current_user.id,
-                query=query,
-                status=status_filter,
-                limit=limit,
-                offset=offset
-            )
-        else:
-            job_descriptions = await service.get_user_job_descriptions(
-                user_id=current_user.id,
-                include_archived=include_archived
-            )
-
-        # Apply pagination if not already done by search
-        if not (query or status_filter):
-            job_descriptions = job_descriptions[offset:offset + limit]
-
-        # Convert to summary DTOs
-        items = []
-        for jd in job_descriptions:
-            items.append(JobDescriptionSummaryDTO(
-                id=jd.id,
-                user_id=jd.user_id,
-                title=jd.title,
-                company=jd.company,
-                status=jd.status.value,
-                version=jd.version,
-                created_at=jd.created_at.isoformat(),
-                updated_at=jd.updated_at.isoformat(),
-                keywords_count=len(jd.metadata.keywords),
-                technical_skills_count=len(jd.metadata.technical_skills),
-                requirements_count=len(jd.requirements)
-            ))
-
-        # Get total count
-        total = await service.get_job_description_count(current_user.id)
-        if not include_archived:
-            # Count only active ones
-            total = len([jd for jd in await service.get_user_job_descriptions(current_user.id, include_archived=False)])
-
-        return JobDescriptionListDTO(
-            items=items,
-            total=total,
+        jobs = await repo.list_by_user(
+            user_id=str(current_user.id),
+            status=status_filter,
+            source=source,
             limit=limit,
             offset=offset
         )
+        total = await repo.count_by_user(str(current_user.id), status_filter, source)
 
+        return JobDescriptionListResponse(
+            jobs=jobs,
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=(offset + limit < total)
+        )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list job descriptions: {str(e)}"
+        )
 
 
-@router.get("/{job_description_id}", response_model=JobDescriptionDTO)
+@router.get("/{job_id}", response_model=JobDescriptionResponse)
 async def get_job_description(
-    job_description_id: UUID,
+    job_id: str,
     current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
+    repo: JobDescriptionRepository = Depends(get_job_description_repository)
+):
     """
-    Get a specific job description by ID.
+    Get job description details by ID.
 
-    - **job_description_id**: UUID of the job description
+    Returns 404 if job not found.
+    Returns 403 if job doesn't belong to current user.
     """
     try:
-        job_description = await service.get_job_description(job_description_id)
-        if not job_description:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
+        job = await repo.get_by_id(job_id)
 
-        # Check ownership
-        if job_description.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job description not found"
+            )
 
-        return JobDescriptionDTO(**job_description.to_dict())
+        if job.user_id != str(current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
 
+        return job
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.put("/{job_description_id}", response_model=JobDescriptionDTO)
-async def update_job_description(
-    job_description_id: UUID,
-    job_description_data: UpdateJobDescriptionDTO,
-    current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
-    """
-    Update an existing job description.
-
-    - **job_description_id**: UUID of the job description to update
-    - **title**: New job title (optional)
-    - **company**: New company name (optional)
-    - **description**: New job description (optional)
-    - **requirements**: New requirements list (optional)
-    - **benefits**: New benefits list (optional)
-    - **metadata**: New metadata (optional)
-    """
-    try:
-        # Check if job description exists and user owns it
-        existing = await service.get_job_description(job_description_id)
-        if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
-        if existing.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        # Convert metadata DTO to domain metadata if provided
-        metadata_domain = None
-        if job_description_data.metadata is not None:
-            md = job_description_data.metadata
-            metadata_domain = JobDescriptionMetadata(
-                keywords=md.keywords,
-                technical_skills=md.technical_skills,
-                soft_skills=md.soft_skills,
-                experience_level=md.experience_level,
-                industry=md.industry,
-                company_size=md.company_size,
-                remote_policy=md.remote_policy,
-                salary_range_min=md.salary_range_min,
-                salary_range_max=md.salary_range_max,
-                salary_currency=md.salary_currency,
-                location=md.location,
-                created_from_url=(str(md.created_from_url) if md.created_from_url else None),
-            )
-
-        job_description = await service.update_job_description(
-            job_description_id=job_description_id,
-            title=job_description_data.title,
-            company=job_description_data.company,
-            description=job_description_data.description,
-            requirements=job_description_data.requirements,
-            benefits=job_description_data.benefits,
-            metadata=metadata_domain,
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get job description: {str(e)}"
         )
 
-        return JobDescriptionDTO(**job_description.to_dict())
 
+@router.put("/{job_id}", response_model=JobDescriptionResponse)
+async def update_job_description(
+    job_id: str,
+    request: UpdateJobDescriptionRequest,
+    current_user: User = Depends(get_current_user),
+    repo: JobDescriptionRepository = Depends(get_job_description_repository)
+):
+    """
+    Update job description.
+
+    All fields are optional. Only provided fields will be updated.
+
+    Returns 404 if job not found.
+    Returns 403 if job doesn't belong to current user.
+    """
+    try:
+        # Verify ownership
+        job = await repo.get_by_id(job_id)
+
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job description not found"
+            )
+
+        if job.user_id != str(current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
+
+        # Update job
+        updated = await repo.update(job_id, request)
+        return updated
     except HTTPException:
         raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update job description: {str(e)}"
+        )
 
 
-@router.delete("/{job_description_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job_description(
-    job_description_id: UUID,
+    job_id: str,
     current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
+    repo: JobDescriptionRepository = Depends(get_job_description_repository)
 ):
     """
-    Delete a job description.
+    Delete job description (soft delete - sets status to 'deleted').
 
-    - **job_description_id**: UUID of the job description to delete
+    Returns 404 if job not found.
+    Returns 403 if job doesn't belong to current user.
     """
     try:
-        # Check if job description exists and user owns it
-        existing = await service.get_job_description(job_description_id)
-        if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
-        if existing.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        # Verify ownership
+        job = await repo.get_by_id(job_id)
 
-        await service.delete_job_description(job_description_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job description not found"
+            )
 
+        if job.user_id != str(current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
+
+        # Delete job
+        await repo.delete(job_id)
+        return None
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.post("/{job_description_id}/parse", response_model=JobDescriptionDTO)
-async def parse_job_description(
-    job_description_id: UUID,
-    parse_data: ParseJobDescriptionDTO,
-    current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
-    """
-    Parse job description to extract keywords and update metadata.
-
-    - **job_description_id**: UUID of the job description to parse
-    """
-    try:
-        # Check if job description exists and user owns it
-        existing = await service.get_job_description(job_description_id)
-        if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
-        if existing.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        job_description = await service.parse_job_description(job_description_id)
-
-        return JobDescriptionDTO(**job_description.to_dict())
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.post("/{job_description_id}/activate", response_model=JobDescriptionDTO)
-async def activate_job_description(
-    job_description_id: UUID,
-    activate_data: ActivateJobDescriptionDTO,
-    current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
-    """
-    Activate a job description.
-
-    - **job_description_id**: UUID of the job description to activate
-    """
-    try:
-        # Check if job description exists and user owns it
-        existing = await service.get_job_description(job_description_id)
-        if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
-        if existing.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        job_description = await service.activate_job_description(job_description_id)
-
-        return JobDescriptionDTO(**job_description.to_dict())
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
-@router.post("/{job_description_id}/archive", response_model=JobDescriptionDTO)
-async def archive_job_description(
-    job_description_id: UUID,
-    archive_data: ArchiveJobDescriptionDTO,
-    current_user: User = Depends(get_current_user),
-    service: JobDescriptionService = Depends(get_job_description_service),
-) -> JobDescriptionDTO:
-    """
-    Archive a job description.
-
-    - **job_description_id**: UUID of the job description to archive
-    """
-    try:
-        # Check if job description exists and user owns it
-        existing = await service.get_job_description(job_description_id)
-        if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job description not found")
-        if existing.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        job_description = await service.archive_job_description(job_description_id)
-
-        return JobDescriptionDTO(**job_description.to_dict())
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete job description: {str(e)}"
+        )
