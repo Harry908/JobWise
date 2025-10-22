@@ -26,6 +26,73 @@ Handles user registration, authentication, and session management using JWT toke
 ### External
 None
 
+## Database Schema
+
+### UserModel (users table)
+
+**Purpose**: Stores user account information and authentication data
+
+**Fields**:
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR NOT NULL UNIQUE,
+    password_hash VARCHAR NOT NULL,
+    full_name VARCHAR NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_users_email ON users(email);
+```
+
+**Field Descriptions**:
+- `id`: Primary key, auto-incrementing integer
+- `email`: User's email address (unique, indexed)
+- `password_hash`: bcrypt hashed password
+- `full_name`: User's full display name
+- `is_active`: Account status (true = active, false = deactivated)
+- `is_verified`: Email verification status (planned feature)
+- `created_at`: Account creation timestamp
+- `updated_at`: Last account update timestamp (auto-updates on changes)
+
+**Constraints**:
+- `email` must be unique across all users
+- `password_hash` cannot be null
+- `full_name` cannot be null
+- `is_active` defaults to true
+- `is_verified` defaults to false
+
+### UserSessionModel (planned)
+
+**Purpose**: Stores user session information for advanced session management (planned feature)
+
+**Fields** (planned):
+```sql
+CREATE TABLE user_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    session_token VARCHAR NOT NULL,
+    ip_address VARCHAR,
+    user_agent VARCHAR,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX idx_user_sessions_session_token ON user_sessions(session_token);
+CREATE INDEX idx_user_sessions_expires_at ON user_sessions(expires_at);
+```
+
+**Note**: UserSessionModel is planned for future implementation to support advanced session management features like concurrent session limits and session invalidation.
+
 ## Data Flow
 
 ```

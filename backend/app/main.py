@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.infrastructure.database.connection import create_engine
 from app.infrastructure.database.models import Base
 from app.presentation.api.auth import router as auth_router
+from app.presentation.api.profile import router as profile_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +68,7 @@ def create_application() -> FastAPI:
 
     # Include routers
     app.include_router(auth_router)
+    app.include_router(profile_router)
 
     @app.get("/health")
     async def health_check():
