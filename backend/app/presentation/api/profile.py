@@ -309,6 +309,236 @@ class ProfileAnalyticsResponse(BaseModel):
     recommendations: List[str]
 
 
+# Bulk operations models
+class ExperienceCreateModel(BaseModel):
+    """Experience model for creation (id is optional)."""
+    id: Optional[str] = Field(None, description="Unique experience ID (auto-generated if not provided)")
+    title: str = Field(..., min_length=1, max_length=100, description="Job title")
+    company: str = Field(..., min_length=1, max_length=100, description="Company name")
+    location: Optional[str] = Field(None, max_length=100, description="Job location")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+    is_current: bool = Field(False, description="Is this current position")
+    description: Optional[str] = Field(None, max_length=1000, description="Job description")
+    achievements: List[str] = Field(default_factory=list, description="Key achievements")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Senior Software Engineer",
+                "company": "Tech Corp",
+                "location": "Seattle, WA",
+                "start_date": "2020-01-01",
+                "end_date": "2023-12-31",
+                "is_current": False,
+                "description": "Led development of scalable web applications",
+                "achievements": ["Increased performance by 40%", "Mentored 5 junior developers"]
+            }
+        }
+    }
+
+
+class ExperienceModel(BaseModel):
+    """Experience model for bulk operations (id is required for updates)."""
+    id: str = Field(..., description="Unique experience ID")
+    title: str = Field(..., min_length=1, max_length=100, description="Job title")
+    company: str = Field(..., min_length=1, max_length=100, description="Company name")
+    location: Optional[str] = Field(None, max_length=100, description="Job location")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+    is_current: bool = Field(False, description="Is this current position")
+    description: Optional[str] = Field(None, max_length=1000, description="Job description")
+    achievements: List[str] = Field(default_factory=list, description="Key achievements")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": "exp_123",
+                "title": "Senior Software Engineer",
+                "company": "Tech Corp",
+                "location": "Seattle, WA",
+                "start_date": "2020-01-01",
+                "end_date": "2023-12-31",
+                "is_current": False,
+                "description": "Led development of scalable web applications",
+                "achievements": ["Increased performance by 40%", "Mentored 5 junior developers"]
+            }
+        }
+    }
+
+
+class EducationCreateModel(BaseModel):
+    """Education model for creation (id is optional)."""
+    id: Optional[str] = Field(None, description="Unique education ID (auto-generated if not provided)")
+    institution: str = Field(..., min_length=1, max_length=100, description="Institution name")
+    degree: str = Field(..., min_length=1, max_length=100, description="Degree earned")
+    field_of_study: str = Field(..., min_length=1, max_length=100, description="Field of study")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+    gpa: Optional[float] = Field(None, ge=0.0, le=4.0, description="GPA (0.0-4.0)")
+    honors: List[str] = Field(default_factory=list, description="Honors and awards")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "institution": "University of Washington",
+                "degree": "Bachelor of Science",
+                "field_of_study": "Computer Science",
+                "start_date": "2016-09-01",
+                "end_date": "2020-06-01",
+                "gpa": 3.8,
+                "honors": ["Summa Cum Laude", "Dean's List"]
+            }
+        }
+    }
+
+
+class EducationModel(BaseModel):
+    """Education model for bulk operations (id is required for updates)."""
+    id: str = Field(..., description="Unique education ID")
+    institution: str = Field(..., min_length=1, max_length=100, description="Institution name")
+    degree: str = Field(..., min_length=1, max_length=100, description="Degree earned")
+    field_of_study: str = Field(..., min_length=1, max_length=100, description="Field of study")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+    gpa: Optional[float] = Field(None, ge=0.0, le=4.0, description="GPA (0.0-4.0)")
+    honors: List[str] = Field(default_factory=list, description="Honors and awards")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": "edu_123",
+                "institution": "University of Washington",
+                "degree": "Bachelor of Science",
+                "field_of_study": "Computer Science",
+                "start_date": "2016-09-01",
+                "end_date": "2020-06-01",
+                "gpa": 3.8,
+                "honors": ["Summa Cum Laude", "Dean's List"]
+            }
+        }
+    }
+
+
+class ProjectCreateModel(BaseModel):
+    """Project model for creation (id is optional)."""
+    id: Optional[str] = Field(None, description="Unique project ID (auto-generated if not provided)")
+    name: str = Field(..., min_length=1, max_length=100, description="Project name")
+    description: str = Field(..., min_length=1, max_length=500, description="Project description")
+    technologies: List[str] = Field(default_factory=list, description="Technologies used")
+    url: Optional[str] = Field(None, description="Project URL")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "E-commerce Platform",
+                "description": "Built a scalable e-commerce platform handling 10k+ transactions daily",
+                "technologies": ["Python", "FastAPI", "PostgreSQL", "Redis"],
+                "url": "https://github.com/user/ecommerce",
+                "start_date": "2022-01-01",
+                "end_date": "2022-06-01"
+            }
+        }
+    }
+
+
+class ProjectModel(BaseModel):
+    """Project model for bulk operations (id is required for updates)."""
+    id: str = Field(..., description="Unique project ID")
+    name: str = Field(..., min_length=1, max_length=100, description="Project name")
+    description: str = Field(..., min_length=1, max_length=500, description="Project description")
+    technologies: List[str] = Field(default_factory=list, description="Technologies used")
+    url: Optional[str] = Field(None, description="Project URL")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": "proj_123",
+                "name": "E-commerce Platform",
+                "description": "Built a scalable e-commerce platform handling 10k+ transactions daily",
+                "technologies": ["Python", "FastAPI", "PostgreSQL", "Redis"],
+                "url": "https://github.com/user/ecommerce",
+                "start_date": "2022-01-01",
+                "end_date": "2022-06-01"
+            }
+        }
+    }
+
+
+class BulkCreateExperiencesRequest(BaseModel):
+    """Request model for bulk creating experiences."""
+    experiences: List[ExperienceModel] = Field(..., description="List of experiences to create")
+
+
+class BulkUpdateExperiencesRequest(BaseModel):
+    """Request model for bulk updating experiences."""
+    experiences: List[ExperienceModel] = Field(..., description="List of experiences to update")
+
+
+class BulkDeleteExperiencesRequest(BaseModel):
+    """Request model for bulk deleting experiences."""
+    experience_ids: List[str] = Field(..., description="List of experience IDs to delete")
+
+
+class BulkCreateEducationRequest(BaseModel):
+    """Request model for bulk creating education."""
+    education: List[EducationModel] = Field(..., description="List of education entries to create")
+
+
+class BulkUpdateEducationRequest(BaseModel):
+    """Request model for bulk updating education."""
+    education: List[EducationModel] = Field(..., description="List of education entries to update")
+
+
+class BulkDeleteEducationRequest(BaseModel):
+    """Request model for bulk deleting education."""
+    education_ids: List[str] = Field(..., description="List of education IDs to delete")
+
+
+class BulkCreateProjectsRequest(BaseModel):
+    """Request model for bulk creating projects."""
+    projects: List[ProjectModel] = Field(..., description="List of projects to create")
+
+
+class BulkUpdateProjectsRequest(BaseModel):
+    """Request model for bulk updating projects."""
+    projects: List[ProjectModel] = Field(..., description="List of projects to update")
+
+
+class BulkDeleteProjectsRequest(BaseModel):
+    """Request model for bulk deleting projects."""
+    project_ids: List[str] = Field(..., description="List of project IDs to delete")
+
+
+class SkillsResponse(BaseModel):
+    """Skills response model."""
+    technical: List[str]
+    soft: List[str]
+    languages: List[Dict[str, Any]]
+    certifications: List[Dict[str, Any]]
+
+
+class CustomFieldModel(BaseModel):
+    """Custom field model."""
+    key: str = Field(..., min_length=1, max_length=50, description="Field key")
+    value: Any = Field(..., description="Field value")
+
+
+class UpdateCustomFieldsRequest(BaseModel):
+    """Request model for updating custom fields."""
+    fields: List[CustomFieldModel] = Field(..., description="List of custom fields to add/update")
+
+
+class BulkResponse(BaseModel):
+    """Generic bulk operation response."""
+    count: int = Field(..., description="Number of items processed")
+    message: str = Field(..., description="Operation result message")
+
+
 # Router
 router = APIRouter(prefix="/api/v1/profiles", tags=["Profiles"])
 
@@ -568,6 +798,496 @@ async def get_profile_analytics(
             statistics=statistics,
             recommendations=recommendations
         )
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Bulk operations routes
+@router.post("/{profile_id}/experiences", status_code=201)
+async def create_experiences_bulk(
+    profile_id: str,
+    experiences: List[ExperienceCreateModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Create multiple experiences for a profile."""
+    try:
+        experiences_data = [exp.model_dump() for exp in experiences]
+        created_experiences = await profile_service.create_experiences_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            experiences_data=experiences_data
+        )
+        return [ExperienceModel(**exp.model_dump()) for exp in created_experiences]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{profile_id}/experiences")
+async def get_experiences(
+    profile_id: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Get experiences for a profile."""
+    try:
+        experiences = await profile_service.get_experiences(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            limit=limit,
+            offset=offset
+        )
+        return {
+            "experiences": [ExperienceModel(**exp.model_dump()) for exp in experiences],
+            "pagination": {
+                "total": len(experiences),  # Simplified - in real app, get from service
+                "limit": limit,
+                "offset": offset
+            }
+        }
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/experiences")
+async def update_experiences_bulk(
+    profile_id: str,
+    experiences: List[ExperienceModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update multiple experiences for a profile."""
+    try:
+        experiences_data = [exp.model_dump() for exp in experiences]
+        updated_experiences = await profile_service.update_experiences_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            experiences_data=experiences_data
+        )
+        return [ExperienceModel(**exp.model_dump()) for exp in updated_experiences]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/experiences", status_code=204)
+async def delete_experiences_bulk(
+    profile_id: str,
+    request: BulkDeleteExperiencesRequest,
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Delete multiple experiences for a profile."""
+    try:
+        deleted_count = await profile_service.delete_experiences_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            experience_ids=request.experience_ids
+        )
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/education", status_code=201)
+async def create_education_bulk(
+    profile_id: str,
+    education: List[EducationCreateModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Create multiple education entries for a profile."""
+    try:
+        education_data = [edu.model_dump() for edu in education]
+        created_education = await profile_service.create_education_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            education_data=education_data
+        )
+        return [EducationModel(**edu.model_dump()) for edu in created_education]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/education")
+async def update_education_bulk(
+    profile_id: str,
+    education: List[EducationModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update multiple education entries for a profile."""
+    try:
+        education_data = [edu.model_dump() for edu in education]
+        updated_education = await profile_service.update_education_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            education_data=education_data
+        )
+        return [EducationModel(**edu.model_dump()) for edu in updated_education]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/education")
+async def delete_education_bulk(
+    profile_id: str,
+    education_ids: List[str],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Delete multiple education entries for a profile."""
+    try:
+        deleted_count = await profile_service.delete_education_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            education_ids=education_ids
+        )
+        return {"message": f"Deleted {deleted_count} education entries successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/projects", status_code=201)
+async def create_projects_bulk(
+    profile_id: str,
+    projects: List[ProjectCreateModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Create multiple projects for a profile."""
+    try:
+        projects_data = [proj.model_dump() for proj in projects]
+        created_projects = await profile_service.create_projects_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            projects_data=projects_data
+        )
+        return [ProjectModel(**proj.model_dump()) for proj in created_projects]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/projects")
+async def update_projects_bulk(
+    profile_id: str,
+    projects: List[ProjectModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update multiple projects for a profile."""
+    try:
+        projects_data = [proj.model_dump() for proj in projects]
+        updated_projects = await profile_service.update_projects_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            projects_data=projects_data
+        )
+        return [ProjectModel(**proj.model_dump()) for proj in updated_projects]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/projects")
+async def delete_projects_bulk(
+    profile_id: str,
+    project_ids: List[str],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Delete multiple projects for a profile."""
+    try:
+        deleted_count = await profile_service.delete_projects_bulk(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            project_ids=project_ids
+        )
+        return {"message": f"Deleted {deleted_count} projects successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{profile_id}/skills", response_model=SkillsResponse)
+async def get_skills(
+    profile_id: str,
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Get skills for a profile."""
+    try:
+        skills = await profile_service.get_skills(
+            profile_id=profile_id,
+            user_id=current_user_id
+        )
+        return SkillsResponse(**skills)
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/skills")
+async def update_skills(
+    profile_id: str,
+    skills: SkillsModel,
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update all skills for a profile."""
+    try:
+        updated_skills = await profile_service.update_skills(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            skills_data=skills.model_dump()
+        )
+        return {"message": "Skills updated successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/skills/technical")
+async def add_technical_skills(
+    profile_id: str,
+    skills: Dict[str, List[str]],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Add technical skills to a profile."""
+    try:
+        updated_skills = await profile_service.add_technical_skills(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            skills=skills["skills"]
+        )
+        return {"message": f"{len(skills['skills'])} technical skills added successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/skills/technical")
+async def remove_technical_skills(
+    profile_id: str,
+    skills: Dict[str, List[str]],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Remove technical skills from a profile."""
+    try:
+        updated_skills = await profile_service.remove_technical_skills(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            skills=skills["skills"]
+        )
+        return {"message": f"{len(skills['skills'])} technical skills removed successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/skills/soft")
+async def add_soft_skills(
+    profile_id: str,
+    skills: Dict[str, List[str]],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Add soft skills to a profile."""
+    try:
+        updated_skills = await profile_service.add_soft_skills(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            skills=skills["skills"]
+        )
+        return {"message": f"{len(skills['skills'])} soft skills added successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/skills/soft")
+async def remove_soft_skills(
+    profile_id: str,
+    skills: Dict[str, List[str]],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Remove soft skills from a profile."""
+    try:
+        updated_skills = await profile_service.remove_soft_skills(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            skills=skills["skills"]
+        )
+        return {"message": f"{len(skills['skills'])} soft skills removed successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise ValidationException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{profile_id}/custom-fields")
+async def get_custom_fields(
+    profile_id: str,
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Get custom fields for a profile."""
+    try:
+        custom_fields = await profile_service.get_custom_fields(
+            profile_id=profile_id,
+            user_id=current_user_id
+        )
+        return custom_fields
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/custom-fields", status_code=201)
+async def add_custom_fields(
+    profile_id: str,
+    request: CustomFieldsRequest,
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Add or update custom fields for a profile."""
+    try:
+        fields_data = [{"key": field.key, "value": field.value} for field in request.fields]
+        updated_fields = await profile_service.update_custom_fields(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            fields=fields_data
+        )
+        return {
+            "message": f"Successfully updated {len(request.fields)} custom fields",
+            "updated_fields": list(updated_fields.keys())
+        }
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/custom-fields")
+async def update_custom_fields(
+    profile_id: str,
+    custom_fields: Dict[str, Any],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update all custom fields for a profile (full replacement)."""
+    try:
+        updated_fields = await profile_service.update_custom_fields_full(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            custom_fields=custom_fields
+        )
+        return updated_fields
     except NotFoundError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ForbiddenException as e:

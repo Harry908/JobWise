@@ -29,7 +29,8 @@ class ProfileRepository:
             version=profile.version,
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
-            skills=profile.skills.model_dump()
+            skills=profile.skills.model_dump(),
+            custom_fields=profile.custom_fields
         )
 
         self.session.add(profile_model)
@@ -141,6 +142,7 @@ class ProfileRepository:
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
             skills=profile.skills.model_dump(),
+            custom_fields=profile.custom_fields,
             updated_at=profile.updated_at
         )
         await self.session.execute(stmt)
@@ -232,6 +234,178 @@ class ProfileRepository:
         count = result.scalar()
         return count if count is not None else 0
 
+    async def create_experiences_bulk(self, profile_id: str, experiences: List[Experience]) -> List[Experience]:
+        """Create multiple experiences for a profile."""
+        for exp in experiences:
+            exp_model = ExperienceModel(
+                id=exp.id,
+                profile_id=profile_id,
+                title=exp.title,
+                company=exp.company,
+                location=exp.location,
+                start_date=exp.start_date,
+                end_date=exp.end_date,
+                is_current=exp.is_current,
+                description=exp.description,
+                achievements=exp.achievements
+            )
+            self.session.add(exp_model)
+
+        await self.session.commit()
+        return experiences
+
+    async def get_experiences_by_profile_id(self, profile_id: str, limit: int = 50, offset: int = 0) -> List[Experience]:
+        """Get experiences for a profile."""
+        stmt = select(ExperienceModel).where(
+            ExperienceModel.profile_id == profile_id
+        ).limit(limit).offset(offset)
+
+        result = await self.session.execute(stmt)
+        exp_models = result.scalars().all()
+
+        experiences = []
+        for exp_model in exp_models:
+            experiences.append(Experience(
+                id=exp_model.id,
+                title=exp_model.title,
+                company=exp_model.company,
+                location=exp_model.location,
+                start_date=exp_model.start_date,
+                end_date=exp_model.end_date,
+                is_current=exp_model.is_current,
+                description=exp_model.description,
+                achievements=exp_model.achievements or []
+            ))
+
+        return experiences
+
+    async def update_experiences_bulk(self, profile_id: str, experiences: List[Experience]) -> List[Experience]:
+        """Update multiple experiences for a profile."""
+        for exp in experiences:
+            stmt = update(ExperienceModel).where(
+                ExperienceModel.id == exp.id,
+                ExperienceModel.profile_id == profile_id
+            ).values(
+                title=exp.title,
+                company=exp.company,
+                location=exp.location,
+                start_date=exp.start_date,
+                end_date=exp.end_date,
+                is_current=exp.is_current,
+                description=exp.description,
+                achievements=exp.achievements
+            )
+            await self.session.execute(stmt)
+
+        await self.session.commit()
+        return experiences
+
+    async def delete_experiences_bulk(self, profile_id: str, experience_ids: List[str]) -> int:
+        """Delete multiple experiences for a profile."""
+        stmt = delete(ExperienceModel).where(
+            ExperienceModel.id.in_(experience_ids),
+            ExperienceModel.profile_id == profile_id
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount
+
+    async def create_education_bulk(self, profile_id: str, education_list: List[Education]) -> List[Education]:
+        """Create multiple education entries for a profile."""
+        for edu in education_list:
+            edu_model = EducationModel(
+                id=edu.id,
+                profile_id=profile_id,
+                institution=edu.institution,
+                degree=edu.degree,
+                field_of_study=edu.field_of_study,
+                start_date=edu.start_date,
+                end_date=edu.end_date,
+                gpa=edu.gpa,
+                honors=edu.honors
+            )
+            self.session.add(edu_model)
+
+        await self.session.commit()
+        return education_list
+
+    async def update_education_bulk(self, profile_id: str, education_list: List[Education]) -> List[Education]:
+        """Update multiple education entries for a profile."""
+        for edu in education_list:
+            stmt = update(EducationModel).where(
+                EducationModel.id == edu.id,
+                EducationModel.profile_id == profile_id
+            ).values(
+                institution=edu.institution,
+                degree=edu.degree,
+                field_of_study=edu.field_of_study,
+                start_date=edu.start_date,
+                end_date=edu.end_date,
+                gpa=edu.gpa,
+                honors=edu.honors
+            )
+            await self.session.execute(stmt)
+
+        await self.session.commit()
+        return education_list
+
+    async def delete_education_bulk(self, profile_id: str, education_ids: List[str]) -> int:
+        """Delete multiple education entries for a profile."""
+        stmt = delete(EducationModel).where(
+            EducationModel.id.in_(education_ids),
+            EducationModel.profile_id == profile_id
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount
+
+    async def create_projects_bulk(self, profile_id: str, projects: List[Project]) -> List[Project]:
+        """Create multiple projects for a profile."""
+        for proj in projects:
+            proj_model = ProjectModel(
+                id=proj.id,
+                profile_id=profile_id,
+                name=proj.name,
+                description=proj.description,
+                technologies=proj.technologies,
+                url=proj.url,
+                start_date=proj.start_date,
+                end_date=proj.end_date
+            )
+            self.session.add(proj_model)
+
+        await self.session.commit()
+        return projects
+
+    async def update_projects_bulk(self, profile_id: str, projects: List[Project]) -> List[Project]:
+        """Update multiple projects for a profile."""
+        for proj in projects:
+            stmt = update(ProjectModel).where(
+                ProjectModel.id == proj.id,
+                ProjectModel.profile_id == profile_id
+            ).values(
+                name=proj.name,
+                description=proj.description,
+                technologies=proj.technologies,
+                url=proj.url,
+                start_date=proj.start_date,
+                end_date=proj.end_date
+            )
+            await self.session.execute(stmt)
+
+        await self.session.commit()
+        return projects
+
+    async def delete_projects_bulk(self, profile_id: str, project_ids: List[str]) -> int:
+        """Delete multiple projects for a profile."""
+        stmt = delete(ProjectModel).where(
+            ProjectModel.id.in_(project_ids),
+            ProjectModel.profile_id == profile_id
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount
+
     async def _model_to_entity(self, profile_model: MasterProfileModel) -> Profile:
         """Convert database model to domain entity."""
         from app.domain.entities.profile import PersonalInfo, Skills
@@ -287,6 +461,7 @@ class ProfileRepository:
             education=education,
             skills=Skills(**profile_model.skills),
             projects=projects,
+            custom_fields=profile_model.custom_fields or {},
             version=profile_model.version,
             created_at=profile_model.created_at,
             updated_at=profile_model.updated_at
