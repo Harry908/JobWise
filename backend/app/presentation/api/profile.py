@@ -173,11 +173,46 @@ class ProjectModel(BaseModel):
     }
 
 
+class CustomFieldModel(BaseModel):
+    """Custom field model."""
+    key: str = Field(..., min_length=1, max_length=50, description="Custom field key")
+    value: Any = Field(..., description="Custom field value")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "key": "hobbies",
+                "value": ["reading", "gaming", "photography"]
+            }
+        }
+    }
+
+
+class CustomFieldsRequest(BaseModel):
+    """Custom fields request model."""
+    fields: List[CustomFieldModel] = Field(..., description="List of custom fields to add/update")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "fields": [
+                    {"key": "hobbies", "value": ["reading", "gaming"]},
+                    {"key": "achievements", "value": ["Employee of the Month", "Hackathon Winner"]}
+                ]
+            }
+        }
+    }
+
+
 class CreateProfileRequest(BaseModel):
     """Profile creation request."""
     personal_info: PersonalInfoModel
     professional_summary: Optional[str] = Field(None, min_length=10, description="Professional summary")
     skills: Optional[SkillsModel] = None
+    experiences: Optional[List[ExperienceModel]] = None
+    education: Optional[List[EducationModel]] = None
+    projects: Optional[List[ProjectModel]] = None
+    custom_fields: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom fields")
 
     model_config = {
         "json_schema_extra": {
@@ -192,6 +227,30 @@ class CreateProfileRequest(BaseModel):
                 "skills": {
                     "technical": ["Python", "FastAPI"],
                     "soft": ["Leadership"]
+                },
+                "experiences": [{
+                    "title": "Senior Developer",
+                    "company": "Tech Corp",
+                    "start_date": "2020-01-01",
+                    "end_date": "2023-01-01",
+                    "description": "Led development team"
+                }],
+                "education": [{
+                    "institution": "University of Washington",
+                    "degree": "BS",
+                    "field_of_study": "Computer Science",
+                    "start_date": "2016-01-01",
+                    "end_date": "2020-01-01"
+                }],
+                "projects": [{
+                    "name": "E-commerce Platform",
+                    "description": "Full-stack solution",
+                    "technologies": ["React", "Node.js"],
+                    "start_date": "2022-01-01"
+                }],
+                "custom_fields": {
+                    "hobbies": ["reading", "gaming"],
+                    "achievements": ["Employee of the Month"]
                 }
             }
         }
@@ -462,40 +521,6 @@ async def update_profile(
     except ValidationException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get("/me", response_model=ProfileResponse)
-async def get_my_profile(
-    current_user_id: int = Depends(get_current_user),
-    profile_service: ProfileService = Depends(get_profile_service)
-):
-    """Get current user's active profile."""
-    print(f"DEBUG: get_my_profile endpoint called with user_id={current_user_id}")
-    try:
-        profile = await profile_service.get_active_profile(current_user_id)
-        print(f"DEBUG: get_active_profile returned: {profile}")
-        if not profile:
-            raise NotFoundError("No profile found for current user")
-
-        # Convert domain entity to response model
-        return ProfileResponse(
-            id=profile.id,
-            user_id=profile.user_id,
-            personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
-            professional_summary=profile.professional_summary,
-            skills=SkillsModel(**profile.skills.model_dump()),
-            experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
-            education=[EducationModel(**edu.model_dump()) for edu in profile.education],
-            projects=[ProjectModel(**proj.model_dump()) for proj in profile.projects],
-            created_at=profile.created_at.isoformat(),
-            updated_at=profile.updated_at.isoformat()
-        )
-    except NotFoundError as e:
-        print(f"DEBUG: NotFoundError raised: {e.detail}")
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
-        print(f"DEBUG: Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

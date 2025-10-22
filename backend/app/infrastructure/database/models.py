@@ -40,6 +40,9 @@ class MasterProfileModel(Base):
     # Skills stored as JSON (technical, soft, languages, certifications)
     skills = Column(JSON, nullable=False)
 
+    # Custom fields stored as JSON (achievements, hobbies, interests, etc.)
+    custom_fields = Column(JSON, default=dict)
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

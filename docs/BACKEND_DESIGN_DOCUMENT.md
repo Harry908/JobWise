@@ -214,7 +214,7 @@ erDiagram
     UserModel ||--o{ GenerationModel : "requests generations"
     UserModel ||--o{ SavedJobModel : "tracks applications"
     UserModel ||--o{ AuditLogModel : "generates logs"
-    
+
     MasterProfileModel ||--o{ ExperienceModel : contains
     MasterProfileModel ||--o{ EducationModel : contains
     MasterProfileModel ||--o{ SkillModel : contains
@@ -222,13 +222,13 @@ erDiagram
     MasterProfileModel ||--o{ CertificationModel : contains
     MasterProfileModel ||--o{ ProjectModel : contains
     MasterProfileModel ||--o{ GenerationModel : "used in"
-    
+
     JobModel ||--o{ GenerationModel : "generates for"
     JobModel ||--o{ SavedJobModel : "applied to"
-    
+
     GenerationModel ||--o{ DocumentModel : produces
     GenerationModel ||--o{ SavedJobModel : "used in applications"
-    
+
     UserModel {
         uuid id PK
         string email UK
@@ -242,24 +242,75 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    
+
     MasterProfileModel {
         uuid id PK
         uuid user_id FK
-        string full_name
-        string email
-        string phone
-        string location
+        json personal_info "JSON: full_name, email, phone, location, linkedin, github, website"
         text professional_summary
-        string linkedin
-        string github
-        string portfolio
+        json skills "JSON: technical[], soft[], languages[], certifications[]"
+        json custom_fields "JSON: flexible key-value pairs for achievements, hobbies, interests, etc."
         int version
         bool is_active
         timestamp created_at
         timestamp updated_at
     }
-    
+
+    ExperienceModel {
+        uuid id PK
+        uuid profile_id FK
+        string title
+        string company
+        string location
+        date start_date
+        date end_date "nullable for current positions"
+        bool is_current
+        text description
+        json achievements "array of achievement strings"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    EducationModel {
+        uuid id PK
+        uuid profile_id FK
+        string institution
+        string degree
+        string field_of_study
+        date start_date
+        date end_date
+        string gpa "optional"
+        json honors "array of honor strings"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ProjectModel {
+        uuid id PK
+        uuid profile_id FK
+        string name
+        text description
+        json technologies "array of technology strings"
+        string url "optional GitHub/project URL"
+        date start_date
+        date end_date "nullable for ongoing projects"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SkillModel {
+        uuid id PK
+        uuid profile_id FK
+        string category "technical, soft, language, certification"
+        string name
+        string proficiency "optional: native, fluent, conversational, basic"
+        string issuer "optional: for certifications"
+        date date_obtained "optional: for certifications"
+        string credential_id "optional: for certifications"
+        timestamp created_at
+        timestamp updated_at
+    }
+
     JobModel {
         uuid id PK
         uuid user_id FK "nullable"
@@ -280,7 +331,7 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    
+
     GenerationModel {
         uuid id PK
         uuid user_id FK
@@ -300,7 +351,7 @@ erDiagram
         timestamp completed_at
         timestamp updated_at
     }
-    
+
     DocumentModel {
         uuid id PK
         uuid generation_id FK
@@ -322,7 +373,7 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    
+
     SavedJobModel {
         uuid id PK
         uuid user_id FK
@@ -350,22 +401,69 @@ erDiagram
 - `created_at`: Timestamp
 - `updated_at`: Timestamp
 
-**MasterProfileModel**
+**MasterProfileModel** (JSON-based Storage)
 - `id`: UUID (Primary Key)
 - `user_id`: UUID (Foreign Key → UserModel)
-- `full_name`: String (max 200 chars)
-- `email`: EmailStr
-- `phone`: String (optional)
-- `location`: String (optional)
-- `professional_summary`: Text
-- `linkedin`: String (URL, optional)
-- `github`: String (URL, optional)
-- `portfolio`: String (URL, optional)
-- `version`: Integer (for versioning support)
+- `personal_info`: JSON (structured object containing: full_name, email, phone, location, linkedin, github, website)
+- `professional_summary`: Text (optional)
+- `skills`: JSON (structured object containing: technical[], soft[], languages[], certifications[])
+- `custom_fields`: JSON (flexible key-value pairs for achievements, hobbies, interests, volunteer_work, publications, awards, etc.)
+- `version`: Integer (for versioning support, incremented on updates)
 - `is_active`: Boolean (default: true)
 - `created_at`: Timestamp
 - `updated_at`: Timestamp
-- Relationships: One-to-many (Experiences, Education, Skills, Projects)
+- **Note**: Uses JSON fields for flexible schema evolution and bulk operations support
+
+**ExperienceModel**
+- `id`: UUID (Primary Key)
+- `profile_id`: UUID (Foreign Key → MasterProfileModel)
+- `title`: String (job title, max 200 chars)
+- `company`: String (company name, max 200 chars)
+- `location`: String (optional, max 200 chars)
+- `start_date`: Date (required)
+- `end_date`: Date (nullable for current positions)
+- `is_current`: Boolean (derived from end_date being null)
+- `description`: Text (job description and responsibilities)
+- `achievements`: JSON (array of achievement strings)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
+
+**EducationModel**
+- `id`: UUID (Primary Key)
+- `profile_id`: UUID (Foreign Key → MasterProfileModel)
+- `institution`: String (school/university name, max 200 chars)
+- `degree`: String (degree title, max 200 chars)
+- `field_of_study`: String (major/field, max 200 chars)
+- `start_date`: Date (required)
+- `end_date`: Date (required)
+- `gpa`: String (optional, e.g., "3.8/4.0")
+- `honors`: JSON (array of honor/award strings)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
+
+**ProjectModel**
+- `id`: UUID (Primary Key)
+- `profile_id`: UUID (Foreign Key → MasterProfileModel)
+- `name`: String (project name, max 200 chars)
+- `description`: Text (project description and impact)
+- `technologies`: JSON (array of technology strings)
+- `url`: String (optional GitHub/project URL)
+- `start_date`: Date (required)
+- `end_date`: Date (nullable for ongoing projects)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
+
+**SkillModel** (Unified Skills & Certifications)
+- `id`: UUID (Primary Key)
+- `profile_id`: UUID (Foreign Key → MasterProfileModel)
+- `category`: String (technical, soft, language, certification)
+- `name`: String (skill/certification name, max 200 chars)
+- `proficiency`: String (optional: native, fluent, conversational, basic for languages; level for skills)
+- `issuer`: String (optional: issuing organization for certifications)
+- `date_obtained`: Date (optional: for certifications)
+- `credential_id`: String (optional: credential ID for certifications)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
 
 **JobModel (Unified)**
 - `id`: UUID (Primary Key)
@@ -451,7 +549,7 @@ User (1) ──< (N) SavedJob
 
 Profile (1) ──< (N) Experience
 Profile (1) ──< (N) Education
-Profile (1) ──< (N) Skill
+Profile (1) ──< (N) Skill (unified: technical, soft, languages, certifications)
 Profile (1) ──< (N) Project
 Profile (1) ──< (N) Generation
 
@@ -460,6 +558,33 @@ Job (1) ──< (N) SavedJob (all sources)
 
 Generation (1) ──< (N) Document
 ```
+
+### 3.4 Bulk Operations Schema Design
+
+**JSON-Based Storage Strategy**:
+The MasterProfileModel uses JSON fields for `personal_info`, `skills`, and `custom_fields` to enable:
+- Flexible schema evolution without migrations
+- Efficient bulk operations on related data
+- Complex nested structures (languages with proficiency, certifications with credentials)
+- Custom fields support for user-defined profile sections
+
+**Component Model Strategy**:
+Separate tables for Experiences, Education, Projects, and Skills enable:
+- Granular CRUD operations with individual record tracking
+- Efficient bulk operations (add/update multiple items simultaneously)
+- Relationship integrity and cascading deletes
+- Optimized queries for specific component types
+
+**Bulk Operation Patterns**:
+- **Create Multiple**: INSERT multiple records in single transaction
+- **Update Multiple**: UPDATE with WHERE IN clauses for batch updates
+- **Delete Multiple**: DELETE with WHERE IN for bulk removal
+- **Query Multiple**: SELECT with JOIN for efficient bulk retrieval
+
+**Versioning Strategy**:
+- MasterProfileModel.version incremented on any profile update
+- Component models track individual created_at/updated_at timestamps
+- Enables conflict resolution and audit trails for bulk operations
 
 ### 3.2 Database Technology
 
@@ -476,24 +601,66 @@ Generation (1) ──< (N) Document
 ### 3.3 Indexing Strategy
 
 ```sql
--- Performance indexes
+-- User and authentication indexes
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_active_verified ON users(is_active, is_verified);
+
+-- Profile indexes for bulk operations
+CREATE INDEX idx_master_profiles_user_id ON master_profiles(user_id);
+CREATE INDEX idx_master_profiles_user_active ON master_profiles(user_id, is_active);
+CREATE INDEX idx_master_profiles_version ON master_profiles(version);
+
+-- Component relationship indexes (critical for bulk operations)
+CREATE INDEX idx_experiences_profile_id ON experiences(profile_id);
+CREATE INDEX idx_experiences_profile_date ON experiences(profile_id, start_date DESC);
+CREATE INDEX idx_education_profile_id ON education(profile_id);
+CREATE INDEX idx_education_profile_date ON education(profile_id, start_date DESC);
+CREATE INDEX idx_projects_profile_id ON projects(profile_id);
+CREATE INDEX idx_projects_profile_date ON projects(profile_id, start_date DESC);
+CREATE INDEX idx_skills_profile_id ON skills(profile_id);
+CREATE INDEX idx_skills_profile_category ON skills(profile_id, category);
+
+-- Job search and filtering indexes
 CREATE INDEX idx_jobs_title ON jobs(title);
 CREATE INDEX idx_jobs_company ON jobs(company);
 CREATE INDEX idx_jobs_user_source ON jobs(user_id, source);
+CREATE INDEX idx_jobs_status ON jobs(status);
+CREATE INDEX idx_jobs_source_status ON jobs(source, status);
+
+-- Generation pipeline indexes
 CREATE INDEX idx_generations_user_status ON generations(user_id, status);
+CREATE INDEX idx_generations_profile_job ON generations(profile_id, job_id);
+CREATE INDEX idx_generations_created_status ON generations(created_at, status);
+
+-- Document and export indexes
 CREATE INDEX idx_documents_generation ON documents(generation_id);
 CREATE INDEX idx_documents_job_id ON documents(job_id);
 CREATE INDEX idx_documents_user_id ON documents(user_id);
+CREATE INDEX idx_documents_profile_id ON documents(profile_id);
+
+-- Saved jobs and application tracking
+CREATE INDEX idx_saved_jobs_user_status ON saved_jobs(user_id, status, updated_at);
 CREATE INDEX idx_saved_jobs_job_id ON saved_jobs(job_id);
 
--- Composite indexes for common queries
-CREATE INDEX idx_saved_jobs_user_status ON saved_jobs(user_id, status, updated_at);
-CREATE INDEX idx_generations_profile_job ON generations(profile_id, job_id);
+-- JSON field indexes for complex queries (PostgreSQL GIN indexes)
+-- CREATE INDEX idx_master_profiles_personal_info_gin ON master_profiles USING gin(personal_info);
+-- CREATE INDEX idx_master_profiles_skills_gin ON master_profiles USING gin(skills);
+-- CREATE INDEX idx_master_profiles_custom_fields_gin ON master_profiles USING gin(custom_fields);
+-- CREATE INDEX idx_jobs_parsed_keywords_gin ON jobs USING gin(parsed_keywords);
+-- CREATE INDEX idx_jobs_requirements_gin ON jobs USING gin(requirements);
 
--- Full-text search (PostgreSQL only)
--- CREATE INDEX idx_jobs_fulltext ON jobs USING gin(to_tsvector('english', title || ' ' || description));
+-- Composite indexes for bulk operations
+CREATE INDEX idx_experiences_bulk_ops ON experiences(profile_id, updated_at DESC);
+CREATE INDEX idx_education_bulk_ops ON education(profile_id, updated_at DESC);
+CREATE INDEX idx_projects_bulk_ops ON projects(profile_id, updated_at DESC);
+CREATE INDEX idx_skills_bulk_ops ON skills(profile_id, category, updated_at DESC);
 ```
+
+**Bulk Operations Performance Notes**:
+- Profile component indexes prioritize `profile_id` for efficient bulk queries
+- Date-based sorting indexes support chronological ordering in bulk responses
+- Category-based indexes on skills enable filtered bulk operations
+- Composite indexes on `(profile_id, updated_at DESC)` optimize bulk updates with versioning
 
 ---
 

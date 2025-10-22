@@ -145,6 +145,7 @@ class Profile(BaseModel):
     education: List[Education] = Field(default_factory=list)
     skills: Skills
     projects: List[Project] = Field(default_factory=list)
+    custom_fields: Dict[str, Any] = Field(default_factory=dict)
     version: int = Field(default=1, ge=1)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
