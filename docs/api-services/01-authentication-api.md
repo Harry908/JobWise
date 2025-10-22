@@ -158,6 +158,75 @@ Token Refresh:
 
 **Response** (204 No Content)
 
+### POST /change-password
+
+**Description**: Change current user's password
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Request**:
+```json
+{
+  "current_password": "CurrentPass123!",
+  "new_password": "NewSecurePass456!"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Errors**:
+- 400: Validation error (weak password, same as current)
+- 401: Invalid current password or missing token
+
+### POST /forgot-password
+
+**Description**: Request password reset (mock implementation)
+
+**Request**:
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "message": "If the email exists, a reset link has been sent"
+}
+```
+
+**Errors**:
+- 400: Invalid email format
+
+### POST /reset-password
+
+**Description**: Reset password with token (mock implementation)
+
+**Request**:
+```json
+{
+  "token": "reset_token_from_email",
+  "new_password": "NewSecurePass456!"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "message": "Password reset successfully"
+}
+```
+
+**Errors**:
+- 400: Invalid or expired token, weak password
+- 404: Token not found
+
 ## Mobile Integration Notes
 
 ### Token Storage

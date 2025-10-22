@@ -1,1 +1,0 @@
-# Document service - Universal document management
