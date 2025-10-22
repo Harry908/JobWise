@@ -8,11 +8,11 @@ class ErrorDisplay extends StatelessWidget {
   final String? retryText;
 
   const ErrorDisplay({
-    Key? key,
+    super.key,
     required this.message,
     this.onRetry,
     this.retryText = 'Retry',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

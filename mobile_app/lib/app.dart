@@ -7,7 +7,7 @@ import 'screens/auth_screens.dart';
 
 // Placeholder screens for now
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 class App extends ConsumerStatefulWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   @override
   ConsumerState<App> createState() => _AppState();
