@@ -12,7 +12,7 @@ from app.main import app
 
 
 @pytest.fixture(autouse=True)
-def setup_database():
+def setup_database(request):
     """Setup database before each test."""
     import asyncio
     import os
@@ -22,6 +22,10 @@ def setup_database():
     from app.infrastructure.database.connection import get_database_url
     from app.infrastructure.database.models import Base
 
+    # Skip database setup for live tests that connect to external server
+    if "live" in request.node.name or "Live" in str(request.cls):
+        return
+
     db_path = "test.db"
     if os.path.exists(db_path):
         os.remove(db_path)
@@ -29,13 +33,13 @@ def setup_database():
     # Recreate database and tables
     settings = get_settings()
     database_url = get_database_url()
-    
+
     async def create_tables():
         engine = create_async_engine(database_url, echo=False, future=True)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         await engine.dispose()
-    
+
     asyncio.run(create_tables())
 
 

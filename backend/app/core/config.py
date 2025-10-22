@@ -4,19 +4,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings loaded from environment variables."""
 
     # Database
-    database_url: str = "sqlite+aiosqlite:///./test.db"
+    database_url: str = "sqlite+aiosqlite:///./test.db"  # Override in .env
 
     # JWT
-    secret_key: str = "test-secret-key-for-testing-only"
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
-    refresh_token_expire_days: int = 7
+    secret_key: str = "change-this-in-env-file"  # Override in .env
+    algorithm: str = "HS256"  # Override in .env if needed
+    access_token_expire_minutes: int = 60  # Override in .env
+    refresh_token_expire_days: int = 7  # Override in .env
 
     # CORS
-    allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    allowed_origins: list[str] = ["*"]  # Override in .env
 
     model_config = SettingsConfigDict(env_file=".env")
 
