@@ -4,22 +4,44 @@ import 'package:go_router/go_router.dart';
 import 'constants/colors.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth_screens.dart';
+import 'screens/debug_screen.dart';
 
 // Placeholder screens for now
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('JobWise'),
         backgroundColor: AppColors.primary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.bug_report),
+            tooltip: 'Debug Tools',
             onPressed: () {
-              // TODO: Implement logout
+              context.go('/debug');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              try {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logged out successfully')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logout completed (local session cleared)')),
+                  );
+                }
+              }
             },
           ),
         ],
@@ -58,6 +80,10 @@ class _AppState extends ConsumerState<App> {
         GoRoute(
           path: '/home',
           builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/debug',
+          builder: (context, state) => const DebugScreen(),
         ),
       ],
       redirect: (context, state) {

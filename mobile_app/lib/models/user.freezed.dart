@@ -23,10 +23,13 @@ User _$UserFromJson(Map<String, dynamic> json) {
 mixin _$User {
   String get id => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
+  @JsonKey(name: 'full_name')
   String get fullName => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   bool get isVerified => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
   DateTime? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this User to a JSON map.
@@ -46,11 +49,11 @@ abstract class $UserCopyWith<$Res> {
   $Res call({
     String id,
     String email,
-    String fullName,
+    @JsonKey(name: 'full_name') String fullName,
     bool isActive,
     bool isVerified,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   });
 }
 
@@ -124,11 +127,11 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
   $Res call({
     String id,
     String email,
-    String fullName,
+    @JsonKey(name: 'full_name') String fullName,
     bool isActive,
     bool isVerified,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   });
 }
 
@@ -193,11 +196,11 @@ class _$UserImpl implements _User {
   const _$UserImpl({
     required this.id,
     required this.email,
-    required this.fullName,
+    @JsonKey(name: 'full_name') required this.fullName,
     this.isActive = true,
     this.isVerified = false,
-    this.createdAt,
-    this.updatedAt,
+    @JsonKey(name: 'created_at') this.createdAt,
+    @JsonKey(name: 'updated_at') this.updatedAt,
   });
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
@@ -208,6 +211,7 @@ class _$UserImpl implements _User {
   @override
   final String email;
   @override
+  @JsonKey(name: 'full_name')
   final String fullName;
   @override
   @JsonKey()
@@ -216,8 +220,10 @@ class _$UserImpl implements _User {
   @JsonKey()
   final bool isVerified;
   @override
+  @JsonKey(name: 'created_at')
   final DateTime? createdAt;
   @override
+  @JsonKey(name: 'updated_at')
   final DateTime? updatedAt;
 
   @override
@@ -275,11 +281,11 @@ abstract class _User implements User {
   const factory _User({
     required final String id,
     required final String email,
-    required final String fullName,
+    @JsonKey(name: 'full_name') required final String fullName,
     final bool isActive,
     final bool isVerified,
-    final DateTime? createdAt,
-    final DateTime? updatedAt,
+    @JsonKey(name: 'created_at') final DateTime? createdAt,
+    @JsonKey(name: 'updated_at') final DateTime? updatedAt,
   }) = _$UserImpl;
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
@@ -289,14 +295,17 @@ abstract class _User implements User {
   @override
   String get email;
   @override
+  @JsonKey(name: 'full_name')
   String get fullName;
   @override
   bool get isActive;
   @override
   bool get isVerified;
   @override
+  @JsonKey(name: 'created_at')
   DateTime? get createdAt;
   @override
+  @JsonKey(name: 'updated_at')
   DateTime? get updatedAt;
 
   /// Create a copy of User

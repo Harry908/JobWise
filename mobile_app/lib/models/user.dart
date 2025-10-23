@@ -8,12 +8,23 @@ class User with _$User {
   const factory User({
     required String id,
     required String email,
-    required String fullName,
-    @Default(true) bool isActive,
-    @Default(false) bool isVerified,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'full_name') required String fullName,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _User;
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory User.fromJson(Map<String, dynamic> json) {
+    // Convert id to string if it's an integer
+    if (json['id'] is int) {
+      json = Map<String, dynamic>.from(json)..['id'] = json['id'].toString();
+    }
+    return _$UserFromJson(json);
+  }
 }

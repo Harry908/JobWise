@@ -1,11 +1,11 @@
 class Validators {
   static String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'Email is required';
     }
 
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
+    final emailRegex = RegExp(r'^(?!.*\.\.)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Please enter a valid email address';
     }
 
@@ -40,7 +40,7 @@ class Validators {
   }
 
   static String? validateFullName(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'Full name is required';
     }
 

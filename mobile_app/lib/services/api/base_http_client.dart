@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import '../storage_service.dart';
 
@@ -30,7 +31,23 @@ class BaseHttpClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+
+          // Log outgoing request
+          developer.log(
+            'HTTP Request: ${options.method} ${options.uri}',
+            name: 'HTTP',
+          );
+
           handler.next(options);
+        },
+        onResponse: (response, handler) {
+          // Log successful response
+          developer.log(
+            'HTTP Response: ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.uri}',
+            name: 'HTTP',
+          );
+
+          handler.next(response);
         },
         onError: (error, handler) async {
           // Auto retry on 401 (token expired)
@@ -49,20 +66,22 @@ class BaseHttpClient {
           // Handle other errors by extracting meaningful error messages
           if (error.response != null) {
             final data = error.response!.data;
+            final statusCode = error.response!.statusCode;
 
-            String errorMessage = 'An error occurred';
+            String errorMessage = _extractErrorMessage(data, statusCode);
 
-            if (data is Map<String, dynamic>) {
-              // Try to extract error message from response
-              if (data.containsKey('detail')) {
-                errorMessage = data['detail'].toString();
-              } else if (data.containsKey('message')) {
-                errorMessage = data['message'].toString();
-              } else if (data.containsKey('error')) {
-                errorMessage = data['error'].toString();
-              }
-            } else if (data is String) {
-              errorMessage = data;
+            // Log error details
+            developer.log(
+              'HTTP Error: $statusCode ${error.requestOptions.method} ${error.requestOptions.uri} - $errorMessage',
+              name: 'HTTP',
+            );
+
+            // Only log full response data for non-422 errors
+            if (statusCode != 422) {
+              developer.log(
+                'Response data: $data',
+                name: 'HTTP',
+              );
             }
 
             // Create a new DioError with the extracted message
@@ -80,6 +99,66 @@ class BaseHttpClient {
         },
       ),
     );
+  }
+
+  String _extractErrorMessage(dynamic data, int? statusCode) {
+    // Handle 422 Unprocessable Entity (validation errors) specifically
+    if (statusCode == 422 && data is Map<String, dynamic>) {
+      final detail = data['detail'];
+      if (detail is List && detail.isNotEmpty) {
+        // FastAPI validation errors come as a list of field errors
+        final firstError = detail[0];
+        if (firstError is Map<String, dynamic>) {
+          // Return just the message, not the field name
+          final message = firstError['msg']?.toString() ?? 'Invalid input';
+          return message;
+        }
+        return detail[0].toString();
+      }
+    }
+
+    // Handle other error formats
+    if (data is Map<String, dynamic>) {
+      // Try to extract error message from response
+      if (data.containsKey('detail')) {
+        final detail = data['detail'];
+        if (detail is String) {
+          return detail;
+        } else if (detail is List && detail.isNotEmpty) {
+          return detail[0].toString();
+        }
+      }
+      if (data.containsKey('message')) {
+        return data['message'].toString();
+      }
+      if (data.containsKey('error')) {
+        return data['error'].toString();
+      }
+    } else if (data is String) {
+      return data;
+    }
+
+    // Default error messages based on status code
+    switch (statusCode) {
+      case 400:
+        return 'Bad request. Please check your input.';
+      case 401:
+        return 'Authentication required. Please log in again.';
+      case 403:
+        return 'Access denied. You don\'t have permission.';
+      case 404:
+        return 'Resource not found.';
+      case 409:
+        return 'This email is already registered.';
+      case 422:
+        return 'Please check your input and try again.';
+      case 429:
+        return 'Too many requests. Please try again later.';
+      case 500:
+        return 'Server error. Please try again later.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
   }
 
   Future<bool> _refreshToken() async {
