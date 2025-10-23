@@ -1,4 +1,53 @@
 ---
+## Interaction [15]
+
+### User Request
+now add 1 more endpoint to my auth api to query if an email is registered for account creation checking. create test -> write code -> update document
+
+### Response Summary
+Successfully added GET /check-email endpoint to authentication API for checking email availability before registration. Implemented comprehensive test suite with 4 test cases, added service method and API endpoint, and updated documentation. All 34 auth API tests pass (30 original + 4 new).
+
+### Actions Taken
+- **File:** `backend/tests/test_auth_api.py`
+  - **Change:** Added 4 comprehensive test cases for email availability checking (available email, taken email, invalid format, missing parameter)
+  - **Reason:** TDD approach - created tests first to define expected behavior
+- **File:** `backend/app/application/services/auth_service.py`
+  - **Change:** Added check_email_availability method to validate email format and check database for existing users
+  - **Reason:** Business logic for email availability checking
+- **File:** `backend/app/presentation/api/auth.py`
+  - **Change:** Added EmailAvailabilityResponse model and GET /check-email endpoint with query parameter validation
+  - **Change:** Added Query import for FastAPI query parameters
+  - **Reason:** RESTful API endpoint for email availability checking
+- **File:** `docs/api-services/01-authentication-api.md`
+  - **Change:** Added GET /check-email endpoint documentation with request/response examples and error codes
+  - **Change:** Updated data flow to include email availability check before registration
+  - **Change:** Added mobile integration example for email availability checking
+  - **Change:** Updated testing section to include email availability checking
+  - **Reason:** Complete API documentation for the new endpoint
+- **Verification:** All 34 authentication API tests pass successfully
+
+---
+## Interaction [14]
+
+### User Request
+Update my auth api contract with all the correct response code and format. Do not code. update the document only
+
+### Response Summary
+Updated authentication API contract document with correct response codes and formats based on actual implementation. Synchronized all endpoint responses, error codes, and data structures to match the backend code and test expectations. Document now accurately reflects the implemented API behavior.
+
+### Actions Taken
+- **File:** `docs/api-services/01-authentication-api.md`
+  - **Change:** Updated POST /register response format to show integer user ID and correct error codes (400 for duplicate email, 422 for validation)
+  - **Change:** Updated POST /login response format to include user object and correct error codes
+  - **Change:** Updated POST /refresh response to include user object in response
+  - **Change:** Updated GET /me response format and added 403 error for missing authorization header
+  - **Change:** Updated POST /logout from 204 No Content to 200 OK with message response and 403 error
+  - **Change:** Updated POST /change-password error codes (400 for same password, 401 for wrong current, 422 for weak password, 403 for missing token)
+  - **Change:** Updated POST /forgot-password error code from 400 to 422 for validation
+  - **Change:** Updated POST /reset-password error codes (400 for invalid token, 422 for weak password)
+  - **Reason:** API contract documentation must match actual implementation and test expectations for accurate client integration
+
+---
 ## Interaction [13]
 
 ### User Request

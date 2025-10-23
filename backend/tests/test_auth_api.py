@@ -415,3 +415,39 @@ class TestAuthAPI:
         assert response.status_code == 422  # Pydantic validation error
         data = response.json()
         assert "password" in str(data).lower()
+
+    @pytest.mark.asyncio
+    async def test_check_email_available(self, client: AsyncClient):
+        """Test checking if email is available for registration."""
+        # Test with non-existent email
+        response = await client.get("/api/v1/auth/check-email?email=available@example.com")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is True
+
+    @pytest.mark.asyncio
+    async def test_check_email_taken(self, client: AsyncClient, test_user_data: dict):
+        """Test checking if email is taken (already registered)."""
+        # First register a user
+        register_response = await client.post("/api/v1/auth/register", json=test_user_data)
+        assert register_response.status_code == 201
+
+        # Now check if email is available
+        response = await client.get(f"/api/v1/auth/check-email?email={test_user_data['email']}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
+
+    @pytest.mark.asyncio
+    async def test_check_email_invalid_format(self, client: AsyncClient):
+        """Test checking email availability with invalid email format."""
+        response = await client.get("/api/v1/auth/check-email?email=invalid-email")
+        assert response.status_code == 422  # Pydantic validation error
+        data = response.json()
+        assert "email" in str(data).lower()
+
+    @pytest.mark.asyncio
+    async def test_check_email_missing_parameter(self, client: AsyncClient):
+        """Test checking email availability without email parameter."""
+        response = await client.get("/api/v1/auth/check-email")
+        assert response.status_code == 422  # Missing required parameter

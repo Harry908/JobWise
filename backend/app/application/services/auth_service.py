@@ -214,3 +214,15 @@ class AuthService:
         # For now, we'll just validate the password and accept any token
         if not token or len(token) < 10:
             raise ValidationException("Invalid reset token")
+
+    async def check_email_availability(self, email: str) -> dict:
+        """Check if an email is available for registration."""
+        # Validate email format
+        if not User.validate_email(email):
+            raise ValidationException("Invalid email format")
+
+        # Check if user already exists
+        existing_user = await self.user_repository.get_by_email(email)
+        available = existing_user is None
+
+        return {"available": available}

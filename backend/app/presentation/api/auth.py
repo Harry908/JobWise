@@ -1,6 +1,6 @@
 """Authentication API routes."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
@@ -122,6 +122,11 @@ class ResetPasswordRequest(BaseModel):
 class MessageResponse(BaseModel):
     """Generic message response."""
     message: str
+
+
+class EmailAvailabilityResponse(BaseModel):
+    """Email availability check response."""
+    available: bool
 
 
 # Router
@@ -258,6 +263,20 @@ async def reset_password(
     except ValidationException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except AuthenticationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/check-email", response_model=EmailAvailabilityResponse)
+async def check_email_availability(
+    email: EmailStr = Query(..., description="Email address to check for availability"),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """Check if an email address is available for registration."""
+    try:
+        return await auth_service.check_email_availability(email)
+    except ValidationException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")

@@ -97,12 +97,15 @@ CREATE INDEX idx_user_sessions_expires_at ON user_sessions(expires_at);
 
 ```
 Client Registration:
-1. Client → POST /register {email, password, full_name}
-2. API validates email uniqueness
-3. API hashes password (bcrypt)
-4. API creates user record
-5. API generates JWT tokens
-6. API ← {access_token, refresh_token, user}
+1. Client → GET /check-email?email=user@example.com {check availability}
+2. API validates email format and checks uniqueness
+3. API ← {available: true/false}
+4. If available: Client → POST /register {email, password, full_name}
+5. API validates email uniqueness (double-check)
+6. API hashes password (bcrypt)
+7. API creates user record
+8. API generates JWT tokens
+9. API ← {access_token, refresh_token, user}
 
 Client Login:
 1. Client → POST /login {email, password}
@@ -325,6 +328,32 @@ Token Refresh:
 - 400: Invalid reset token
 - 422: Validation error (weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
 
+### GET /check-email
+
+**Description**: Check if an email address is available for registration
+
+**Query Parameters**:
+- `email` (required): Email address to check for availability
+
+**Request**:
+```
+GET /api/v1/auth/check-email?email=user@example.com
+```
+
+**Response** (200 OK):
+```json
+{
+  "available": true
+}
+```
+
+**Response Examples**:
+- Available email: `{"available": true}`
+- Taken email: `{"available": false}`
+
+**Errors**:
+- 422: Validation error (invalid email format or missing email parameter)
+
 ## Mobile Integration Notes
 
 ### Token Storage
@@ -394,6 +423,26 @@ Enforce client-side:
 - At least 1 lowercase letter
 - At least 1 number
 
+### Email Availability Check
+Check email availability before registration:
+```dart
+class AuthService {
+  Future<bool> checkEmailAvailability(String email) async {
+    try {
+      final response = await _dio.get('/auth/check-email', 
+        queryParameters: {'email': email}
+      );
+      return response.data['available'];
+    } on DioError catch (e) {
+      if (e.response?.statusCode == 422) {
+        throw ValidationException('Invalid email format');
+      }
+      throw NetworkException('Connection failed');
+    }
+  }
+}
+```
+
 ### Error Handling
 ```dart
 try {
@@ -439,4 +488,5 @@ try {
 - Test JWT generation/validation
 - Test token expiry
 - Test duplicate email registration
+- Test email availability checking
 - Test invalid credentials
