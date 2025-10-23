@@ -6,6 +6,65 @@ part of 'profile.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+Profile _$ProfileFromJson(Map<String, dynamic> json) => Profile(
+  id: json['id'] as String,
+  userId: json['user_id'] as String,
+  personalInfo: PersonalInfo.fromJson(
+    json['personalInfo'] as Map<String, dynamic>,
+  ),
+  professionalSummary: json['professional_summary'] as String?,
+  experiences: (json['experiences'] as List<dynamic>)
+      .map((e) => Experience.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  education: (json['education'] as List<dynamic>)
+      .map((e) => Education.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  skills: Skills.fromJson(json['skills'] as Map<String, dynamic>),
+  projects: (json['projects'] as List<dynamic>)
+      .map((e) => Project.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  customFields: json['customFields'] as Map<String, dynamic>,
+  version: (json['version'] as num).toInt(),
+  createdAt: DateTime.parse(json['created_at'] as String),
+  updatedAt: DateTime.parse(json['updated_at'] as String),
+);
+
+Map<String, dynamic> _$ProfileToJson(Profile instance) => <String, dynamic>{
+  'id': instance.id,
+  'user_id': instance.userId,
+  'personalInfo': instance.personalInfo,
+  'professional_summary': instance.professionalSummary,
+  'experiences': instance.experiences,
+  'education': instance.education,
+  'skills': instance.skills,
+  'projects': instance.projects,
+  'customFields': instance.customFields,
+  'version': instance.version,
+  'created_at': instance.createdAt.toIso8601String(),
+  'updated_at': instance.updatedAt.toIso8601String(),
+};
+
+PersonalInfo _$PersonalInfoFromJson(Map<String, dynamic> json) => PersonalInfo(
+  fullName: json['full_name'] as String,
+  email: json['email'] as String,
+  phone: json['phone'] as String?,
+  location: json['location'] as String?,
+  linkedin: json['linkedin'] as String?,
+  github: json['github'] as String?,
+  website: json['website'] as String?,
+);
+
+Map<String, dynamic> _$PersonalInfoToJson(PersonalInfo instance) =>
+    <String, dynamic>{
+      'full_name': instance.fullName,
+      'email': instance.email,
+      'phone': instance.phone,
+      'location': instance.location,
+      'linkedin': instance.linkedin,
+      'github': instance.github,
+      'website': instance.website,
+    };
+
 _$PersonalInfoImpl _$$PersonalInfoImplFromJson(Map<String, dynamic> json) =>
     _$PersonalInfoImpl(
       fullName: json['full_name'] as String,
