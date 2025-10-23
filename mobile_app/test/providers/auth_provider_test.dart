@@ -28,7 +28,7 @@ void main() {
     });
 
     test('authenticated state has correct values', () {
-      const testUser = User(
+      final testUser = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',

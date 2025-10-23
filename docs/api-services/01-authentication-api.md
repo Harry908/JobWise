@@ -141,17 +141,17 @@ Token Refresh:
   "token_type": "Bearer",
   "expires_in": 3600,
   "user": {
-    "id": "uuid",
+    "id": 1,
     "email": "user@example.com",
     "full_name": "John Doe",
-    "created_at": "2025-10-21T10:00:00Z"
+    "created_at": "2025-10-21T10:00:00"
   }
 }
 ```
 
 **Errors**:
-- 400: Validation error (invalid email, weak password)
-- 409: Email already registered
+- 400: User with this email already exists
+- 422: Validation error (invalid email format, weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
 
 ### POST /login
 
@@ -165,11 +165,25 @@ Token Refresh:
 }
 ```
 
-**Response** (200 OK): Same as /register
+**Response** (200 OK):
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "created_at": "2025-10-21T10:00:00"
+  }
+}
+```
 
 **Errors**:
 - 401: Invalid credentials
-- 400: Validation error
+- 422: Validation error (invalid email format)
 
 ### POST /refresh
 
@@ -188,7 +202,13 @@ Token Refresh:
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "created_at": "2025-10-21T10:00:00"
+  }
 }
 ```
 
@@ -204,26 +224,35 @@ Token Refresh:
 **Response** (200 OK):
 ```json
 {
-  "id": "uuid",
+  "id": 1,
   "email": "user@example.com",
   "full_name": "John Doe",
   "is_active": true,
   "is_verified": false,
-  "created_at": "2025-10-21T10:00:00Z",
-  "updated_at": "2025-10-21T10:00:00Z"
+  "created_at": "2025-10-21T10:00:00",
+  "updated_at": "2025-10-21T10:00:00"
 }
 ```
 
 **Errors**:
 - 401: Invalid or missing token
+- 403: Forbidden (missing authorization header)
 
 ### POST /logout
 
-**Description**: Invalidate session (planned)
+**Description**: Logout user by invalidating their session
 
 **Headers**: `Authorization: Bearer <access_token>`
 
-**Response** (204 No Content)
+**Response** (200 OK):
+```json
+{
+  "message": "Successfully logged out"
+}
+```
+
+**Errors**:
+- 403: Forbidden (missing authorization header)
 
 ### POST /change-password
 
@@ -247,8 +276,10 @@ Token Refresh:
 ```
 
 **Errors**:
-- 400: Validation error (weak password, same as current)
-- 401: Invalid current password or missing token
+- 400: New password must be different from current password
+- 401: Current password is incorrect
+- 403: Forbidden (missing authorization header)
+- 422: Validation error (weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
 
 ### POST /forgot-password
 
@@ -269,7 +300,7 @@ Token Refresh:
 ```
 
 **Errors**:
-- 400: Invalid email format
+- 422: Validation error (invalid email format)
 
 ### POST /reset-password
 
@@ -291,8 +322,8 @@ Token Refresh:
 ```
 
 **Errors**:
-- 400: Invalid or expired token, weak password
-- 404: Token not found
+- 400: Invalid reset token
+- 422: Validation error (weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
 
 ## Mobile Integration Notes
 
