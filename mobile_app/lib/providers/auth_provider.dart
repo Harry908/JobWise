@@ -61,9 +61,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final user = await _authApi.login(email, password);
+      final authResponse = await _authApi.login(email, password);
       state = state.copyWith(
-        user: user,
+        user: authResponse.user,
         isAuthenticated: true,
         isLoading: false,
       );
@@ -84,9 +84,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final user = await _authApi.register(email, password, fullName);
+      final authResponse = await _authApi.register(email, password, fullName);
       state = state.copyWith(
-        user: user,
+        user: authResponse.user,
         isAuthenticated: true,
         isLoading: false,
       );
@@ -114,18 +114,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> refreshToken() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      await _authApi.changePassword(currentPassword, newPassword);
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
+      final authResponse = await _authApi.refreshToken();
       state = state.copyWith(
+        user: authResponse.user,
         isLoading: false,
-        error: 'Password change failed. Please try again.',
       );
+    } catch (e) {
+      // Refresh failed, logout user
+      await logout();
       rethrow;
+    }
+  }
+
+  Future<bool> checkEmailAvailability(String email) async {
+    try {
+      return await _authApi.checkEmailAvailability(email);
+    } catch (e) {
+      // Return false on error (assume unavailable)
+      return false;
     }
   }
 

@@ -266,3 +266,19 @@ I successfully created all the missing UI components for the profile management 
   - **Reason:** To integrate the new card and dialog components and enable full CRUD functionality for all profile sections
 
 ---
+
+### User Request
+based on my 2 backend api design documents, update the mobile app design document for the features realted to these 2 apis.
+
+### Response Summary
+I have successfully updated both mobile app design documents to align with the comprehensive backend API specifications. The authentication feature document now includes all missing endpoints (change-password, forgot-password, reset-password, check-email) with complete API client and state management integration. The profile feature document has been updated to version 2.0 to match the backend API v2.1, including all endpoints, granular skills management, custom fields, analytics, and updated data models with additional fields.
+
+### Actions Taken
+- **File:** `docs/mobile/01-authentication-feature.md`
+  - **Change:** Added missing API endpoints (change-password, forgot-password, reset-password, check-email); updated AuthApiClient and AuthNotifier with new methods; updated user stories, key features, and implementation checklist
+  - **Reason:** Align mobile authentication design with complete backend API capabilities
+- **File:** `docs/mobile/02-profile-feature.md`
+  - **Change:** Updated to version 2.0 matching backend API v2.1; added comprehensive endpoints including analytics, granular skills management, custom fields; updated data models with additional fields (employmentType, industry, isCurrent, highlights, etc.); enhanced ProfileNotifier and ProfilesApiClient with all new methods; updated testing strategy
+  - **Reason:** Align mobile profile design with comprehensive backend API implementation including bulk operations, granular management, and analytics
+
+---

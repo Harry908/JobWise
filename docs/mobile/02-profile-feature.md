@@ -1,10 +1,10 @@
 # Profile Feature - Mobile Design Document
 
-**Version**: 1.0  
+**Version**: 2.0  
 **Feature**: Master Resume Profile Management  
 **API Service**: Profile API  
-**Status**: Design Complete  
-**Last Updated**: October 22, 2025
+**Status**: Updated to match Backend API v2.1  
+**Last Updated**: October 23, 2025
 
 ---
 
@@ -16,9 +16,12 @@ Manage master resume profiles containing personal information, work experiences,
 ### Key Features
 - Create/edit comprehensive profile with nested components
 - Bulk operations for experiences, education, projects
-- Profile completeness analytics
-- Offline-first with sync
-- Version control support
+- Granular skills management (add/remove individual skills)
+- Profile completeness analytics and recommendations
+- Custom fields support for extensibility
+- Offline-first with sync capabilities
+- Version control and conflict resolution
+- Comprehensive validation and error handling
 
 ---
 
@@ -38,9 +41,15 @@ Manage master resume profiles containing personal information, work experiences,
 | `/profiles/{id}` | GET/PUT/DELETE | CRUD operations |
 | `/profiles/{id}/analytics` | GET | Completeness metrics |
 | `/profiles/{id}/experiences` | POST/PUT/DELETE | Bulk experience operations |
+| `/profiles/{id}/experiences` | GET | List all experiences |
 | `/profiles/{id}/education` | POST/PUT/DELETE | Bulk education operations |
+| `/profiles/{id}/education` | GET | List all education |
 | `/profiles/{id}/projects` | POST/PUT/DELETE | Bulk project operations |
+| `/profiles/{id}/projects` | GET | List all projects |
 | `/profiles/{id}/skills` | GET/PUT | Skills management |
+| `/profiles/{id}/skills/technical` | POST/PUT | Add/update technical skills |
+| `/profiles/{id}/skills/soft` | POST/PUT | Add/update soft skills |
+| `/profiles/{id}/custom-fields` | GET/PUT | Custom fields management |
 
 ---
 
@@ -65,6 +74,7 @@ class Profile with _$Profile {
     @Default([]) List<Education> education,
     required Skills skills,
     @Default([]) List<Project> projects,
+    @Default([]) List<Certification> certifications,
     @Default({}) Map<String, dynamic> customFields,
     required int version,
     required DateTime createdAt,
@@ -84,6 +94,8 @@ class PersonalInfo with _$PersonalInfo {
     String? linkedin,
     String? github,
     String? website,
+    String? portfolioUrl,
+    String? headline,
   }) = _PersonalInfo;
 
   factory PersonalInfo.fromJson(Map<String, dynamic> json) => 
@@ -102,6 +114,8 @@ class Experience with _$Experience {
     @Default(false) bool isCurrent,
     String? description,
     @Default([]) List<String> achievements,
+    String? employmentType,
+    String? industry,
   }) = _Experience;
 
   factory Experience.fromJson(Map<String, dynamic> json) => 
@@ -117,8 +131,10 @@ class Education with _$Education {
     required String fieldOfStudy,
     required String startDate,
     String? endDate,
+    @Default(false) bool isCurrent,
     double? gpa,
     @Default([]) List<String> honors,
+    String? description,
   }) = _Education;
 
   factory Education.fromJson(Map<String, dynamic> json) => 
@@ -172,8 +188,11 @@ class Project with _$Project {
     required String description,
     @Default([]) List<String> technologies,
     String? url,
+    String? repositoryUrl,
     String? startDate,
     String? endDate,
+    @Default(false) bool isOngoing,
+    @Default([]) List<String> highlights,
   }) = _Project;
 
   factory Project.fromJson(Map<String, dynamic> json) => 
@@ -285,6 +304,110 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   }
 
   // Similar methods for education, projects, skills
+  Future<void> getProfileAnalytics() async {
+    if (state.profile == null) return;
+    state = state.copyWith(isLoading: true);
+    try {
+      final analytics = await _profileApi.getProfileAnalytics(state.profile!.id);
+      // Update state with analytics data
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<List<Experience>> getExperiences() async {
+    if (state.profile == null) return [];
+    try {
+      return await _profileApi.getExperiences(state.profile!.id);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return [];
+    }
+  }
+
+  Future<List<Education>> getEducation() async {
+    if (state.profile == null) return [];
+    try {
+      return await _profileApi.getEducation(state.profile!.id);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return [];
+    }
+  }
+
+  Future<List<Project>> getProjects() async {
+    if (state.profile == null) return [];
+    try {
+      return await _profileApi.getProjects(state.profile!.id);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return [];
+    }
+  }
+
+  Future<Skills> getSkills() async {
+    if (state.profile == null) return const Skills();
+    try {
+      return await _profileApi.getSkills(state.profile!.id);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return const Skills();
+    }
+  }
+
+  Future<void> addTechnicalSkills(List<String> skills) async {
+    if (state.profile == null) return;
+    state = state.copyWith(isSaving: true);
+    try {
+      await _profileApi.addTechnicalSkills(state.profile!.id, skills);
+      // Refresh skills
+      final updatedSkills = await _profileApi.getSkills(state.profile!.id);
+      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
+      state = state.copyWith(profile: updatedProfile, isSaving: false);
+    } catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> addSoftSkills(List<String> skills) async {
+    if (state.profile == null) return;
+    state = state.copyWith(isSaving: true);
+    try {
+      await _profileApi.addSoftSkills(state.profile!.id, skills);
+      // Refresh skills
+      final updatedSkills = await _profileApi.getSkills(state.profile!.id);
+      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
+      state = state.copyWith(profile: updatedProfile, isSaving: false);
+    } catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getCustomFields() async {
+    if (state.profile == null) return {};
+    try {
+      return await _profileApi.getCustomFields(state.profile!.id);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return {};
+    }
+  }
+
+  Future<void> updateCustomFields(Map<String, dynamic> customFields) async {
+    if (state.profile == null) return;
+    state = state.copyWith(isSaving: true);
+    try {
+      await _profileApi.updateCustomFields(state.profile!.id, customFields);
+      final updatedProfile = state.profile!.copyWith(customFields: customFields);
+      state = state.copyWith(profile: updatedProfile, isSaving: false);
+    } catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: e.toString());
+      rethrow;
+    }
+  }
 }
 
 final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
@@ -367,6 +490,53 @@ class ProfilesApiClient {
   }
 
   // Similar methods for education, projects, certifications
+  Future<Map<String, dynamic>> getProfileAnalytics(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/analytics');
+    return response.data;
+  }
+
+  Future<List<Experience>> getExperiences(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/experiences');
+    return (response.data['experiences'] as List)
+        .map((json) => Experience.fromJson(json))
+        .toList();
+  }
+
+  Future<List<Education>> getEducation(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/education');
+    return (response.data['education'] as List)
+        .map((json) => Education.fromJson(json))
+        .toList();
+  }
+
+  Future<List<Project>> getProjects(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/projects');
+    return (response.data['projects'] as List)
+        .map((json) => Project.fromJson(json))
+        .toList();
+  }
+
+  Future<Skills> getSkills(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/skills');
+    return Skills.fromJson(response.data);
+  }
+
+  Future<void> addTechnicalSkills(String profileId, List<String> skills) async {
+    await _client.post('/profiles/$profileId/skills/technical', data: skills);
+  }
+
+  Future<void> addSoftSkills(String profileId, List<String> skills) async {
+    await _client.post('/profiles/$profileId/skills/soft', data: skills);
+  }
+
+  Future<Map<String, dynamic>> getCustomFields(String profileId) async {
+    final response = await _client.get('/profiles/$profileId/custom-fields');
+    return response.data;
+  }
+
+  Future<void> updateCustomFields(String profileId, Map<String, dynamic> customFields) async {
+    await _client.put('/profiles/$profileId/custom-fields', data: customFields);
+  }
 }
 
 final profilesApiClientProvider = Provider<ProfilesApiClient>((ref) {
@@ -738,21 +908,27 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
 ---
 
-## Testing Strategy
+### Testing Strategy
 
 ### Unit Tests
-- Test ProfileNotifier state transitions
-- Test ProfilesApiClient HTTP requests
-- Test model serialization/deserialization
+- Test ProfileNotifier state transitions for all operations
+- Test ProfilesApiClient HTTP requests for all endpoints
+- Test model serialization/deserialization with all fields
+- Test bulk operations and error handling
 
 ### Widget Tests
-- Test profile form validation
-- Test adding/removing experiences
-- Test stepper navigation
+- Test profile form validation with comprehensive fields
+- Test adding/removing experiences, education, projects
+- Test skills management (add/remove individual skills)
+- Test stepper navigation and form flow
+- Test analytics display and recommendations
 
 ### Integration Tests
-- Test full profile creation flow
-- Test bulk operations (add multiple experiences)
+- Test full profile creation flow with all components
+- Test bulk operations (add multiple experiences/education/projects)
+- Test granular skills management
+- Test custom fields operations
+- Test profile analytics and completeness scoring
 - Test offline editing with sync
 
 ---
@@ -772,5 +948,6 @@ dev_dependencies:
 
 ---
 
-**Document Status**: Complete  
-**Next Steps**: Implement Job Feature Design
+**Document Status**: Updated to match Backend API v2.1  
+**Last Updated**: October 23, 2025  
+**Changes**: Added comprehensive API endpoints, granular skills management, custom fields, analytics, and updated data models to match backend implementation

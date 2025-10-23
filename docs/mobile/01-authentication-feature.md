@@ -29,9 +29,13 @@ Handle user authentication, session management, and secure token storage for the
 
 ### User Stories
 - **Registration**: As a new user, I want to create an account with email and password
+- **Email Check**: As a new user, I want to check if my email is available before registering
 - **Login**: As a returning user, I want to log in securely
 - **Token Management**: As a user, I want my session to persist across app restarts
 - **Auto-refresh**: As a user, I want automatic token refresh when expired
+- **Change Password**: As a user, I want to change my password securely
+- **Forgot Password**: As a user, I want to reset my password if I forget it
+- **Reset Password**: As a user, I want to set a new password using a reset token
 
 ### Key Features
 - Email/password registration and login
@@ -39,6 +43,9 @@ Handle user authentication, session management, and secure token storage for the
 - Secure token storage with flutter_secure_storage
 - Automatic token refresh on 401 errors
 - Password validation (client-side)
+- Password change functionality
+- Forgot/reset password flow
+- Email availability checking
 - Logout and session clearing
 
 ---
@@ -80,6 +87,10 @@ class AppConfig {
 | `/api/v1/auth/refresh` | POST | Refresh access token | No (refresh token) |
 | `/api/v1/auth/me` | GET | Get current user | Yes |
 | `/api/v1/auth/logout` | POST | Invalidate session | Yes |
+| `/api/v1/auth/change-password` | POST | Change password | Yes |
+| `/api/v1/auth/forgot-password` | POST | Request password reset | No |
+| `/api/v1/auth/reset-password` | POST | Reset password with token | No |
+| `/api/v1/auth/check-email` | GET | Check email availability | No |
 
 #### CORS Configuration
 Backend `.env` configuration:
@@ -322,6 +333,70 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Change password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _authApi.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _parseErrorMessage(e),
+      );
+      rethrow;
+    }
+  }
+
+  // Forgot password
+  Future<void> forgotPassword(String email) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _authApi.forgotPassword(email);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _parseErrorMessage(e),
+      );
+      rethrow;
+    }
+  }
+
+  // Reset password
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _authApi.resetPassword(token: token, newPassword: newPassword);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _parseErrorMessage(e),
+      );
+      rethrow;
+    }
+  }
+
+  // Check email availability
+  Future<bool> checkEmailAvailability(String email) async {
+    try {
+      return await _authApi.checkEmailAvailability(email);
+    } catch (e) {
+      // Return false on error (assume unavailable)
+      return false;
+    }
+  }
+
   String _parseErrorMessage(dynamic error) {
     if (error.toString().contains('409')) {
       return 'Email already registered';
@@ -451,6 +526,43 @@ class AuthApiClient {
   // Logout (future)
   Future<void> logout() async {
     await _client.post('/auth/logout');
+  }
+
+  // Change password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _client.post('/auth/change-password', data: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+  }
+
+  // Forgot password
+  Future<void> forgotPassword(String email) async {
+    await _client.post('/auth/forgot-password', data: {
+      'email': email,
+    });
+  }
+
+  // Reset password
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _client.post('/auth/reset-password', data: {
+      'token': token,
+      'new_password': newPassword,
+    });
+  }
+
+  // Check email availability
+  Future<bool> checkEmailAvailability(String email) async {
+    final response = await _client.get('/auth/check-email', queryParameters: {
+      'email': email,
+    });
+    return response.data['available'] as bool;
   }
 }
 
@@ -1169,9 +1281,12 @@ void main() {
 - [x] Add unit tests for services
 - [x] Add widget tests for screens
 - [x] Add integration tests
+- [ ] Implement ChangePasswordScreen UI
+- [ ] Implement ForgotPasswordScreen UI
+- [ ] Implement ResetPasswordScreen UI
+- [ ] Add email availability checking to registration flow
 - [ ] Test on physical Android device
 - [ ] Test on iOS simulator
-- [ ] Document API errors and handling
 
 ---
 
@@ -1214,11 +1329,10 @@ dev_dependencies:
 
 1. **Biometric Authentication**: Face ID / Fingerprint support
 2. **Social Login**: Google, Apple Sign-In
-3. **Password Reset**: Email-based password recovery
-4. **Email Verification**: Verify email before full access
-5. **Multi-factor Authentication (MFA)**: SMS or authenticator app
-6. **Session Management**: Multiple device sessions
-7. **Analytics**: Track login success/failure rates
+3. **Email Verification**: Verify email before full access
+4. **Multi-factor Authentication (MFA)**: SMS or authenticator app
+5. **Session Management**: Multiple device sessions
+6. **Analytics**: Track login success/failure rates
 
 ---
 

@@ -26,8 +26,8 @@ mixin _$User {
   String get fullName => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   bool get isVerified => throw _privateConstructorUsedError;
-  DateTime? get createdAt => throw _privateConstructorUsedError;
-  DateTime? get updatedAt => throw _privateConstructorUsedError;
+  DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this User to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -49,8 +49,8 @@ abstract class $UserCopyWith<$Res> {
     String fullName,
     bool isActive,
     bool isVerified,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime createdAt,
+    DateTime updatedAt,
   });
 }
 
@@ -74,8 +74,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? fullName = null,
     Object? isActive = null,
     Object? isVerified = null,
-    Object? createdAt = freezed,
-    Object? updatedAt = freezed,
+    Object? createdAt = null,
+    Object? updatedAt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -99,14 +99,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.isVerified
                 : isVerified // ignore: cast_nullable_to_non_nullable
                       as bool,
-            createdAt: freezed == createdAt
+            createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
-                      as DateTime?,
-            updatedAt: freezed == updatedAt
+                      as DateTime,
+            updatedAt: null == updatedAt
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
-                      as DateTime?,
+                      as DateTime,
           )
           as $Val,
     );
@@ -127,8 +127,8 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
     String fullName,
     bool isActive,
     bool isVerified,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime createdAt,
+    DateTime updatedAt,
   });
 }
 
@@ -149,8 +149,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? fullName = null,
     Object? isActive = null,
     Object? isVerified = null,
-    Object? createdAt = freezed,
-    Object? updatedAt = freezed,
+    Object? createdAt = null,
+    Object? updatedAt = null,
   }) {
     return _then(
       _$UserImpl(
@@ -174,14 +174,14 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value.isVerified
             : isVerified // ignore: cast_nullable_to_non_nullable
                   as bool,
-        createdAt: freezed == createdAt
+        createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime?,
-        updatedAt: freezed == updatedAt
+                  as DateTime,
+        updatedAt: null == updatedAt
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime?,
+                  as DateTime,
       ),
     );
   }
@@ -196,8 +196,8 @@ class _$UserImpl implements _User {
     required this.fullName,
     this.isActive = true,
     this.isVerified = false,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
@@ -216,9 +216,9 @@ class _$UserImpl implements _User {
   @JsonKey()
   final bool isVerified;
   @override
-  final DateTime? createdAt;
+  final DateTime createdAt;
   @override
-  final DateTime? updatedAt;
+  final DateTime updatedAt;
 
   @override
   String toString() {
@@ -278,8 +278,8 @@ abstract class _User implements User {
     required final String fullName,
     final bool isActive,
     final bool isVerified,
-    final DateTime? createdAt,
-    final DateTime? updatedAt,
+    required final DateTime createdAt,
+    required final DateTime updatedAt,
   }) = _$UserImpl;
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
@@ -295,9 +295,9 @@ abstract class _User implements User {
   @override
   bool get isVerified;
   @override
-  DateTime? get createdAt;
+  DateTime get createdAt;
   @override
-  DateTime? get updatedAt;
+  DateTime get updatedAt;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.

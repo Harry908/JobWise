@@ -8,7 +8,7 @@ import '../../widgets/profile_cards.dart';
 import '../../widgets/profile_dialogs.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
-  const ProfileEditScreen({Key? key}) : super(key: key);
+  const ProfileEditScreen({super.key});
 
   @override
   ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
@@ -256,7 +256,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             onEdit: () => _editExperience(entry.key),
             onDelete: () => _deleteExperience(entry.key),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
         Center(
           child: ElevatedButton.icon(
@@ -284,7 +284,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             onEdit: () => _editEducation(entry.key),
             onDelete: () => _deleteEducation(entry.key),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
         Center(
           child: ElevatedButton.icon(
@@ -375,7 +375,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             onEdit: () => _editProject(entry.key),
             onDelete: () => _deleteProject(entry.key),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
         Center(
           child: ElevatedButton.icon(

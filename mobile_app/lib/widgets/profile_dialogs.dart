@@ -6,10 +6,10 @@ class ExperienceDialog extends StatefulWidget {
   final Function(Experience) onSave;
 
   const ExperienceDialog({
-    Key? key,
+    super.key,
     this.experience,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<ExperienceDialog> createState() => _ExperienceDialogState();
@@ -152,10 +152,10 @@ class EducationDialog extends StatefulWidget {
   final Function(Education) onSave;
 
   const EducationDialog({
-    Key? key,
+    super.key,
     this.education,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<EducationDialog> createState() => _EducationDialogState();
@@ -286,10 +286,10 @@ class ProjectDialog extends StatefulWidget {
   final Function(Project) onSave;
 
   const ProjectDialog({
-    Key? key,
+    super.key,
     this.project,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<ProjectDialog> createState() => _ProjectDialogState();

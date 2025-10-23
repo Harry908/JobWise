@@ -7,11 +7,11 @@ class ExperienceCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const ExperienceCard({
-    Key? key,
+    super.key,
     required this.experience,
     required this.onEdit,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -97,11 +97,11 @@ class EducationCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const EducationCard({
-    Key? key,
+    super.key,
     required this.education,
     required this.onEdit,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,11 +185,11 @@ class ProjectCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const ProjectCard({
-    Key? key,
+    super.key,
     required this.project,
     required this.onEdit,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
