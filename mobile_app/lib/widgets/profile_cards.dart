@@ -230,7 +230,7 @@ class ProjectCard extends StatelessWidget {
                 children: project.technologies
                     .map((tech) => Chip(
                           label: Text(tech),
-                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          backgroundColor: Color.fromRGBO(33, 150, 243, 0.1),
                         ))
                     .toList(),
               ),

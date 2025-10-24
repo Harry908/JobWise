@@ -3,33 +3,142 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'profile.freezed.dart';
 part 'profile.g.dart';
 
-@freezed
-class Profile with _$Profile {
-  const factory Profile({
-    required String id,
-    // ignore: invalid_annotation_target
-    @JsonKey(name: 'user_id') required String userId,
-    required PersonalInfo personalInfo,
-    // ignore: invalid_annotation_target
-    @JsonKey(name: 'professional_summary') String? professionalSummary,
-    @Default([]) List<Experience> experiences,
-    @Default([]) List<Education> education,
-    required Skills skills,
-    @Default([]) List<Project> projects,
-    @Default({}) Map<String, dynamic> customFields,
-    required int version,
-    // ignore: invalid_annotation_target
-    @JsonKey(name: 'created_at') required DateTime createdAt,
-    // ignore: invalid_annotation_target
-    @JsonKey(name: 'updated_at') required DateTime updatedAt,
-  }) = _Profile;
+class Profile {
+  const Profile({
+    required this.id,
+    required this.userId,
+    required this.personalInfo,
+    this.professionalSummary,
+    this.experiences = const [],
+    this.education = const [],
+    required this.skills,
+    this.projects = const [],
+    this.customFields = const {},
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String userId;
+  final PersonalInfo personalInfo;
+  final String? professionalSummary;
+  final List<Experience> experiences;
+  final List<Education> education;
+  final Skills skills;
+  final List<Project> projects;
+  final Map<String, dynamic> customFields;
+  final int version;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     // Convert user_id to string if it's an integer
-    if (json['user_id'] is int) {
-      json = Map<String, dynamic>.from(json)..['user_id'] = json['user_id'].toString();
-    }
-    return _$ProfileFromJson(json);
+    final userId = json['user_id'] is int
+        ? json['user_id'].toString()
+        : json['user_id'] as String;
+
+    return Profile(
+      id: json['id'] as String,
+      userId: userId,
+      personalInfo: PersonalInfo.fromJson(json['personal_info'] as Map<String, dynamic>),
+      professionalSummary: json['professional_summary'] as String?,
+      experiences: (json['experiences'] as List<dynamic>?)
+          ?.map((e) => Experience.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      education: (json['education'] as List<dynamic>?)
+          ?.map((e) => Education.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      skills: Skills.fromJson(json['skills'] as Map<String, dynamic>),
+      projects: (json['projects'] as List<dynamic>?)
+          ?.map((e) => Project.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      customFields: (json['custom_fields'] as Map<String, dynamic>?) ?? const {},
+      version: json['version'] as int,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'personal_info': personalInfo.toJson(),
+      'professional_summary': professionalSummary,
+      'experiences': experiences.map((e) => e.toJson()).toList(),
+      'education': education.map((e) => e.toJson()).toList(),
+      'skills': skills.toJson(),
+      'projects': projects.map((e) => e.toJson()).toList(),
+      'custom_fields': customFields,
+      'version': version,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  Profile copyWith({
+    String? id,
+    String? userId,
+    PersonalInfo? personalInfo,
+    String? professionalSummary,
+    List<Experience>? experiences,
+    List<Education>? education,
+    Skills? skills,
+    List<Project>? projects,
+    Map<String, dynamic>? customFields,
+    int? version,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      personalInfo: personalInfo ?? this.personalInfo,
+      professionalSummary: professionalSummary ?? this.professionalSummary,
+      experiences: experiences ?? this.experiences,
+      education: education ?? this.education,
+      skills: skills ?? this.skills,
+      projects: projects ?? this.projects,
+      customFields: customFields ?? this.customFields,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Profile &&
+        other.id == id &&
+        other.userId == userId &&
+        other.personalInfo == personalInfo &&
+        other.professionalSummary == professionalSummary &&
+        other.experiences == experiences &&
+        other.education == education &&
+        other.skills == skills &&
+        other.projects == projects &&
+        other.customFields == customFields &&
+        other.version == version &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        userId.hashCode ^
+        personalInfo.hashCode ^
+        professionalSummary.hashCode ^
+        experiences.hashCode ^
+        education.hashCode ^
+        skills.hashCode ^
+        projects.hashCode ^
+        customFields.hashCode ^
+        version.hashCode ^
+        createdAt.hashCode ^
+        updatedAt.hashCode;
   }
 }
 
@@ -64,6 +173,9 @@ class Experience with _$Experience {
     @JsonKey(name: 'is_current') @Default(false) bool isCurrent,
     String? description,
     @Default([]) List<String> achievements,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'employment_type') String? employmentType,
+    String? industry,
   }) = _Experience;
 
   factory Experience.fromJson(Map<String, dynamic> json) => _$ExperienceFromJson(json);
@@ -81,8 +193,11 @@ class Education with _$Education {
     @JsonKey(name: 'start_date') required String startDate,
     // ignore: invalid_annotation_target
     @JsonKey(name: 'end_date') String? endDate,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'is_current') @Default(false) bool isCurrent,
     double? gpa,
     @Default([]) List<String> honors,
+    String? description,
   }) = _Education;
 
   factory Education.fromJson(Map<String, dynamic> json) => _$EducationFromJson(json);
@@ -136,9 +251,14 @@ class Project with _$Project {
     @Default([]) List<String> technologies,
     String? url,
     // ignore: invalid_annotation_target
+    @JsonKey(name: 'repository_url') String? repositoryUrl,
+    // ignore: invalid_annotation_target
     @JsonKey(name: 'start_date') String? startDate,
     // ignore: invalid_annotation_target
     @JsonKey(name: 'end_date') String? endDate,
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'is_ongoing') @Default(false) bool isOngoing,
+    @Default([]) List<String> highlights,
   }) = _Project;
 
   factory Project.fromJson(Map<String, dynamic> json) => _$ProjectFromJson(json);

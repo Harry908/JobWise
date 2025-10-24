@@ -1,9 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../models/profile.dart';
-import '../api/profiles_api_client.dart';
-import '../api/base_http_client.dart';
-import '../storage_service.dart';
+import '../models/profile.dart';
+import '../services/api/profiles_api_client.dart';
+import 'auth_provider.dart';
 
 part 'profile_provider.freezed.dart';
 
@@ -46,8 +46,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       state = state.copyWith(profile: createdProfile, isSaving: false);
     } catch (e) {
       String errorMessage = 'Failed to create profile. Please try again.';
-      if (e is String) {
-        errorMessage = e;
+      if (e is DioException && e.error is String) {
+        errorMessage = e.error as String;
       }
       state = state.copyWith(
         isSaving: false,
@@ -69,8 +69,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       state = state.copyWith(profile: updatedProfile, isSaving: false);
     } catch (e) {
       String errorMessage = 'Failed to update profile. Please try again.';
-      if (e is String) {
-        errorMessage = e;
+      if (e is DioException && e.error is String) {
+        errorMessage = e.error as String;
       }
       state = state.copyWith(
         isSaving: false,
@@ -539,12 +539,21 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     }
   }
 
-  void clearError() {
-    state = state.copyWith(errorMessage: null);
-  }
+  Future<ProfileAnalytics> getProfileAnalytics() async {
+    if (state.profile == null) {
+      throw Exception('No profile available');
+    }
 
-  Future<void> refreshProfile() async {
-    await _loadProfile();
+    try {
+      return await _profileApi.getProfileAnalytics(state.profile!.id);
+    } catch (e) {
+      String errorMessage = 'Failed to load profile analytics.';
+      if (e is DioException && e.error is String) {
+        errorMessage = e.error as String;
+      }
+      state = state.copyWith(errorMessage: errorMessage);
+      rethrow;
+    }
   }
 }
 

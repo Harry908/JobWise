@@ -799,7 +799,11 @@ mixin _$Experience {
   @JsonKey(name: 'is_current')
   bool get isCurrent => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
-  List<String> get achievements => throw _privateConstructorUsedError;
+  List<String> get achievements =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'employment_type')
+  String? get employmentType => throw _privateConstructorUsedError;
+  String? get industry => throw _privateConstructorUsedError;
 
   /// Serializes this Experience to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -828,6 +832,8 @@ abstract class $ExperienceCopyWith<$Res> {
     @JsonKey(name: 'is_current') bool isCurrent,
     String? description,
     List<String> achievements,
+    @JsonKey(name: 'employment_type') String? employmentType,
+    String? industry,
   });
 }
 
@@ -855,6 +861,8 @@ class _$ExperienceCopyWithImpl<$Res, $Val extends Experience>
     Object? isCurrent = null,
     Object? description = freezed,
     Object? achievements = null,
+    Object? employmentType = freezed,
+    Object? industry = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -894,6 +902,14 @@ class _$ExperienceCopyWithImpl<$Res, $Val extends Experience>
                 ? _value.achievements
                 : achievements // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            employmentType: freezed == employmentType
+                ? _value.employmentType
+                : employmentType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            industry: freezed == industry
+                ? _value.industry
+                : industry // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -919,6 +935,8 @@ abstract class _$$ExperienceImplCopyWith<$Res>
     @JsonKey(name: 'is_current') bool isCurrent,
     String? description,
     List<String> achievements,
+    @JsonKey(name: 'employment_type') String? employmentType,
+    String? industry,
   });
 }
 
@@ -945,6 +963,8 @@ class __$$ExperienceImplCopyWithImpl<$Res>
     Object? isCurrent = null,
     Object? description = freezed,
     Object? achievements = null,
+    Object? employmentType = freezed,
+    Object? industry = freezed,
   }) {
     return _then(
       _$ExperienceImpl(
@@ -984,6 +1004,14 @@ class __$$ExperienceImplCopyWithImpl<$Res>
             ? _value._achievements
             : achievements // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        employmentType: freezed == employmentType
+            ? _value.employmentType
+            : employmentType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        industry: freezed == industry
+            ? _value.industry
+            : industry // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -1002,6 +1030,8 @@ class _$ExperienceImpl implements _Experience {
     @JsonKey(name: 'is_current') this.isCurrent = false,
     this.description,
     final List<String> achievements = const [],
+    @JsonKey(name: 'employment_type') this.employmentType,
+    this.industry,
   }) : _achievements = achievements;
 
   factory _$ExperienceImpl.fromJson(Map<String, dynamic> json) =>
@@ -1038,9 +1068,16 @@ class _$ExperienceImpl implements _Experience {
     return EqualUnmodifiableListView(_achievements);
   }
 
+  // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'employment_type')
+  final String? employmentType;
+  @override
+  final String? industry;
+
   @override
   String toString() {
-    return 'Experience(id: $id, title: $title, company: $company, location: $location, startDate: $startDate, endDate: $endDate, isCurrent: $isCurrent, description: $description, achievements: $achievements)';
+    return 'Experience(id: $id, title: $title, company: $company, location: $location, startDate: $startDate, endDate: $endDate, isCurrent: $isCurrent, description: $description, achievements: $achievements, employmentType: $employmentType, industry: $industry)';
   }
 
   @override
@@ -1063,7 +1100,11 @@ class _$ExperienceImpl implements _Experience {
             const DeepCollectionEquality().equals(
               other._achievements,
               _achievements,
-            ));
+            ) &&
+            (identical(other.employmentType, employmentType) ||
+                other.employmentType == employmentType) &&
+            (identical(other.industry, industry) ||
+                other.industry == industry));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1079,6 +1120,8 @@ class _$ExperienceImpl implements _Experience {
     isCurrent,
     description,
     const DeepCollectionEquality().hash(_achievements),
+    employmentType,
+    industry,
   );
 
   /// Create a copy of Experience
@@ -1106,6 +1149,8 @@ abstract class _Experience implements Experience {
     @JsonKey(name: 'is_current') final bool isCurrent,
     final String? description,
     final List<String> achievements,
+    @JsonKey(name: 'employment_type') final String? employmentType,
+    final String? industry,
   }) = _$ExperienceImpl;
 
   factory _Experience.fromJson(Map<String, dynamic> json) =
@@ -1131,7 +1176,12 @@ abstract class _Experience implements Experience {
   @override
   String? get description;
   @override
-  List<String> get achievements;
+  List<String> get achievements; // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'employment_type')
+  String? get employmentType;
+  @override
+  String? get industry;
 
   /// Create a copy of Experience
   /// with the given fields replaced by the non-null parameter values.
@@ -1156,9 +1206,12 @@ mixin _$Education {
   @JsonKey(name: 'start_date')
   String get startDate => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
   @JsonKey(name: 'end_date')
-  String? get endDate => throw _privateConstructorUsedError;
+  String? get endDate => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'is_current')
+  bool get isCurrent => throw _privateConstructorUsedError;
   double? get gpa => throw _privateConstructorUsedError;
   List<String> get honors => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
 
   /// Serializes this Education to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1182,8 +1235,10 @@ abstract class $EducationCopyWith<$Res> {
     @JsonKey(name: 'field_of_study') String fieldOfStudy,
     @JsonKey(name: 'start_date') String startDate,
     @JsonKey(name: 'end_date') String? endDate,
+    @JsonKey(name: 'is_current') bool isCurrent,
     double? gpa,
     List<String> honors,
+    String? description,
   });
 }
 
@@ -1208,8 +1263,10 @@ class _$EducationCopyWithImpl<$Res, $Val extends Education>
     Object? fieldOfStudy = null,
     Object? startDate = null,
     Object? endDate = freezed,
+    Object? isCurrent = null,
     Object? gpa = freezed,
     Object? honors = null,
+    Object? description = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1237,6 +1294,10 @@ class _$EducationCopyWithImpl<$Res, $Val extends Education>
                 ? _value.endDate
                 : endDate // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isCurrent: null == isCurrent
+                ? _value.isCurrent
+                : isCurrent // ignore: cast_nullable_to_non_nullable
+                      as bool,
             gpa: freezed == gpa
                 ? _value.gpa
                 : gpa // ignore: cast_nullable_to_non_nullable
@@ -1245,6 +1306,10 @@ class _$EducationCopyWithImpl<$Res, $Val extends Education>
                 ? _value.honors
                 : honors // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            description: freezed == description
+                ? _value.description
+                : description // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -1267,8 +1332,10 @@ abstract class _$$EducationImplCopyWith<$Res>
     @JsonKey(name: 'field_of_study') String fieldOfStudy,
     @JsonKey(name: 'start_date') String startDate,
     @JsonKey(name: 'end_date') String? endDate,
+    @JsonKey(name: 'is_current') bool isCurrent,
     double? gpa,
     List<String> honors,
+    String? description,
   });
 }
 
@@ -1292,8 +1359,10 @@ class __$$EducationImplCopyWithImpl<$Res>
     Object? fieldOfStudy = null,
     Object? startDate = null,
     Object? endDate = freezed,
+    Object? isCurrent = null,
     Object? gpa = freezed,
     Object? honors = null,
+    Object? description = freezed,
   }) {
     return _then(
       _$EducationImpl(
@@ -1321,6 +1390,10 @@ class __$$EducationImplCopyWithImpl<$Res>
             ? _value.endDate
             : endDate // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isCurrent: null == isCurrent
+            ? _value.isCurrent
+            : isCurrent // ignore: cast_nullable_to_non_nullable
+                  as bool,
         gpa: freezed == gpa
             ? _value.gpa
             : gpa // ignore: cast_nullable_to_non_nullable
@@ -1329,6 +1402,10 @@ class __$$EducationImplCopyWithImpl<$Res>
             ? _value._honors
             : honors // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        description: freezed == description
+            ? _value.description
+            : description // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -1344,8 +1421,10 @@ class _$EducationImpl implements _Education {
     @JsonKey(name: 'field_of_study') required this.fieldOfStudy,
     @JsonKey(name: 'start_date') required this.startDate,
     @JsonKey(name: 'end_date') this.endDate,
+    @JsonKey(name: 'is_current') this.isCurrent = false,
     this.gpa,
     final List<String> honors = const [],
+    this.description,
   }) : _honors = honors;
 
   factory _$EducationImpl.fromJson(Map<String, dynamic> json) =>
@@ -1369,6 +1448,10 @@ class _$EducationImpl implements _Education {
   @override
   @JsonKey(name: 'end_date')
   final String? endDate;
+  // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'is_current')
+  final bool isCurrent;
   @override
   final double? gpa;
   final List<String> _honors;
@@ -1381,8 +1464,11 @@ class _$EducationImpl implements _Education {
   }
 
   @override
+  final String? description;
+
+  @override
   String toString() {
-    return 'Education(id: $id, institution: $institution, degree: $degree, fieldOfStudy: $fieldOfStudy, startDate: $startDate, endDate: $endDate, gpa: $gpa, honors: $honors)';
+    return 'Education(id: $id, institution: $institution, degree: $degree, fieldOfStudy: $fieldOfStudy, startDate: $startDate, endDate: $endDate, isCurrent: $isCurrent, gpa: $gpa, honors: $honors, description: $description)';
   }
 
   @override
@@ -1399,8 +1485,12 @@ class _$EducationImpl implements _Education {
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.isCurrent, isCurrent) ||
+                other.isCurrent == isCurrent) &&
             (identical(other.gpa, gpa) || other.gpa == gpa) &&
-            const DeepCollectionEquality().equals(other._honors, _honors));
+            const DeepCollectionEquality().equals(other._honors, _honors) &&
+            (identical(other.description, description) ||
+                other.description == description));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1413,8 +1503,10 @@ class _$EducationImpl implements _Education {
     fieldOfStudy,
     startDate,
     endDate,
+    isCurrent,
     gpa,
     const DeepCollectionEquality().hash(_honors),
+    description,
   );
 
   /// Create a copy of Education
@@ -1439,8 +1531,10 @@ abstract class _Education implements Education {
     @JsonKey(name: 'field_of_study') required final String fieldOfStudy,
     @JsonKey(name: 'start_date') required final String startDate,
     @JsonKey(name: 'end_date') final String? endDate,
+    @JsonKey(name: 'is_current') final bool isCurrent,
     final double? gpa,
     final List<String> honors,
+    final String? description,
   }) = _$EducationImpl;
 
   factory _Education.fromJson(Map<String, dynamic> json) =
@@ -1460,11 +1554,16 @@ abstract class _Education implements Education {
   String get startDate; // ignore: invalid_annotation_target
   @override
   @JsonKey(name: 'end_date')
-  String? get endDate;
+  String? get endDate; // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'is_current')
+  bool get isCurrent;
   @override
   double? get gpa;
   @override
   List<String> get honors;
+  @override
+  String? get description;
 
   /// Create a copy of Education
   /// with the given fields replaced by the non-null parameter values.
@@ -2203,10 +2302,15 @@ mixin _$Project {
   List<String> get technologies => throw _privateConstructorUsedError;
   String? get url =>
       throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'repository_url')
+  String? get repositoryUrl => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
   @JsonKey(name: 'start_date')
   String? get startDate => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
   @JsonKey(name: 'end_date')
-  String? get endDate => throw _privateConstructorUsedError;
+  String? get endDate => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'is_ongoing')
+  bool get isOngoing => throw _privateConstructorUsedError;
+  List<String> get highlights => throw _privateConstructorUsedError;
 
   /// Serializes this Project to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -2228,8 +2332,11 @@ abstract class $ProjectCopyWith<$Res> {
     String description,
     List<String> technologies,
     String? url,
+    @JsonKey(name: 'repository_url') String? repositoryUrl,
     @JsonKey(name: 'start_date') String? startDate,
     @JsonKey(name: 'end_date') String? endDate,
+    @JsonKey(name: 'is_ongoing') bool isOngoing,
+    List<String> highlights,
   });
 }
 
@@ -2253,8 +2360,11 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
     Object? description = null,
     Object? technologies = null,
     Object? url = freezed,
+    Object? repositoryUrl = freezed,
     Object? startDate = freezed,
     Object? endDate = freezed,
+    Object? isOngoing = null,
+    Object? highlights = null,
   }) {
     return _then(
       _value.copyWith(
@@ -2278,6 +2388,10 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
                 ? _value.url
                 : url // ignore: cast_nullable_to_non_nullable
                       as String?,
+            repositoryUrl: freezed == repositoryUrl
+                ? _value.repositoryUrl
+                : repositoryUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
             startDate: freezed == startDate
                 ? _value.startDate
                 : startDate // ignore: cast_nullable_to_non_nullable
@@ -2286,6 +2400,14 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
                 ? _value.endDate
                 : endDate // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isOngoing: null == isOngoing
+                ? _value.isOngoing
+                : isOngoing // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            highlights: null == highlights
+                ? _value.highlights
+                : highlights // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
           )
           as $Val,
     );
@@ -2306,8 +2428,11 @@ abstract class _$$ProjectImplCopyWith<$Res> implements $ProjectCopyWith<$Res> {
     String description,
     List<String> technologies,
     String? url,
+    @JsonKey(name: 'repository_url') String? repositoryUrl,
     @JsonKey(name: 'start_date') String? startDate,
     @JsonKey(name: 'end_date') String? endDate,
+    @JsonKey(name: 'is_ongoing') bool isOngoing,
+    List<String> highlights,
   });
 }
 
@@ -2330,8 +2455,11 @@ class __$$ProjectImplCopyWithImpl<$Res>
     Object? description = null,
     Object? technologies = null,
     Object? url = freezed,
+    Object? repositoryUrl = freezed,
     Object? startDate = freezed,
     Object? endDate = freezed,
+    Object? isOngoing = null,
+    Object? highlights = null,
   }) {
     return _then(
       _$ProjectImpl(
@@ -2355,6 +2483,10 @@ class __$$ProjectImplCopyWithImpl<$Res>
             ? _value.url
             : url // ignore: cast_nullable_to_non_nullable
                   as String?,
+        repositoryUrl: freezed == repositoryUrl
+            ? _value.repositoryUrl
+            : repositoryUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
         startDate: freezed == startDate
             ? _value.startDate
             : startDate // ignore: cast_nullable_to_non_nullable
@@ -2363,6 +2495,14 @@ class __$$ProjectImplCopyWithImpl<$Res>
             ? _value.endDate
             : endDate // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isOngoing: null == isOngoing
+            ? _value.isOngoing
+            : isOngoing // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        highlights: null == highlights
+            ? _value._highlights
+            : highlights // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
       ),
     );
   }
@@ -2377,9 +2517,13 @@ class _$ProjectImpl implements _Project {
     required this.description,
     final List<String> technologies = const [],
     this.url,
+    @JsonKey(name: 'repository_url') this.repositoryUrl,
     @JsonKey(name: 'start_date') this.startDate,
     @JsonKey(name: 'end_date') this.endDate,
-  }) : _technologies = technologies;
+    @JsonKey(name: 'is_ongoing') this.isOngoing = false,
+    final List<String> highlights = const [],
+  }) : _technologies = technologies,
+       _highlights = highlights;
 
   factory _$ProjectImpl.fromJson(Map<String, dynamic> json) =>
       _$$ProjectImplFromJson(json);
@@ -2403,16 +2547,32 @@ class _$ProjectImpl implements _Project {
   final String? url;
   // ignore: invalid_annotation_target
   @override
+  @JsonKey(name: 'repository_url')
+  final String? repositoryUrl;
+  // ignore: invalid_annotation_target
+  @override
   @JsonKey(name: 'start_date')
   final String? startDate;
   // ignore: invalid_annotation_target
   @override
   @JsonKey(name: 'end_date')
   final String? endDate;
+  // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'is_ongoing')
+  final bool isOngoing;
+  final List<String> _highlights;
+  @override
+  @JsonKey()
+  List<String> get highlights {
+    if (_highlights is EqualUnmodifiableListView) return _highlights;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_highlights);
+  }
 
   @override
   String toString() {
-    return 'Project(id: $id, name: $name, description: $description, technologies: $technologies, url: $url, startDate: $startDate, endDate: $endDate)';
+    return 'Project(id: $id, name: $name, description: $description, technologies: $technologies, url: $url, repositoryUrl: $repositoryUrl, startDate: $startDate, endDate: $endDate, isOngoing: $isOngoing, highlights: $highlights)';
   }
 
   @override
@@ -2429,9 +2589,17 @@ class _$ProjectImpl implements _Project {
               _technologies,
             ) &&
             (identical(other.url, url) || other.url == url) &&
+            (identical(other.repositoryUrl, repositoryUrl) ||
+                other.repositoryUrl == repositoryUrl) &&
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
-            (identical(other.endDate, endDate) || other.endDate == endDate));
+            (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.isOngoing, isOngoing) ||
+                other.isOngoing == isOngoing) &&
+            const DeepCollectionEquality().equals(
+              other._highlights,
+              _highlights,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2443,8 +2611,11 @@ class _$ProjectImpl implements _Project {
     description,
     const DeepCollectionEquality().hash(_technologies),
     url,
+    repositoryUrl,
     startDate,
     endDate,
+    isOngoing,
+    const DeepCollectionEquality().hash(_highlights),
   );
 
   /// Create a copy of Project
@@ -2468,8 +2639,11 @@ abstract class _Project implements Project {
     required final String description,
     final List<String> technologies,
     final String? url,
+    @JsonKey(name: 'repository_url') final String? repositoryUrl,
     @JsonKey(name: 'start_date') final String? startDate,
     @JsonKey(name: 'end_date') final String? endDate,
+    @JsonKey(name: 'is_ongoing') final bool isOngoing,
+    final List<String> highlights,
   }) = _$ProjectImpl;
 
   factory _Project.fromJson(Map<String, dynamic> json) = _$ProjectImpl.fromJson;
@@ -2485,11 +2659,19 @@ abstract class _Project implements Project {
   @override
   String? get url; // ignore: invalid_annotation_target
   @override
+  @JsonKey(name: 'repository_url')
+  String? get repositoryUrl; // ignore: invalid_annotation_target
+  @override
   @JsonKey(name: 'start_date')
   String? get startDate; // ignore: invalid_annotation_target
   @override
   @JsonKey(name: 'end_date')
-  String? get endDate;
+  String? get endDate; // ignore: invalid_annotation_target
+  @override
+  @JsonKey(name: 'is_ongoing')
+  bool get isOngoing;
+  @override
+  List<String> get highlights;
 
   /// Create a copy of Project
   /// with the given fields replaced by the non-null parameter values.

@@ -15,22 +15,21 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
-User _$UserFromJson(Map<String, dynamic> json) {
-  return _User.fromJson(json);
-}
-
 /// @nodoc
 mixin _$User {
   String get id => throw _privateConstructorUsedError;
-  String get email => throw _privateConstructorUsedError;
-  String get fullName => throw _privateConstructorUsedError;
-  bool get isActive => throw _privateConstructorUsedError;
-  bool get isVerified => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
-
-  /// Serializes this User to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get email =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'full_name')
+  String get fullName => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'is_active')
+  bool get isActive => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'is_verified')
+  bool get isVerified => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'created_at')
+  DateTime? get createdAt => throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'updated_at')
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -46,11 +45,11 @@ abstract class $UserCopyWith<$Res> {
   $Res call({
     String id,
     String email,
-    String fullName,
-    bool isActive,
-    bool isVerified,
-    DateTime createdAt,
-    DateTime updatedAt,
+    @JsonKey(name: 'full_name') String fullName,
+    @JsonKey(name: 'is_active') bool isActive,
+    @JsonKey(name: 'is_verified') bool isVerified,
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   });
 }
 
@@ -74,8 +73,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? fullName = null,
     Object? isActive = null,
     Object? isVerified = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -99,14 +98,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.isVerified
                 : isVerified // ignore: cast_nullable_to_non_nullable
                       as bool,
-            createdAt: null == createdAt
+            createdAt: freezed == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
-            updatedAt: null == updatedAt
+                      as DateTime?,
+            updatedAt: freezed == updatedAt
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
+                      as DateTime?,
           )
           as $Val,
     );
@@ -124,11 +123,11 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
   $Res call({
     String id,
     String email,
-    String fullName,
-    bool isActive,
-    bool isVerified,
-    DateTime createdAt,
-    DateTime updatedAt,
+    @JsonKey(name: 'full_name') String fullName,
+    @JsonKey(name: 'is_active') bool isActive,
+    @JsonKey(name: 'is_verified') bool isVerified,
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   });
 }
 
@@ -149,8 +148,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? fullName = null,
     Object? isActive = null,
     Object? isVerified = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(
       _$UserImpl(
@@ -174,51 +173,56 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value.isVerified
             : isVerified // ignore: cast_nullable_to_non_nullable
                   as bool,
-        createdAt: null == createdAt
+        createdAt: freezed == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
-        updatedAt: null == updatedAt
+                  as DateTime?,
+        updatedAt: freezed == updatedAt
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
+                  as DateTime?,
       ),
     );
   }
 }
 
 /// @nodoc
-@JsonSerializable()
+
 class _$UserImpl implements _User {
   const _$UserImpl({
     required this.id,
     required this.email,
-    required this.fullName,
-    this.isActive = true,
-    this.isVerified = false,
-    required this.createdAt,
-    required this.updatedAt,
+    @JsonKey(name: 'full_name') required this.fullName,
+    @JsonKey(name: 'is_active') this.isActive = true,
+    @JsonKey(name: 'is_verified') this.isVerified = false,
+    @JsonKey(name: 'created_at') this.createdAt,
+    @JsonKey(name: 'updated_at') this.updatedAt,
   });
-
-  factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
-      _$$UserImplFromJson(json);
 
   @override
   final String id;
   @override
   final String email;
+  // ignore: invalid_annotation_target
   @override
+  @JsonKey(name: 'full_name')
   final String fullName;
+  // ignore: invalid_annotation_target
   @override
-  @JsonKey()
+  @JsonKey(name: 'is_active')
   final bool isActive;
+  // ignore: invalid_annotation_target
   @override
-  @JsonKey()
+  @JsonKey(name: 'is_verified')
   final bool isVerified;
+  // ignore: invalid_annotation_target
   @override
-  final DateTime createdAt;
+  @JsonKey(name: 'created_at')
+  final DateTime? createdAt;
+  // ignore: invalid_annotation_target
   @override
-  final DateTime updatedAt;
+  @JsonKey(name: 'updated_at')
+  final DateTime? updatedAt;
 
   @override
   String toString() {
@@ -244,7 +248,6 @@ class _$UserImpl implements _User {
                 other.updatedAt == updatedAt));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
     runtimeType,
@@ -264,40 +267,38 @@ class _$UserImpl implements _User {
   @pragma('vm:prefer-inline')
   _$$UserImplCopyWith<_$UserImpl> get copyWith =>
       __$$UserImplCopyWithImpl<_$UserImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$UserImplToJson(this);
-  }
 }
 
 abstract class _User implements User {
   const factory _User({
     required final String id,
     required final String email,
-    required final String fullName,
-    final bool isActive,
-    final bool isVerified,
-    required final DateTime createdAt,
-    required final DateTime updatedAt,
+    @JsonKey(name: 'full_name') required final String fullName,
+    @JsonKey(name: 'is_active') final bool isActive,
+    @JsonKey(name: 'is_verified') final bool isVerified,
+    @JsonKey(name: 'created_at') final DateTime? createdAt,
+    @JsonKey(name: 'updated_at') final DateTime? updatedAt,
   }) = _$UserImpl;
-
-  factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
 
   @override
   String get id;
   @override
-  String get email;
+  String get email; // ignore: invalid_annotation_target
   @override
-  String get fullName;
+  @JsonKey(name: 'full_name')
+  String get fullName; // ignore: invalid_annotation_target
   @override
-  bool get isActive;
+  @JsonKey(name: 'is_active')
+  bool get isActive; // ignore: invalid_annotation_target
   @override
-  bool get isVerified;
+  @JsonKey(name: 'is_verified')
+  bool get isVerified; // ignore: invalid_annotation_target
   @override
-  DateTime get createdAt;
+  @JsonKey(name: 'created_at')
+  DateTime? get createdAt; // ignore: invalid_annotation_target
   @override
-  DateTime get updatedAt;
+  @JsonKey(name: 'updated_at')
+  DateTime? get updatedAt;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.

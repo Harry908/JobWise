@@ -43,6 +43,8 @@ _$ExperienceImpl _$$ExperienceImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      employmentType: json['employment_type'] as String?,
+      industry: json['industry'] as String?,
     );
 
 Map<String, dynamic> _$$ExperienceImplToJson(_$ExperienceImpl instance) =>
@@ -56,6 +58,8 @@ Map<String, dynamic> _$$ExperienceImplToJson(_$ExperienceImpl instance) =>
       'is_current': instance.isCurrent,
       'description': instance.description,
       'achievements': instance.achievements,
+      'employment_type': instance.employmentType,
+      'industry': instance.industry,
     };
 
 _$EducationImpl _$$EducationImplFromJson(Map<String, dynamic> json) =>
@@ -66,12 +70,14 @@ _$EducationImpl _$$EducationImplFromJson(Map<String, dynamic> json) =>
       fieldOfStudy: json['field_of_study'] as String,
       startDate: json['start_date'] as String,
       endDate: json['end_date'] as String?,
+      isCurrent: json['is_current'] as bool? ?? false,
       gpa: (json['gpa'] as num?)?.toDouble(),
       honors:
           (json['honors'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      description: json['description'] as String?,
     );
 
 Map<String, dynamic> _$$EducationImplToJson(_$EducationImpl instance) =>
@@ -82,8 +88,10 @@ Map<String, dynamic> _$$EducationImplToJson(_$EducationImpl instance) =>
       'field_of_study': instance.fieldOfStudy,
       'start_date': instance.startDate,
       'end_date': instance.endDate,
+      'is_current': instance.isCurrent,
       'gpa': instance.gpa,
       'honors': instance.honors,
+      'description': instance.description,
     };
 
 _$SkillsImpl _$$SkillsImplFromJson(Map<String, dynamic> json) => _$SkillsImpl(
@@ -156,8 +164,15 @@ _$ProjectImpl _$$ProjectImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       url: json['url'] as String?,
+      repositoryUrl: json['repository_url'] as String?,
       startDate: json['start_date'] as String?,
       endDate: json['end_date'] as String?,
+      isOngoing: json['is_ongoing'] as bool? ?? false,
+      highlights:
+          (json['highlights'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$ProjectImplToJson(_$ProjectImpl instance) =>
@@ -167,8 +182,11 @@ Map<String, dynamic> _$$ProjectImplToJson(_$ProjectImpl instance) =>
       'description': instance.description,
       'technologies': instance.technologies,
       'url': instance.url,
+      'repository_url': instance.repositoryUrl,
       'start_date': instance.startDate,
       'end_date': instance.endDate,
+      'is_ongoing': instance.isOngoing,
+      'highlights': instance.highlights,
     };
 
 _$ProfileAnalyticsImpl _$$ProfileAnalyticsImplFromJson(

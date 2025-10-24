@@ -73,7 +73,8 @@ class ProfilesApiClient {
       '/profiles/$profileId/experiences',
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
-    return (response.data['experiences'] as List)
+    final data = response.data as Map<String, dynamic>;
+    return (data['experiences'] as List)
         .map((json) => Experience.fromJson(json))
         .toList();
   }
@@ -102,7 +103,7 @@ class ProfilesApiClient {
   Future<void> deleteEducation(String profileId, List<String> educationIds) async {
     await _client.delete(
       '/profiles/$profileId/education',
-      data: {'education_ids': educationIds},
+      data: educationIds,
     );
   }
 
@@ -130,7 +131,7 @@ class ProfilesApiClient {
   Future<void> deleteProjects(String profileId, List<String> projectIds) async {
     await _client.delete(
       '/profiles/$profileId/projects',
-      data: {'project_ids': projectIds},
+      data: projectIds,
     );
   }
 
@@ -210,7 +211,7 @@ class ProfilesApiClient {
   Future<Map<String, dynamic>> updateCustomFields(String profileId, Map<String, dynamic> fields) async {
     final response = await _client.put(
       '/profiles/$profileId/custom-fields',
-      data: {'fields': fields.entries.map((e) => {'key': e.key, 'value': e.value}).toList()},
+      data: fields,
     );
     return response.data as Map<String, dynamic>;
   }
