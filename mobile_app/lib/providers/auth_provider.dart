@@ -84,17 +84,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('AuthProvider: Starting registration for $email');
       final authResponse = await _authApi.register(email, password, fullName);
+      print('AuthProvider: Registration API call successful');
+      print('AuthProvider: AuthResponse user: ${authResponse.user}');
       state = state.copyWith(
         user: authResponse.user,
         isAuthenticated: true,
         isLoading: false,
       );
+      print('AuthProvider: State updated successfully');
     } catch (e) {
+      print('AuthProvider: Registration failed with error: $e');
       String errorMessage = 'Registration failed. Please try again.';
       if (e is DioException && e.error is String) {
         errorMessage = e.error as String;
       }
+      print('AuthProvider: Setting error state: $errorMessage');
       state = state.copyWith(
         isLoading: false,
         error: errorMessage,

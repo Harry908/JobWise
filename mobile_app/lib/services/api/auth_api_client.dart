@@ -27,19 +27,26 @@ class AuthApiClient {
   }
 
   Future<AuthResponse> register(String email, String password, String fullName) async {
+    print('AuthApiClient: Making register request');
     final response = await _client.post('/auth/register', data: {
       'email': email,
       'password': password,
       'full_name': fullName,
     });
+    print('AuthApiClient: Register response received: ${response.statusCode}');
+    print('AuthApiClient: Response data type: ${response.data.runtimeType}');
+    print('AuthApiClient: Response data: ${response.data}');
 
+    print('AuthApiClient: Parsing AuthResponse');
     final authResponse = AuthResponse.fromJson(response.data);
+    print('AuthApiClient: AuthResponse parsed successfully: ${authResponse.user}');
 
     // Auto-login after registration
     await _storage.saveTokens(
       authResponse.accessToken,
       authResponse.refreshToken,
     );
+    print('AuthApiClient: Tokens saved successfully');
 
     return authResponse;
   }

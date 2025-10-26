@@ -14,12 +14,20 @@ class AuthResponse with _$AuthResponse {
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    return AuthResponse(
-      accessToken: json['access_token'] as String,
-      refreshToken: json['refresh_token'] as String,
-      tokenType: json['token_type'] as String?,
-      expiresIn: json['expires_in'] as int?,
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
-    );
+    print('AuthResponse.fromJson: Parsing response: $json');
+    try {
+      final result = AuthResponse(
+        accessToken: json['access_token'] as String,
+        refreshToken: json['refresh_token'] as String,
+        tokenType: json['token_type'] as String?,
+        expiresIn: json['expires_in'] as int?,
+        user: User.fromJson(json['user'] as Map<String, dynamic>),
+      );
+      print('AuthResponse.fromJson: Successfully parsed: ${result.user}');
+      return result;
+    } catch (e) {
+      print('AuthResponse.fromJson: Failed to parse: $e');
+      rethrow;
+    }
   }
 }

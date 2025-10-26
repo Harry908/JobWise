@@ -46,6 +46,16 @@ class BaseHttpClient {
             'HTTP Response: ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.uri}',
             name: 'HTTP',
           );
+          developer.log(
+            'Response data type: ${response.data.runtimeType}',
+            name: 'HTTP',
+          );
+          if (response.data != null) {
+            developer.log(
+              'Response data: ${response.data}',
+              name: 'HTTP',
+            );
+          }
 
           handler.next(response);
         },
