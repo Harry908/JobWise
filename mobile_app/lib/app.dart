@@ -5,6 +5,7 @@ import 'constants/colors.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/debug_screen.dart';
+import 'screens/profile_edit_screen.dart';
 
 // Placeholder screens for now
 class HomeScreen extends ConsumerWidget {
@@ -12,6 +13,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('JobWise'),
@@ -46,8 +49,60 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Welcome to JobWise!'),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.work,
+              size: 80,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Welcome to JobWise!',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your AI-powered job application assistant',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 48),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.go('/profile');
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('Create Profile'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (authState.user != null)
+              Text(
+                'Logged in as: ${authState.user!.email}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -84,6 +139,10 @@ class _AppState extends ConsumerState<App> {
         GoRoute(
           path: '/debug',
           builder: (context, state) => const DebugScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileEditScreen(),
         ),
       ],
       redirect: (context, state) {

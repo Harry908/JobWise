@@ -1,24 +1,37 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/profile.dart';
 import '../services/api/profiles_api_client.dart';
 import 'auth_provider.dart';
 
-part 'profile_provider.freezed.dart';
+class ProfileState {
+  final Profile? profile;
+  final bool isLoading;
+  final bool isSaving;
+  final String? errorMessage;
 
-@freezed
-class ProfileState with _$ProfileState {
-  const factory ProfileState({
-    Profile? profile,
-    @Default(false) bool isLoading,
-    @Default(false) bool isSaving,
-    String? errorMessage,
-  }) = _ProfileState;
-
-  const ProfileState._();
+  const ProfileState({
+    this.profile,
+    this.isLoading = false,
+    this.isSaving = false,
+    this.errorMessage,
+  });
 
   factory ProfileState.initial() => const ProfileState();
+
+  ProfileState copyWith({
+    Profile? profile,
+    bool? isLoading,
+    bool? isSaving,
+    String? errorMessage,
+  }) {
+    return ProfileState(
+      profile: profile ?? this.profile,
+      isLoading: isLoading ?? this.isLoading,
+      isSaving: isSaving ?? this.isSaving,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class ProfileNotifier extends StateNotifier<ProfileState> {

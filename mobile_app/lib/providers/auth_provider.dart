@@ -1,26 +1,39 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import '../config/app_config.dart';
 import '../models/user.dart';
 import '../services/api/auth_api_client.dart';
 import '../services/api/base_http_client.dart';
 import '../services/storage_service.dart';
 
-part 'auth_provider.freezed.dart';
+class AuthState {
+  final User? user;
+  final bool isLoading;
+  final bool isAuthenticated;
+  final String? error;
 
-@freezed
-class AuthState with _$AuthState {
-  const factory AuthState({
-    User? user,
-    @Default(false) bool isLoading,
-    @Default(false) bool isAuthenticated,
-    String? error,
-  }) = _AuthState;
-
-  const AuthState._();
+  const AuthState({
+    this.user,
+    this.isLoading = false,
+    this.isAuthenticated = false,
+    this.error,
+  });
 
   factory AuthState.initial() => const AuthState();
+
+  AuthState copyWith({
+    User? user,
+    bool? isLoading,
+    bool? isAuthenticated,
+    String? error,
+  }) {
+    return AuthState(
+      user: user ?? this.user,
+      isLoading: isLoading ?? this.isLoading,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      error: error ?? this.error,
+    );
+  }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {

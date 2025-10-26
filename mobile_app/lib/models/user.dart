@@ -1,20 +1,41 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class User {
+  final String id;
+  final String email;
+  final String fullName;
+  final bool isActive;
+  final bool isVerified;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-part 'user.freezed.dart';
-part 'user.g.dart';
+  const User({
+    required this.id,
+    required this.email,
+    required this.fullName,
+    this.isActive = true,
+    this.isVerified = false,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-@freezed
-@JsonSerializable()
-class User with _$User {
-  const factory User({
-    required String id,
-    required String email,
-    required String fullName,
-    @Default(true) bool isActive,
-    @Default(false) bool isVerified,
+  User copyWith({
+    String? id,
+    String? email,
+    String? fullName,
+    bool? isActive,
+    bool? isVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) = _User;
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      isActive: isActive ?? this.isActive,
+      isVerified: isVerified ?? this.isVerified,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   factory User.fromJson(Map<String, dynamic> json) {
     print('User.fromJson: Parsing user: $json');
@@ -62,5 +83,47 @@ class User with _$User {
       print('User.fromJson: Failed to create user: $e');
       rethrow;
     }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'full_name': fullName,
+      'is_active': isActive,
+      'is_verified': isVerified,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'User(id: $id, email: $email, fullName: $fullName, isActive: $isActive, isVerified: $isVerified, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is User &&
+        other.id == id &&
+        other.email == email &&
+        other.fullName == fullName &&
+        other.isActive == isActive &&
+        other.isVerified == isVerified &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        email.hashCode ^
+        fullName.hashCode ^
+        isActive.hashCode ^
+        isVerified.hashCode ^
+        createdAt.hashCode ^
+        updatedAt.hashCode;
   }
 }
