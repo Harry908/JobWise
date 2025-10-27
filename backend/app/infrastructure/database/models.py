@@ -29,7 +29,6 @@ class MasterProfileModel(Base):
 
     id = Column(String, primary_key=True)  # UUID as string
     user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
-    version = Column(Integer, default=1, nullable=False)
 
     # Personal info stored as JSON
     personal_info = Column(JSON, nullable=False)

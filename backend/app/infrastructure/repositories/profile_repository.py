@@ -26,7 +26,6 @@ class ProfileRepository:
         profile_model = MasterProfileModel(
             id=profile.id,
             user_id=profile.user_id,
-            version=profile.version,
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
             skills=profile.skills.model_dump(),
@@ -138,7 +137,6 @@ class ProfileRepository:
         stmt = update(MasterProfileModel).where(
             MasterProfileModel.id == profile.id
         ).values(
-            version=profile.version,
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
             skills=profile.skills.model_dump(),
@@ -462,7 +460,6 @@ class ProfileRepository:
             skills=Skills(**profile_model.skills),
             projects=projects,
             custom_fields=profile_model.custom_fields or {},
-            version=profile_model.version,
             created_at=profile_model.created_at,
             updated_at=profile_model.updated_at
         )

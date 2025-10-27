@@ -290,6 +290,7 @@ class ProfileResponse(BaseModel):
     experiences: List[ExperienceModel] = Field(default_factory=list)
     education: List[EducationModel] = Field(default_factory=list)
     projects: List[ProjectModel] = Field(default_factory=list)
+    custom_fields: Dict[str, Any] = Field(default_factory=dict, description="Custom user-defined fields")
     created_at: str
     updated_at: str
 

@@ -161,8 +161,8 @@ class ProfileService:
             except Exception as e:
                 raise ValidationException(f"Invalid projects data: {str(e)}")
 
-        # Increment version and update timestamp
-        existing_profile.increment_version()
+        # Update timestamp
+        existing_profile.updated_at = datetime.utcnow()
 
         return await self.profile_repository.update(existing_profile)
 

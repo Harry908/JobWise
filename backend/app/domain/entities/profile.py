@@ -146,7 +146,6 @@ class Profile(BaseModel):
     skills: Skills
     projects: List[Project] = Field(default_factory=list)
     custom_fields: Dict[str, Any] = Field(default_factory=dict)
-    version: int = Field(default=1, ge=1)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -156,11 +155,6 @@ class Profile(BaseModel):
         if not self.personal_info.full_name.strip():
             raise ValueError('Full name is required')
         return self
-
-    def increment_version(self):
-        """Increment profile version."""
-        self.version += 1
-        self.updated_at = datetime.utcnow()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""

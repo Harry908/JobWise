@@ -364,7 +364,7 @@ Analytics (✅ Implemented):
 }
 ```
 
-**Response** (200 OK): Updated profile with incremented version
+**Response** (200 OK): Updated profile
 
 **Errors**:
 - 400: Validation error
@@ -995,7 +995,6 @@ class Profile {
   final Skills skills;
   final List<Project> projects;
   final Map<String, dynamic> customFields;
-  final int version;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -1009,7 +1008,6 @@ class Profile {
     required this.skills,
     this.projects = const [],
     this.customFields = const {},
-    required this.version,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1031,7 +1029,6 @@ class Profile {
           ?.map((e) => Project.fromJson(e))
           .toList() ?? [],
       customFields: json['custom_fields'] ?? {},
-      version: json['version'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -1104,7 +1101,6 @@ Consider caching profiles locally:
 - Support adding/removing list items (experiences, education, skills, projects)
 - Support custom fields with dynamic key-value pairs
 - Auto-save drafts locally before submitting
-- Show version number for conflict resolution
 - **Current Status**: ✅ All endpoints implemented and tested including core CRUD, bulk operations, granular skills management, custom fields, and analytics
 - **Future**: Enhanced features like profile versioning, advanced analytics, and integration with AI generation pipeline
 

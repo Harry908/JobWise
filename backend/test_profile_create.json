@@ -1,0 +1,50 @@
+{
+  "personal_info": {
+    "full_name": "Test User",
+    "email": "test@example.com",
+    "phone": "+1-555-123-4567",
+    "location": "Seattle, WA",
+    "linkedin": "https://linkedin.com/in/testuser",
+    "github": "https://github.com/testuser",
+    "website": "https://testuser.com"
+  },
+  "professional_summary": "Experienced software engineer with 5+ years in full-stack development",
+  "skills": {
+    "technical": ["Python", "JavaScript", "SQL", "AWS"],
+    "soft": ["Teamwork", "Critical Thinking", "Adaptability"]
+  },
+  "experiences": [{
+    "title": "Senior Software Engineer",
+    "company": "Tech Corp",
+    "location": "Seattle, WA",
+    "start_date": "2021-01-15",
+    "end_date": null,
+    "is_current": true,
+    "description": "Lead development of microservices architecture",
+    "achievements": [
+      "Improved system performance by 40%",
+      "Led team of 4 developers"
+    ]
+  }],
+  "education": [{
+    "institution": "University of Washington",
+    "degree": "Bachelor of Science",
+    "field_of_study": "Computer Science",
+    "start_date": "2015-09-01",
+    "end_date": "2019-06-15",
+    "gpa": 3.8,
+    "honors": ["Dean's List", "Summa Cum Laude"]
+  }],
+  "projects": [{
+    "name": "E-commerce Platform",
+    "description": "Built scalable e-commerce solution with React and Node.js",
+    "technologies": ["React", "Node.js", "PostgreSQL", "AWS"],
+    "url": "https://github.com/testuser/ecommerce",
+    "start_date": "2020-01-15",
+    "end_date": "2020-12-31"
+  }],
+  "custom_fields": {
+    "achievements": ["Led team of 10 developers", "Increased performance by 40%"],
+    "hobbies": ["Photography", "Hiking", "Reading"]
+  }
+}

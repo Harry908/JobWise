@@ -1,10 +1,41 @@
 # Profile Feature - Mobile Design Document
 
-**Version**: 2.0  
+**Version**: 2.1  
 **Feature**: Master Resume Profile Management  
 **API Service**: Profile API  
-**Status**: Updated to match Backend API v2.1  
-**Last Updated**: October 23, 2025
+**Status**: ✅ **Sprint 1 Complete** (Core CRUD, bulk operations implemented)  
+**Last Updated**: October 27, 2025
+
+---
+
+## Implementation Status
+
+### ✅ Implemented Features
+- **Minimal profile creation**: Create profile with just name and email
+- Core profile CRUD (create, read, update, delete)
+- Multi-step profile form (Personal Info, Experience, Education/Skills, Projects)
+- All steps optional except Personal Info (name + email required)
+- Work experience management with CRUD dialogs and date pickers
+- Education management with CRUD dialogs and date pickers
+- Technical and soft skills with tag-based input
+- Project management with CRUD dialogs and date pickers
+- Date format settings (US MM/dd/yyyy, European dd/MM/yyyy, ISO yyyy-MM-dd)
+- Settings screen for date format configuration
+- Profile API client with all endpoints
+- Profile state management with Riverpod
+- Navigation with proper back button support
+- Comprehensive error handling
+
+### ⚠️ Partially Implemented
+- **Profile Analytics**: API client ready, no UI visualization
+- **Custom Fields**: API client ready, no UI for management
+- **Certifications**: Model and API ready, not in profile form
+- **Languages**: Model exists, not in profile form
+
+### ❌ Not Implemented
+- Profile analytics display screen
+- Custom fields management UI
+- Offline profile editing with sync
 
 ---
 
@@ -14,14 +45,77 @@
 Manage master resume profiles containing personal information, work experiences, education, skills, projects, certifications, and custom fields.
 
 ### Key Features
+- **Minimal profile creation**: Only personal info (name + email) and empty skills object required
+- **Progressive enhancement**: Add experiences, education, projects, skills later
 - Create/edit comprehensive profile with nested components
 - Bulk operations for experiences, education, projects
 - Granular skills management (add/remove individual skills)
 - Profile completeness analytics and recommendations
 - Custom fields support for extensibility
 - Offline-first with sync capabilities
-- Version control and conflict resolution
 - Comprehensive validation and error handling
+
+### Profile Creation Requirements
+**Required for initial profile creation:**
+- Personal Info: `full_name` and `email` (minimum)
+- Skills: Empty skills object `{}` (auto-created with empty lists)
+
+**Optional components (can be added later):**
+- Professional summary
+- Work experiences
+- Education entries
+- Technical/soft skills
+- Projects
+- Certifications
+- Languages
+- Custom fields
+
+This allows users to create a basic profile quickly and progressively build it over time.
+
+---
+
+## Profile Creation Flow
+
+### Minimum Viable Profile
+Users can create a profile with just the essentials and progressively enhance it:
+
+**Minimum Required Data:**
+```json
+{
+  "personal_info": {
+    "full_name": "John Doe",
+    "email": "john@example.com"
+  },
+  "skills": {
+    "technical": [],
+    "soft": [],
+    "languages": [],
+    "certifications": []
+  }
+}
+```
+
+**Progressive Enhancement:**
+1. **Step 1 (Required)**: Personal Info → Name and Email
+2. **Step 2 (Optional)**: Add work experiences when ready
+3. **Step 3 (Optional)**: Add education and skills when ready
+4. **Step 4 (Optional)**: Add projects when ready
+
+All steps except Step 1 can be skipped during initial profile creation. Users can add these details later via profile edit.
+
+### Multi-Step Form Design
+The profile form uses a stepper with optional steps:
+
+- **Step 0: Personal Info** (Required) - Name, Email, Phone, Location, LinkedIn, GitHub, Website, Summary
+- **Step 1: Experience** (Optional) - Add work experiences or skip
+- **Step 2: Education & Skills** (Optional) - Add education entries and skills or skip
+- **Step 3: Projects** (Optional) - Add projects or skip
+
+**Navigation:**
+- "Continue" button validates current step and moves to next
+- "Skip" or continue with empty data on optional steps
+- "Cancel" button returns to previous step
+- Final step shows "Save Profile" button
 
 ---
 
@@ -58,30 +152,118 @@ Manage master resume profiles containing personal information, work experiences,
 ### Profile Model
 ```dart
 // lib/models/profile.dart
-import 'package:freezed_annotation/freezed_annotation.dart';
+// NOTE: Manual implementation (not using freezed)
+// REQUIRED FIELDS: Only personal_info (with full_name + email) and skills (can be empty)
+// ALL OTHER FIELDS ARE OPTIONAL and can be added later
 
-part 'profile.freezed.dart';
-part 'profile.g.dart';
+class Profile {
+  const Profile({
+    required this.id,
+    required this.userId,
+    required this.personalInfo,  // REQUIRED: must have full_name and email
+    this.professionalSummary,    // OPTIONAL
+    this.experiences = const [], // OPTIONAL: can be empty list
+    this.education = const [],   // OPTIONAL: can be empty list
+    required this.skills,        // REQUIRED: but can be empty Skills()
+    this.projects = const [],    // OPTIONAL: can be empty list
+    this.customFields = const {}, // OPTIONAL: can be empty map
+    required this.createdAt,
+    required this.updatedAt,
+  });
+    required this.userId,
+    required this.personalInfo,
+    this.professionalSummary,
+    this.experiences = const [],
+    this.education = const [],
+    required this.skills,
+    this.projects = const [],
+    this.customFields = const {},
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-@freezed
-class Profile with _$Profile {
-  const factory Profile({
-    required String id,
-    required String userId,
-    required PersonalInfo personalInfo,
+  final String id;
+  final String userId;
+  final PersonalInfo personalInfo;
+  final String? professionalSummary;
+  final List<Experience> experiences;
+  final List<Education> education;
+  final Skills skills;
+  final List<Project> projects;
+  final Map<String, dynamic> customFields;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    // Convert user_id to string if it's an integer
+    final userId = json['user_id'] is int
+        ? json['user_id'].toString()
+        : json['user_id'] as String;
+
+    return Profile(
+      id: json['id'] as String,
+      userId: userId,
+      personalInfo: PersonalInfo.fromJson(json['personal_info'] as Map<String, dynamic>),
+      professionalSummary: json['professional_summary'] as String?,
+      experiences: (json['experiences'] as List<dynamic>?)
+          ?.map((e) => Experience.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      education: (json['education'] as List<dynamic>?)
+          ?.map((e) => Education.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      skills: Skills.fromJson(json['skills'] as Map<String, dynamic>),
+      projects: (json['projects'] as List<dynamic>?)
+          ?.map((e) => Project.fromJson(e as Map<String, dynamic>))
+          .toList() ?? const [],
+      customFields: (json['custom_fields'] as Map<String, dynamic>?) ?? const {},
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'personal_info': personalInfo.toJson(),
+      'professional_summary': professionalSummary,
+      'experiences': experiences.map((e) => e.toJson()).toList(),
+      'education': education.map((e) => e.toJson()).toList(),
+      'skills': skills.toJson(),
+      'projects': projects.map((e) => e.toJson()).toList(),
+      'custom_fields': customFields,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  Profile copyWith({
+    String? id,
+    String? userId,
+    PersonalInfo? personalInfo,
     String? professionalSummary,
-    @Default([]) List<Experience> experiences,
-    @Default([]) List<Education> education,
-    required Skills skills,
-    @Default([]) List<Project> projects,
-    @Default([]) List<Certification> certifications,
-    @Default({}) Map<String, dynamic> customFields,
-    required int version,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) = _Profile;
-
-  factory Profile.fromJson(Map<String, dynamic> json) => _$ProfileFromJson(json);
+    List<Experience>? experiences,
+    List<Education>? education,
+    Skills? skills,
+    List<Project>? projects,
+    Map<String, dynamic>? customFields,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      personalInfo: personalInfo ?? this.personalInfo,
+      professionalSummary: professionalSummary ?? this.professionalSummary,
+      experiences: experiences ?? this.experiences,
+      education: education ?? this.education,
+      skills: skills ?? this.skills,
+      projects: projects ?? this.projects,
+      customFields: customFields ?? this.customFields,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 @freezed
@@ -550,6 +732,12 @@ final profilesApiClientProvider = Provider<ProfilesApiClient>((ref) {
 
 ### Profile Form Screen (Multi-step)
 
+**Design Philosophy:**
+- Only Step 0 (Personal Info) is required with name and email
+- Steps 1-3 (Experience, Education/Skills, Projects) are fully optional
+- Users can create a minimal profile and enhance it later
+- No validation on optional steps - empty lists are acceptable
+
 ```dart
 // lib/screens/profile_edit_screen.dart
 import 'package:flutter/material.dart';
@@ -565,14 +753,13 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   int _currentStep = 0;
   
-  final _personalInfoFormKey = GlobalKey<FormState>();
-  final _experiencesFormKey = GlobalKey<FormState>();
-  final _educationFormKey = GlobalKey<FormState>();
-  final _skillsFormKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();  // Only for Step 0 validation
 
-  // Controllers for personal info
+  // Controllers for REQUIRED fields (Step 0)
   late TextEditingController _fullNameController;
   late TextEditingController _emailController;
+  
+  // Controllers for OPTIONAL fields
   late TextEditingController _phoneController;
   late TextEditingController _locationController;
   late TextEditingController _linkedinController;
@@ -580,7 +767,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController _websiteController;
   late TextEditingController _summaryController;
 
-  // Lists for dynamic components
+  // Lists for dynamic components (ALL OPTIONAL - can be empty)
   List<Experience> _experiences = [];
   List<Education> _education = [];
   List<String> _technicalSkills = [];
@@ -663,23 +850,31 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         steps: [
           Step(
             title: const Text('Personal Info'),
+            subtitle: const Text('Required'),
             content: _buildPersonalInfoForm(),
             isActive: _currentStep >= 0,
+            state: _getStepState(0),
           ),
           Step(
             title: const Text('Experience'),
+            subtitle: const Text('Optional - Skip if not ready'),
             content: _buildExperiencesForm(),
             isActive: _currentStep >= 1,
+            state: _getStepState(1),
           ),
           Step(
             title: const Text('Education & Skills'),
+            subtitle: const Text('Optional - Skip if not ready'),
             content: _buildEducationSkillsForm(),
             isActive: _currentStep >= 2,
+            state: _getStepState(2),
           ),
           Step(
             title: const Text('Projects'),
+            subtitle: const Text('Optional - Skip if not ready'),
             content: _buildProjectsForm(),
             isActive: _currentStep >= 3,
+            state: _getStepState(3),
           ),
         ],
       ),
@@ -688,19 +883,39 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   Widget _buildPersonalInfoForm() {
     return Form(
-      key: _personalInfoFormKey,
+      key: _formKey,  // Only form that requires validation
       child: Column(
         children: [
+          // REQUIRED FIELDS
           TextFormField(
             controller: _fullNameController,
-            decoration: const InputDecoration(labelText: 'Full Name*'),
-            validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+            decoration: const InputDecoration(
+              labelText: 'Full Name*',
+              hintText: 'John Doe',
+            ),
+            validator: (v) => v?.trim().isEmpty ?? true ? 'Full name is required' : null,
           ),
           TextFormField(
             controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Email*'),
-            validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+            decoration: const InputDecoration(
+              labelText: 'Email*',
+              hintText: 'john@example.com',
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (v) {
+              if (v?.trim().isEmpty ?? true) return 'Email is required';
+              if (!v!.contains('@')) return 'Invalid email format';
+              return null;
+            },
           ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const Text(
+            'Optional Information',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          // OPTIONAL FIELDS - No validation required
           TextFormField(
             controller: _phoneController,
             decoration: const InputDecoration(labelText: 'Phone'),
@@ -811,6 +1026,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   void _onStepContinue() {
+    // Only validate Step 0 (Personal Info) - it's the only required step
+    if (_currentStep == 0) {
+      if (!_formKey.currentState!.validate()) {
+        // Show error: name and email are required
+        return;
+      }
+    }
+    // Steps 1-3 are optional - no validation needed
+    // Users can continue with empty experiences/education/projects/skills
+    
     if (_currentStep < 3) {
       setState(() {
         _currentStep++;
@@ -827,27 +1052,40 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _saveProfile() async {
+    // Validate required fields one more time before saving
+    if (!_formKey.currentState!.validate()) {
+      setState(() => _currentStep = 0);  // Go back to Step 0
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in required fields (Name and Email)')),
+      );
+      return;
+    }
+    
     final profile = Profile(
       id: ref.read(profileProvider).profile?.id ?? '',
       userId: ref.read(profileProvider).profile?.userId ?? '',
       personalInfo: PersonalInfo(
-        fullName: _fullNameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text.isEmpty ? null : _phoneController.text,
-        location: _locationController.text.isEmpty ? null : _locationController.text,
-        linkedin: _linkedinController.text.isEmpty ? null : _linkedinController.text,
-        github: _githubController.text.isEmpty ? null : _githubController.text,
-        website: _websiteController.text.isEmpty ? null : _websiteController.text,
+        fullName: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        // Optional fields
+        phone: _phoneController.text.isEmpty ? null : _phoneController.text.trim(),
+        location: _locationController.text.isEmpty ? null : _locationController.text.trim(),
+        linkedin: _linkedinController.text.isEmpty ? null : _linkedinController.text.trim(),
+        github: _githubController.text.isEmpty ? null : _githubController.text.trim(),
+        website: _websiteController.text.isEmpty ? null : _websiteController.text.trim(),
       ),
-      professionalSummary: _summaryController.text.isEmpty ? null : _summaryController.text,
+      professionalSummary: _summaryController.text.isEmpty ? null : _summaryController.text.trim(),
+      // These can all be empty lists - totally fine!
       experiences: _experiences,
       education: _education,
       skills: Skills(
-        technical: _technicalSkills,
-        soft: _softSkills,
+        technical: _technicalSkills,  // Can be empty []
+        soft: _softSkills,            // Can be empty []
+        languages: [],                 // Can be empty []
+        certifications: [],            // Can be empty []
       ),
-      projects: _projects,
-      version: ref.read(profileProvider).profile?.version ?? 1,
+      projects: _projects,             // Can be empty []
+      customFields: {},                // Can be empty {}
       createdAt: ref.read(profileProvider).profile?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -933,21 +1171,73 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
 ---
 
+## Implementation Checklist
+
+- [x] Create Profile, PersonalInfo, Experience, Education, Skills, Project models (manual implementation)
+- [x] Remove version field from Profile model (per requirements)
+- [x] **Implement minimal profile creation** (only name + email required)
+- [x] **Mark optional steps clearly** in multi-step form UI
+- [x] **Validate only Step 0** (Personal Info) - all other steps optional
+- [x] Implement ProfilesApiClient with all CRUD endpoints
+- [x] Implement bulk operations for experiences, education, projects
+- [x] Implement granular skills management (add/remove)
+- [x] Implement custom fields operations
+- [x] Create ProfileNotifier with Riverpod
+- [x] Build multi-step ProfileEditScreen UI (Personal Info, Experience, Education/Skills, Projects)
+- [x] Create ExperienceDialog, EducationDialog, ProjectDialog widgets
+- [x] Implement tag-based input for skills (TagInput widget)
+- [x] Add date pickers for all date fields
+- [x] Implement date format system (US/European/ISO)
+- [x] Create SettingsScreen for date format configuration
+- [x] Fix navigation back buttons (context.push)
+- [x] Add comprehensive error handling
+- [x] Test profile creation flow with minimal data
+- [x] Test profile creation flow with complete data
+- [ ] Add unit tests for ProfilesApiClient
+- [ ] Add unit tests for ProfileNotifier
+- [ ] Add widget tests for ProfileEditScreen
+- [ ] Add integration tests for minimal profile creation
+- [ ] Add integration tests for progressive profile enhancement
+- [ ] Build ProfileAnalyticsScreen UI (API ready, UI pending)
+- [ ] Build CustomFieldsScreen UI (API ready, UI pending)
+- [ ] Add Certifications to profile form (model and API ready)
+- [ ] Add Languages to profile form (model ready)
+- [ ] Implement offline profile editing with sync
+- [ ] Test on physical Android device
+- [ ] Test on iOS simulator
+
+---
+
 ## Dependencies
 
 ```yaml
 dependencies:
-  freezed_annotation: ^2.4.1
-  json_annotation: ^4.8.1
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  intl: ^0.18.1
   
-dev_dependencies:
-  build_runner: ^2.4.6
-  freezed: ^2.4.6
-  json_serializable: ^6.7.1
+# Note: No longer using freezed - models are manually implemented
 ```
 
 ---
 
-**Document Status**: Updated to match Backend API v2.1  
-**Last Updated**: October 23, 2025  
-**Changes**: Added comprehensive API endpoints, granular skills management, custom fields, analytics, and updated data models to match backend implementation
+**Document Status**: ✅ Sprint 1 Complete - Updated to reflect minimal profile creation  
+**Last Updated**: October 27, 2025  
+**Changes**: 
+- **Clarified minimal profile requirements**: Only name + email required for creation
+- **Updated multi-step form design**: Steps 1-3 marked as optional with subtitles
+- **Removed validation on optional steps**: Users can skip experiences/education/projects/skills
+- **Added progressive enhancement section**: Explains how users can build profile over time
+- Updated implementation status to reflect Sprint 1 completion
+- Removed version field from Profile model
+- Changed from freezed to manual implementation
+- Added date format system (US/European/ISO)
+- Noted certifications/languages not in UI (models/API ready)
+- Noted analytics/custom fields not visualized (API ready)
+- Updated dependencies to remove freezed
+
+**Backend Validation (from tests):**
+- ✅ Profile creation with only `personal_info` (name + email) and empty `skills` object works
+- ✅ All other fields (`experiences`, `education`, `projects`, `professional_summary`) are optional
+- ✅ Empty lists for experiences/education/projects are valid
+- ✅ Empty skills lists (technical, soft, languages, certifications) are valid

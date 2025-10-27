@@ -1,5 +1,4 @@
-import 'dart:convert';
-import '../lib/models/auth_response.dart';
+import 'lib/models/auth_response.dart';
 
 void main() {
   // Test data from the backend response

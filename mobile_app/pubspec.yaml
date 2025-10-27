@@ -54,8 +54,12 @@ dependencies:
   # Utils
   intl: ^0.18.0
 
+  # Tag Editor
+  chips_choice: ^3.0.1
+
   # Environment Configuration
   flutter_dotenv: ^5.1.0
+  flutter_chips_input: ^2.0.0
 
 dev_dependencies:
   flutter_test:

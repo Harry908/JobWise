@@ -6,6 +6,7 @@ import '../../utils/validators.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../widgets/profile_cards.dart';
 import '../../widgets/profile_dialogs.dart';
+import '../../widgets/tag_input.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -16,7 +17,7 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   int _currentStep = 0;
-  final _formKeys = List.generate(4, (_) => GlobalKey<FormState>());
+  final _formKey = GlobalKey<FormState>();
 
   // Personal Info Controllers
   late TextEditingController _fullNameController;
@@ -156,7 +157,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   Widget _buildPersonalInfoForm() {
     return Form(
-      key: _formKeys[0],
+      key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -208,28 +209,52 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           TextFormField(
             controller: _linkedinController,
             decoration: const InputDecoration(
-              labelText: 'LinkedIn URL',
+              labelText: 'LinkedIn URL (Optional)',
               prefixIcon: Icon(Icons.business),
               border: OutlineInputBorder(),
+              hintText: 'https://linkedin.com/in/yourprofile',
             ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return null;
+              if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                return 'URL must start with http:// or https://';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _githubController,
             decoration: const InputDecoration(
-              labelText: 'GitHub URL',
+              labelText: 'GitHub URL (Optional)',
               prefixIcon: Icon(Icons.code),
               border: OutlineInputBorder(),
+              hintText: 'https://github.com/yourusername',
             ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return null;
+              if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                return 'URL must start with http:// or https://';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _websiteController,
             decoration: const InputDecoration(
-              labelText: 'Personal Website',
+              labelText: 'Personal Website (Optional)',
               prefixIcon: Icon(Icons.web),
               border: OutlineInputBorder(),
+              hintText: 'https://yourwebsite.com',
             ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return null;
+              if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                return 'URL must start with http:// or https://';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -294,72 +319,30 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Technical Skills',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: _technicalSkills
-              .map((skill) => Chip(
-                    label: Text(skill),
-                    onDeleted: () {
-                      setState(() {
-                        _technicalSkills.remove(skill);
-                      });
-                    },
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          decoration: const InputDecoration(
-            labelText: 'Add Technical Skill',
-            suffixIcon: Icon(Icons.add),
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (value) {
-            if (value.isNotEmpty && !_technicalSkills.contains(value)) {
-              setState(() {
-                _technicalSkills.add(value);
-              });
-            }
+        TagInput(
+          initialTags: _technicalSkills,
+          onTagsChanged: (tags) {
+            setState(() {
+              _technicalSkills.clear();
+              _technicalSkills.addAll(tags);
+            });
           },
+          labelText: 'Technical Skills',
+          hintText: 'e.g., Python, JavaScript, SQL, AWS',
+          helperText: 'Add technical skills you possess',
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Soft Skills',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: _softSkills
-              .map((skill) => Chip(
-                    label: Text(skill),
-                    onDeleted: () {
-                      setState(() {
-                        _softSkills.remove(skill);
-                      });
-                    },
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          decoration: const InputDecoration(
-            labelText: 'Add Soft Skill',
-            suffixIcon: Icon(Icons.add),
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (value) {
-            if (value.isNotEmpty && !_softSkills.contains(value)) {
-              setState(() {
-                _softSkills.add(value);
-              });
-            }
+        TagInput(
+          initialTags: _softSkills,
+          onTagsChanged: (tags) {
+            setState(() {
+              _softSkills.clear();
+              _softSkills.addAll(tags);
+            });
           },
+          labelText: 'Soft Skills',
+          hintText: 'e.g., Teamwork, Critical Thinking, Adaptability',
+          helperText: 'Add soft skills and personal qualities',
         ),
       ],
     );
@@ -390,7 +373,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   void _onStepContinue() {
     if (_currentStep < 3) {
-      if (_formKeys[_currentStep].currentState?.validate() ?? false) {
+      // Only validate step 0 (Personal Info) which has a form
+      // Other steps are optional sections with dynamic lists
+      if (_currentStep == 0) {
+        if (_formKey.currentState?.validate() ?? false) {
+          setState(() {
+            _currentStep++;
+          });
+        }
+      } else {
+        // Steps 1-3 don't require validation, proceed directly
         setState(() {
           _currentStep++;
         });
@@ -407,14 +399,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKeys[0].currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) {
       setState(() => _currentStep = 0);
       return;
     }
 
     final profile = Profile(
       id: ref.read(profileProvider).profile?.id ?? '',
-      userId: ref.read(profileProvider).profile?.userId ?? '',
+      userId: ref.read(profileProvider).profile?.userId ?? 0,
       personalInfo: PersonalInfo(
         fullName: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
@@ -433,7 +425,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       ),
       projects: _projects,
       customFields: {},
-      version: ref.read(profileProvider).profile?.version ?? 1,
       createdAt: ref.read(profileProvider).profile?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );

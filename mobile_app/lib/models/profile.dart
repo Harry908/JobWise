@@ -10,13 +10,12 @@ class Profile {
     required this.skills,
     this.projects = const [],
     this.customFields = const {},
-    required this.version,
     required this.createdAt,
     required this.updatedAt,
   });
 
   final String id;
-  final String userId;
+  final int userId;
   final PersonalInfo personalInfo;
   final String? professionalSummary;
   final List<Experience> experiences;
@@ -24,15 +23,14 @@ class Profile {
   final Skills skills;
   final List<Project> projects;
   final Map<String, dynamic> customFields;
-  final int version;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   factory Profile.fromJson(Map<String, dynamic> json) {
-    // Convert user_id to string if it's an integer
+    // Convert user_id to int if it's a string, handle both formats
     final userId = json['user_id'] is int
-        ? json['user_id'].toString()
-        : json['user_id'] as String;
+        ? json['user_id'] as int
+        : int.parse(json['user_id'] as String);
 
     return Profile(
       id: json['id'] as String,
@@ -50,7 +48,6 @@ class Profile {
           ?.map((e) => Project.fromJson(e as Map<String, dynamic>))
           .toList() ?? const [],
       customFields: (json['custom_fields'] as Map<String, dynamic>?) ?? const {},
-      version: json['version'] as int,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -67,7 +64,6 @@ class Profile {
       'skills': skills.toJson(),
       'projects': projects.map((e) => e.toJson()).toList(),
       'custom_fields': customFields,
-      'version': version,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -75,7 +71,7 @@ class Profile {
 
   Profile copyWith({
     String? id,
-    String? userId,
+    int? userId,
     PersonalInfo? personalInfo,
     String? professionalSummary,
     List<Experience>? experiences,
@@ -83,7 +79,6 @@ class Profile {
     Skills? skills,
     List<Project>? projects,
     Map<String, dynamic>? customFields,
-    int? version,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -97,7 +92,6 @@ class Profile {
       skills: skills ?? this.skills,
       projects: projects ?? this.projects,
       customFields: customFields ?? this.customFields,
-      version: version ?? this.version,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -116,7 +110,6 @@ class Profile {
         other.skills == skills &&
         other.projects == projects &&
         other.customFields == customFields &&
-        other.version == version &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -132,7 +125,6 @@ class Profile {
         skills.hashCode ^
         projects.hashCode ^
         customFields.hashCode ^
-        version.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

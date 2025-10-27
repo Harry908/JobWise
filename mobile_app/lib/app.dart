@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/debug_screen.dart';
 import 'screens/profile_edit_screen.dart';
+import 'screens/settings_screen.dart';
 
 // Placeholder screens for now
 class HomeScreen extends ConsumerWidget {
@@ -21,10 +22,17 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () {
+              context.push('/settings');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.bug_report),
             tooltip: 'Debug Tools',
             onPressed: () {
-              context.go('/debug');
+              context.push('/debug');
             },
           ),
           IconButton(
@@ -82,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  context.go('/profile');
+                  context.push('/profile');
                 },
                 icon: const Icon(Icons.person_add),
                 label: const Text('Create Profile'),
@@ -139,6 +147,10 @@ class _AppState extends ConsumerState<App> {
         GoRoute(
           path: '/debug',
           builder: (context, state) => const DebugScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
           path: '/profile',
