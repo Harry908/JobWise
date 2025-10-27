@@ -57,14 +57,17 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       final createdProfile = await _profileApi.createProfile(profile);
       state = state.copyWith(profile: createdProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to create profile. Please try again.';
-      if (e is DioException && e.error is String) {
-        errorMessage = e.error as String;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to create profile');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
+      );
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while creating profile',
       );
       rethrow;
     }
@@ -80,14 +83,17 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         profile,
       );
       state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update profile. Please try again.';
-      if (e is DioException && e.error is String) {
-        errorMessage = e.error as String;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to update profile');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
+      );
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while updating profile',
       );
       rethrow;
     }
@@ -100,24 +106,44 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       await _profileApi.deleteProfile(state.profile!.id);
       state = ProfileState.initial();
-    } catch (e) {
-      String errorMessage = 'Failed to delete profile. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to delete profile');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
       );
       rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while deleting profile',
+      );
+      rethrow;
     }
+  }
+
+  // Helper method to extract user-friendly error messages from DioException
+  String _extractErrorMessage(DioException error, String defaultMessage) {
+    if (error.response?.data is Map) {
+      final data = error.response!.data as Map<String, dynamic>;
+      if (data.containsKey('detail')) {
+        return data['detail'] as String;
+      }
+      if (data.containsKey('message')) {
+        return data['message'] as String;
+      }
+    }
+    if (error.response?.statusMessage != null) {
+      return error.response!.statusMessage!;
+    }
+    return '$defaultMessage. Please try again.';
   }
 
   // Bulk Experience Operations
   Future<void> addExperiences(List<Experience> experiences) async {
     if (state.profile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = state.copyWith(isSaving: true, errorMessage: null);
     try {
       final createdExperiences = await _profileApi.addExperiences(
         state.profile!.id,
@@ -127,14 +153,17 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         experiences: [...state.profile!.experiences, ...createdExperiences],
       );
       state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add experiences. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to add experiences');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
+      );
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while adding experiences',
       );
       rethrow;
     }
@@ -143,19 +172,22 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   Future<void> updateExperiences(List<Experience> experiences) async {
     if (state.profile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = state.copyWith(isSaving: true, errorMessage: null);
     try {
       await _profileApi.updateExperiences(state.profile!.id, experiences);
       final updatedProfile = state.profile!.copyWith(experiences: experiences);
       state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update experiences. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to update experiences');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
+      );
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while updating experiences',
       );
       rethrow;
     }
@@ -164,7 +196,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   Future<void> deleteExperiences(List<String> experienceIds) async {
     if (state.profile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = state.copyWith(isSaving: true, errorMessage: null);
     try {
       await _profileApi.deleteExperiences(state.profile!.id, experienceIds);
       final updatedExperiences = state.profile!.experiences
@@ -172,14 +204,17 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
           .toList();
       final updatedProfile = state.profile!.copyWith(experiences: updatedExperiences);
       state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to delete experiences. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e, 'Failed to delete experiences');
       state = state.copyWith(
         isSaving: false,
         errorMessage: errorMessage,
+      );
+      rethrow;
+    } catch (e) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'An unexpected error occurred while deleting experiences',
       );
       rethrow;
     }

@@ -172,6 +172,50 @@ class PersonalInfo {
       'website': website,
     };
   }
+
+  PersonalInfo copyWith({
+    String? fullName,
+    String? email,
+    String? phone,
+    String? location,
+    String? linkedin,
+    String? github,
+    String? website,
+  }) {
+    return PersonalInfo(
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      location: location ?? this.location,
+      linkedin: linkedin ?? this.linkedin,
+      github: github ?? this.github,
+      website: website ?? this.website,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PersonalInfo &&
+        other.fullName == fullName &&
+        other.email == email &&
+        other.phone == phone &&
+        other.location == location &&
+        other.linkedin == linkedin &&
+        other.github == github &&
+        other.website == website;
+  }
+
+  @override
+  int get hashCode {
+    return fullName.hashCode ^
+        email.hashCode ^
+        phone.hashCode ^
+        location.hashCode ^
+        linkedin.hashCode ^
+        github.hashCode ^
+        website.hashCode;
+  }
 }
 
 class Experience {
@@ -232,6 +276,76 @@ class Experience {
       'industry': industry,
     };
   }
+
+  Experience copyWith({
+    String? id,
+    String? title,
+    String? company,
+    String? location,
+    String? startDate,
+    String? endDate,
+    bool? isCurrent,
+    String? description,
+    List<String>? achievements,
+    String? employmentType,
+    String? industry,
+  }) {
+    return Experience(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      company: company ?? this.company,
+      location: location ?? this.location,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      isCurrent: isCurrent ?? this.isCurrent,
+      description: description ?? this.description,
+      achievements: achievements ?? this.achievements,
+      employmentType: employmentType ?? this.employmentType,
+      industry: industry ?? this.industry,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Experience &&
+        other.id == id &&
+        other.title == title &&
+        other.company == company &&
+        other.location == location &&
+        other.startDate == startDate &&
+        other.endDate == endDate &&
+        other.isCurrent == isCurrent &&
+        other.description == description &&
+        _listEquals(other.achievements, achievements) &&
+        other.employmentType == employmentType &&
+        other.industry == industry;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        title.hashCode ^
+        company.hashCode ^
+        location.hashCode ^
+        startDate.hashCode ^
+        endDate.hashCode ^
+        isCurrent.hashCode ^
+        description.hashCode ^
+        achievements.hashCode ^
+        employmentType.hashCode ^
+        industry.hashCode;
+  }
+}
+
+// Helper function for list equality
+bool _listEquals<T>(List<T>? a, List<T>? b) {
+  if (a == null) return b == null;
+  if (b == null || a.length != b.length) return false;
+  for (int i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 class Education {

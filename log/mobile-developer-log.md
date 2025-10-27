@@ -448,4 +448,194 @@ Successfully implemented a custom TagInput widget to replace the basic text fiel
  
  - - - 
   
- 
+ ### User Request
+no verify my code and update my code. use context7
+### Response Summary
+Successfully conducted comprehensive code verification and updates using context7 best practices for Flutter/Riverpod. Enhanced Profile and related model classes with proper const constructors, copyWith methods, and equality operators. Improved error handling in ProfileNotifier with sophisticated DioException extraction and user-friendly error messages. All code follows Riverpod StateNotifier best practices with no public properties beyond state, proper state transitions, and comprehensive error handling.
+### Actions Taken
+- **File:** `lib/models/profile.dart`
+  - **Change:** Added copyWith, equality operators, and hashCode to PersonalInfo class
+  - **Reason:** Follow Flutter best practices for immutable data classes with proper value comparison
+- **File:** `lib/models/profile.dart`
+  - **Change:** Added copyWith, equality operators, and hashCode to Experience class; created _listEquals helper for list comparison
+  - **Reason:** Enable proper state management with immutable data structures and value equality
+- **File:** `lib/providers/profile_provider.dart`
+  - **Change:** Replaced generic error handling with _extractErrorMessage helper method that properly extracts messages from DioException response data (detail/message fields)
+  - **Reason:** Provide user-friendly error messages from backend validation responses instead of generic errors
+- **File:** `lib/providers/profile_provider.dart`
+  - **Change:** Updated all CRUD methods (createProfile, updateProfile, deleteProfile) with proper DioException handling and fallback catch for unexpected errors
+  - **Reason:** Follow Riverpod best practices for error handling with clear state transitions and specific error messages
+- **File:** `lib/providers/profile_provider.dart`
+  - **Change:** Updated bulk experience operations (addExperiences, updateExperiences, deleteExperiences) with improved DioException error extraction
+  - **Reason:** Maintain consistent error handling pattern across all API operations with actionable user feedback
+### Code Quality Improvements (Context7 Best Practices)
+- **Riverpod StateNotifier:** No public properties beyond state (verified), proper state transitions with copyWith, comprehensive error handling
+- **Immutability:** Added copyWith methods to all data classes, proper const constructors where applicable
+- **Error Handling:** Sophisticated DioException response parsing (detail/message extraction), fallback to statusMessage, user-friendly defaults
+- **Type Safety:** Proper null handling, list equality comparisons, defensive coding
+- **Performance:** Const constructors reduce object allocation, immutable collections prevent unintended mutations
+### Verification Results
+- **Profile Model:** PASS - Manual implementation with const constructors, proper equality, copyWith methods
+- **ProfileNotifier:** PASS - Follows Riverpod best practices, no public properties, proper state management
+- **API Client:** PASS - Clean separation, proper type safety, consistent endpoint structure
+- **Profile Edit Screen:** PASS - Multi-step form, proper validation, optional steps working correctly
+- **Error Handling:** PASS - Consistent DioException handling, user-friendly messages, proper state management
+- **Navigation:** PASS - Proper use of context.push for secondary screens, back navigation working
+- **Compilation:** PASS - No errors or warnings in analyzed files
+### Technical Analysis
+- **State Management:** Excellent use of Riverpod StateNotifier with proper immutability patterns
+- **Error Recovery:** All async operations have try-catch with proper error state management
+- **Data Models:** Consistent manual implementation following Dart best practices (no freezed conflicts)
+- **UI Components:** Proper separation of concerns with reusable cards and dialogs
+- **Form Validation:** Comprehensive validation on required fields, optional steps working correctly
+- **Date Handling:** Configurable format system with proper API conversion (YYYY-MM-DD)
+### Recommendations for Future Enhancements
+1. Add unit tests for ProfileNotifier state transitions (priority: high)
+2. Implement offline caching for profile data with sync on network availability
+3. Add loading states for individual operations (currently only isSaving for all operations)
+4. Implement profile analytics visualization (API client ready, UI pending)
+5. Add custom fields management UI (API client ready, UI pending)
+6. Consider retry logic for failed network requests
+7. Add comprehensive widget and integration tests
+---
+---
+### User Request
+sprint 2 is finished. plan for sprint 3
+### Response Summary
+Created comprehensive Sprint 3 plan focusing on mobile UI implementation for job browsing, generation flow, and document management. Updated README to reflect Sprint 2 completion (Generation & Document Export APIs) and Sprint 3 roadmap (Mobile UI for AI-powered resume generation workflow).
+### Actions Taken
+- **File:** `docs/sprint3/sprint3-plan.md`
+  - **Change:** Created comprehensive Sprint 3 detailed plan (40 hours, 5 days)
+  - **Reason:** Document complete Sprint 3 roadmap with API integration, UI screens, testing strategy, and daily schedule
+- **File:** `README.md`
+  - **Change:** Updated Recent Updates section to reflect Sprint 2 completion and Sprint 3 start
+  - **Reason:** Document Sprint 2 achievements (Generation API, Document Export API, 67+ tests passing, 65%+ coverage)
+- **File:** `README.md`
+  - **Change:** Updated Core Features checklist with Sprint 2 completions
+  - **Reason:** Mark AI-powered resume generation and PDF export as complete at backend level
+- **File:** `README.md`
+  - **Change:** Expanded Sprint 2 section with detailed achievements and metrics
+  - **Reason:** Comprehensive documentation of 5-stage pipeline, 3 templates, 19 endpoints, performance benchmarks
+- **File:** `README.md`
+  - **Change:** Added Sprint 3 plan overview with phases and success criteria
+  - **Reason:** Clear roadmap for mobile UI implementation (8+ screens, 3 API clients, 15+ tests)
+- **File:** `README.md`
+  - **Change:** Updated Sprint 4, 5, 6 plans with specific dates and tasks
+  - **Reason:** Maintain accurate project timeline and deliverable tracking
+- **File:** `README.md`
+  - **Change:** Updated "Last Updated" date to Oct 27, 2025 with Sprint 2/3 status
+  - **Reason:** Reflect current project phase accurately
+### Sprint 3 Plan Highlights
+**Time Budget**: 40 hours across 5 days (Oct 28 - Nov 3, 2025)
+**Phase 1: API Client Integration (8 hours)**
+- Generation API Client with models (Generation, GenerationResult, ATSScore, ResumeContent)
+- Document API Client with export operations (PDF, DOCX, TXT formats)
+- Enhanced Job API Client with search, filtering, and status management
+- Riverpod providers for state management (GenerationNotifier, DocumentNotifier, JobNotifier)
+**Phase 2: Job Browsing UI (10 hours)**
+- Swipeable job cards using flutter_card_swiper package (Tinder-style interactions)
+- Job search screen with filters (keywords, location, experience level, remote/hybrid/onsite)
+- Saved jobs dashboard with status badges (Saved, Generating, Generated, Applied)
+- Job statistics widget with analytics (saved count, applications, match scores)
+**Phase 3: Generation Flow UI (10 hours)**
+- Generation request screen with 3 template selector (Professional, Modern, Creative)
+- Generation progress screen with real-time polling (1-second interval, 5-stage indicator)
+- Generation result screen with ATS score breakdown and recommendations
+- Resume preview widget rendering all sections with template styling
+**Phase 4: Document Management UI (8 hours)**
+- Document library screen with grid/list view toggle and filtering
+- Document viewer with PDF rendering using syncfusion_flutter_pdfviewer (zoom, scroll, pages)
+- Document download service with system share integration
+- Export options bottom sheet (format selection, template switching, custom filename)
+**Phase 5: Testing & Polish (4 hours)**
+- 15+ widget tests covering job cards, generation progress, document viewer, ATS score display
+- 5+ integration tests for complete user flows (browse ? save ? generate ? preview ? download)
+- UI/UX polish with loading skeletons, smooth transitions, haptic feedback
+- Performance optimization (<100ms screen transitions, <500ms API calls)
+### Key Technical Decisions
+**Swipeable Cards**: Using flutter_card_swiper package for production-ready swipe gestures with customizable animations and callbacks (swipe right to save, left to skip, tap for details).
+**Progress Polling**: 1-second polling interval during generation (simple implementation without WebSocket complexity, acceptable UX for 5.5-second generation time, easy to upgrade later).
+**PDF Viewing**: Using syncfusion_flutter_pdfviewer package for excellent performance with large PDFs, built-in zoom/scroll/navigation, page thumbnails, and text selection.
+**Document Storage**: Download PDFs to app documents directory using path_provider, provide system share sheet for distribution (keeps documents accessible offline, avoids complex cloud storage setup).
+### Success Criteria
+- ? Complete user flow: Browse Jobs ? Save ? Generate Resume ? Preview ATS Score ? Download PDF
+- ? 8+ new mobile screens operational with Material Design 3 compliance
+- ? 3 new API clients with comprehensive DioException error handling
+- ? 15+ widget tests and 5+ integration tests passing
+- ? Smooth swipeable card interactions with spring physics animations
+- ? Real-time generation progress tracking with 5-stage indicator
+- ? PDF viewing with zoom, scroll, and multi-page navigation
+- ? Performance targets met (<100ms transitions, <500ms API responses)
+### Sprint 3 Daily Schedule
+**Day 1 (Mon, Oct 28)**: API Integration - Generation, Document, Job clients + Riverpod providers (8h)
+**Day 2 (Tue, Oct 29)**: Job Browsing UI - Swipeable cards, search screen, saved jobs dashboard (8h)
+**Day 3 (Wed, Oct 30)**: Generation Flow UI - Request screen, progress tracking, result display (8h)
+**Day 4 (Thu, Oct 31)**: Document Management - Library, viewer, download/share (8h)
+**Day 5 (Fri, Nov 1)**: Testing & Polish - Widget tests, integration tests, UI refinements (8h)
+### AI Agent Coordination
+**Mobile Developer Agent (Primary)**: GitHub Copilot + Claude 3.5 Sonnet
+- Implement all mobile UI screens and widgets following Material Design 3 guidelines
+- Integrate with Generation, Document, and Job APIs using Dio HTTP client
+- Create Riverpod state management providers with proper StateNotifier patterns
+- Write comprehensive widget and integration tests with Flutter test framework
+- Daily progress updates in `log/mobile-developer-log.md`
+**Solutions Architect Agent (Supporting)**: ChatGPT-4
+- Review mobile architecture design and state management approach
+- Validate API integration patterns and error handling strategies
+- Provide UX optimization recommendations for generation flow
+- Architecture review at Phase 1 completion (API clients), UI/UX review at Phase 2 (Job browsing)
+**Backend Developer Agent (Coordination)**: GitHub Copilot
+- Provide Generation and Document API documentation with request/response examples
+- Support API integration debugging and clarify endpoint behaviors
+- Quick response to mobile integration questions via OpenAPI spec and Postman collection
+**QA Engineer Agent (Supporting)**: GitHub Copilot + ChatGPT
+- Design widget test strategy covering critical UI components
+- Review test coverage reports and validate error handling flows
+- Performance testing recommendations for API calls and screen transitions
+- Test strategy review at sprint start, daily coverage monitoring, final quality validation
+### Development Metrics Targets
+- **Screens**: 8+ new screens (Job Search, Saved Jobs, Generation Request/Progress/Result, Document Library/Viewer, Job Statistics)
+- **Widgets**: 15+ reusable components (JobCard, SwipeableJobCard, GenerationProgressIndicator, ATSScoreCard, ResumePreviewWidget, DocumentCard, PDFViewerWidget)
+- **API Clients**: 3 comprehensive clients (GenerationApiClient, DocumentApiClient, enhanced JobApiClient)
+- **Tests**: 15+ widget tests, 5+ integration tests
+- **Performance**: <100ms screen transitions, <500ms API calls, 1-second generation status polling
+- **Quality**: Zero critical bugs, Material Design 3 compliance, WCAG AA accessibility
+### Dependencies & Packages
+**New Dependencies Added**:
+`yaml
+# UI Components
+flutter_card_swiper: ^7.0.1           # Swipeable job cards with gestures
+syncfusion_flutter_pdfviewer: ^27.2.2 # PDF rendering with zoom/scroll
+shimmer: ^3.0.0                       # Loading skeleton animations
+lottie: ^3.1.2                        # Animated illustrations
+# File Management
+path_provider: ^2.1.5                 # App documents directory
+share_plus: ^10.1.1                   # System share sheet integration
+open_filex: ^4.5.0                    # Open files in external apps
+`
+### Technical Highlights
+**Material Design 3**: Using latest Material Design guidelines with dynamic color schemes, elevated components, and motion design patterns.
+**Gesture Recognition**: Implementing swipe right (save/like), swipe left (skip/pass), and tap (view details) gestures with haptic feedback for intuitive job browsing.
+**Real-time Updates**: Polling generation status every 1 second with automatic navigation to result screen when complete, cancellation support with confirmation dialog.
+**ATS Score Visualization**: Interactive score breakdown with progress ring, keyword match percentage, format compliance score, matched/missing keywords as chips.
+**PDF Rendering**: High-performance PDF viewer with pinch-to-zoom, pan, scroll, page thumbnails, and loading indicators using Syncfusion package.
+**Offline Support**: Downloaded documents stored in app directory for offline access, sync strategy for future sprint implementation.
+### Challenges Anticipated
+**Challenge 1**: PDF rendering performance with multi-page documents
+- **Mitigation**: Use optimized Syncfusion package, implement loading indicators, cache rendered pages, fallback to text-only view if needed
+**Challenge 2**: Swipeable card UX complexity with gesture recognition
+- **Mitigation**: Use proven flutter_card_swiper package, test on multiple devices, provide alternative tap-based navigation, add tutorial overlay
+**Challenge 3**: Generation progress polling overhead
+- **Mitigation**: Limit to 1-second intervals, cancel polling when screen not visible, exponential backoff on errors, cache status to reduce API calls
+**Challenge 4**: State management complexity with multiple providers
+- **Mitigation**: Follow established Riverpod patterns from Sprint 1, keep providers focused and single-purpose, use context7 for best practices
+### Learning Objectives
+**Technical Skills**: Complex UI patterns (swipeable cards, progress tracking, PDF viewing), advanced Riverpod patterns with polling, API integration with multiple services, performance optimization (list rendering, image caching).
+**Mobile Development Skills**: Material Design 3 guidelines, gesture recognition and haptic feedback, file management and system share, offline support with caching, smooth animations and transitions.
+### Next Steps (Sprint 4)
+**Resume Editing Interface**: Modify generated content, reorder sections, add/remove bullet points
+**Cover Letter Generation UI**: Template selection, customization, tone adjustment
+**Application Tracking Dashboard**: Status pipeline, deadline reminders, progress visualization
+**Notifications System**: Push notifications for generation complete, application deadlines
+**Settings & Preferences**: Theme selection, date format, API key management, profile preferences
+---
