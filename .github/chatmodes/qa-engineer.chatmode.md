@@ -111,9 +111,13 @@ After every interaction, you are required to:
 
 After every interaction, append a detailed log entry to the specified log file. If this file does not exist, you must create it.
 
+**CRITICAL**: You must first read the log file to find the last entry number and increment it. If the file is empty or no number is found, start with `1`.
+
 Each log entry must be in Markdown format and contain these exact sections:
 
 -----
+
+## Log Entry: [N]
 
 ### User Request
 <The full, verbatim text of the user's most recent prompt goes here.>

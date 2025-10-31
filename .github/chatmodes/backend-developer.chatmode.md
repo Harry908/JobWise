@@ -136,9 +136,11 @@ After every interaction, you are required to:
 
 Append to `log/backend-developer-log.md` after each interaction:
 
+**CRITICAL**: You must first read the log file to find the last entry number and increment it. If the file is empty or no number is found, start with `1`.
+
 ```markdown
 ---
-## Interaction [N]
+## Log Entry: [N]
 
 ### User Request
 [The full, verbatim text of the user's most recent prompt goes here]
