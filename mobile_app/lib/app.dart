@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'constants/colors.dart';
 import 'providers/auth_provider.dart';
+import 'providers/profile_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/debug_screen.dart';
 import 'screens/profile_edit_screen.dart';
+import 'screens/profile_view_screen.dart';
 import 'screens/settings_screen.dart';
 
 // Placeholder screens for now
@@ -15,12 +17,24 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final profileState = ref.watch(profileProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('JobWise'),
         backgroundColor: AppColors.primary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'My Profile',
+            onPressed: () {
+              if (profileState.profile != null) {
+                context.push('/profile/view');
+              } else {
+                context.push('/profile/edit');
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
@@ -86,20 +100,52 @@ class HomeScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  context.push('/profile');
-                },
-                icon: const Icon(Icons.person_add),
-                label: const Text('Create Profile'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18),
+            if (profileState.profile != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/profile/view');
+                  },
+                  icon: const Icon(Icons.person),
+                  label: const Text('View Profile'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/profile/edit');
+                  },
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Edit Profile'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/profile/edit');
+                  },
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Create Profile'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             if (authState.user != null)
               Text(
@@ -153,8 +199,12 @@ class _AppState extends ConsumerState<App> {
           builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
-          path: '/profile',
+          path: '/profile/edit',
           builder: (context, state) => const ProfileEditScreen(),
+        ),
+        GoRoute(
+          path: '/profile/view',
+          builder: (context, state) => const ProfileViewScreen(),
         ),
       ],
       redirect: (context, state) {

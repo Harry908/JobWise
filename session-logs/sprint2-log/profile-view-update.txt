@@ -1,0 +1,44 @@
+### User Request
+User reported: "ok i can create a profile but have no way to update or view my profile"
+
+### Response Summary
+Implemented comprehensive profile viewing and updating functionality. Created ProfileViewScreen with rich card-based UI displaying all profile sections (personal info, summary, experience, education, skills, projects). Updated HomeScreen with conditional buttons based on profile existence ("View Profile" + "Edit Profile" if profile exists, "Create Profile" if not) and added profile icon to app bar for quick navigation. Fixed 15 compilation errors related to model field mismatches (date types, field names).
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change:** Created comprehensive 683-line ProfileViewScreen with card-based UI for all profile sections
+  - **Reason:** Enable users to view their complete profile in organized, readable format with Material Design cards
+  - **Features:** Personal info with avatar/initials, professional summary, work experience cards with dates/locations/achievements, education cards with GPA/honors, technical/soft skills as colored chips, project cards with technologies/highlights, pull-to-refresh support, edit button in app bar
+  - **Bug Fixes:** Fixed 15 compilation errors - changed DateTime to string-based date formatting methods, removed Education.location field references (doesn't exist in model), changed education.achievements to education.honors, changed project.achievements to project.highlights, fixed variable context errors, removed null checks for non-nullable fields
+
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Updated HomeScreen to watch profileProvider and show conditional UI based on profile existence
+  - **Reason:** Provide intuitive navigation - show "View Profile" + "Edit Profile" buttons if profile exists, "Create Profile" button if not
+  - **Features:** Added profile icon button to app bar that navigates to view or edit based on profile state, conditional rendering with proper Material Design button styling (primary ElevatedButton for view, outlined secondary for edit)
+
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Updated GoRouter with separate `/profile/view` and `/profile/edit` routes
+  - **Reason:** Proper separation of concerns - dedicated routes for viewing and editing profiles
+  - **Result:** Clean navigation flow - Home → View Profile → Edit (via app bar) → Save → View
+
+### Model Field Corrections
+**Date Handling**:
+- API returns dates as strings (e.g., "2024-01-15"), not DateTime objects
+- Created `_formatStringDateRange(String?, String?)` and `_formatStringDate(String)` helper methods
+- Formats string dates to "Mon YYYY" display format (e.g., "Jan 2024")
+
+**Experience Model**:
+- Uses `achievements` list (List<String>)
+- Dates stored as `startDate: String` and `endDate: String?`
+
+**Education Model**:
+- Uses `honors` list (NOT achievements)
+- No `location` field in model
+- Dates stored as strings
+
+**Project Model**:
+- Uses `highlights` list (NOT achievements)  
+- `description` is non-nullable (String, not String?)
+- Dates stored as optional strings
+
+---

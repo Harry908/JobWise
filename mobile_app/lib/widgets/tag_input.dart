@@ -10,7 +10,7 @@ class TagInput extends StatefulWidget {
   final int? maxTags;
 
   const TagInput({
-    Key? key,
+    super.key,
     required this.initialTags,
     required this.onTagsChanged,
     required this.labelText,
@@ -18,7 +18,7 @@ class TagInput extends StatefulWidget {
     this.helperText,
     this.enabled = true,
     this.maxTags,
-  }) : super(key: key);
+  });
 
   @override
   State<TagInput> createState() => _TagInputState();

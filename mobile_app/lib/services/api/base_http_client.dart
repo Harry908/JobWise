@@ -60,16 +60,28 @@ class BaseHttpClient {
           handler.next(response);
         },
         onError: (error, handler) async {
-          // Auto retry on 401 (token expired)
-          if (error.response?.statusCode == 401) {
+          // Auto retry on 401 (token expired) - but NOT for refresh endpoint itself
+          if (error.response?.statusCode == 401 && 
+              !error.requestOptions.path.contains('/auth/refresh')) {
             final refreshed = await _refreshToken();
             if (refreshed) {
               // Retry original request with new token
               final opts = error.requestOptions;
               final newToken = await _storage.getToken();
               opts.headers['Authorization'] = 'Bearer $newToken';
-              final response = await _dio.fetch(opts);
-              return handler.resolve(response);
+              try {
+                final response = await _dio.fetch(opts);
+                return handler.resolve(response);
+              } catch (retryError) {
+                // If retry fails, pass the error through
+                return handler.next(error);
+              }
+            } else {
+              // Refresh failed - clear tokens and pass error through
+              developer.log(
+                'Token refresh failed, user needs to log in again',
+                name: 'HTTP',
+              );
             }
           }
 
@@ -174,9 +186,25 @@ class BaseHttpClient {
   Future<bool> _refreshToken() async {
     try {
       final refreshToken = await _storage.getRefreshToken();
-      if (refreshToken == null) return false;
+      if (refreshToken == null) {
+        developer.log('No refresh token available', name: 'HTTP');
+        return false;
+      }
 
-      final response = await _dio.post('/auth/refresh', data: {
+      developer.log('Attempting token refresh', name: 'HTTP');
+
+      // Create a separate Dio instance without interceptors to avoid infinite loop
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ));
+
+      final response = await refreshDio.post('/api/v1/auth/refresh', data: {
         'refresh_token': refreshToken,
       });
 
@@ -184,8 +212,11 @@ class BaseHttpClient {
         response.data['access_token'],
         response.data['refresh_token'],
       );
+      
+      developer.log('Token refresh successful', name: 'HTTP');
       return true;
     } catch (e) {
+      developer.log('Token refresh failed: $e', name: 'HTTP');
       await _storage.clearTokens();
       return false;
     }
