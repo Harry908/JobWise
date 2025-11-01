@@ -80,6 +80,23 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(profileState.profile == null ? 'Create Profile' : 'Edit Profile'),
+        actions: [
+          IconButton(
+            onPressed: profileState.isSaving ? null : _saveProfile,
+            icon: profileState.isSaving 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.save),
+            tooltip: 'Save Profile',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [
@@ -399,14 +416,28 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      setState(() => _currentStep = 0);
-      return;
+    // Validate the form if we're on step 0 or if called from top save button
+    if (_currentStep == 0 || _currentStep > 0) {
+      if (!_formKey.currentState!.validate()) {
+        setState(() => _currentStep = 0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all required fields in Personal Information'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
     }
 
+    final existingProfile = ref.read(profileProvider).profile;
+    final isCreating = existingProfile == null;
+
+    // Create the complete profile with all nested components
+    // According to the backend API, this should work in a single request
     final profile = Profile(
-      id: ref.read(profileProvider).profile?.id ?? '',
-      userId: ref.read(profileProvider).profile?.userId ?? 0,
+      id: existingProfile?.id ?? '',
+      userId: existingProfile?.userId ?? 0,
       personalInfo: PersonalInfo(
         fullName: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
@@ -424,17 +455,21 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         soft: _softSkills,
       ),
       projects: _projects,
-      customFields: {},
-      createdAt: ref.read(profileProvider).profile?.createdAt ?? DateTime.now(),
+      customFields: existingProfile?.customFields ?? {},
+      createdAt: existingProfile?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
     try {
-      if (ref.read(profileProvider).profile == null) {
+      print('Saving profile with ${_experiences.length} experiences...');
+      if (isCreating) {
         await ref.read(profileProvider.notifier).createProfile(profile);
       } else {
         await ref.read(profileProvider.notifier).updateProfile(profile);
       }
+
+      // Refresh the profile to get the latest data from server
+      await ref.read(profileProvider.notifier).refreshProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -443,6 +478,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      print('Profile save error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),

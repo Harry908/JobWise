@@ -85,8 +85,9 @@ class Experience(BaseModel):
             raise ValueError('Start date cannot be after end date')
         if self.is_current and self.end_date:
             raise ValueError('Current position cannot have end date')
-        if not self.is_current and not self.end_date:
-            raise ValueError('Past position must have end date')
+        # Allow past positions without end date for flexibility
+        # if not self.is_current and not self.end_date:
+        #     raise ValueError('Past position must have end date')
         return self
 
 

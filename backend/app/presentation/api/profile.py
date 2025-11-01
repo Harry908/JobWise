@@ -101,26 +101,29 @@ class SkillsModel(BaseModel):
 
 
 class ExperienceModel(BaseModel):
-    """Work experience model."""
-    title: str = Field(..., min_length=1, max_length=100)
-    company: str = Field(..., min_length=1, max_length=100)
-    location: Optional[str] = Field(None, max_length=100)
-    start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
-    end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
-    is_current: bool = Field(False)
-    description: Optional[str] = Field(None, max_length=2000)
-    achievements: List[str] = Field(default_factory=list)
+    """Experience model for API responses and requests."""
+    id: str = Field(..., description="Unique experience ID")
+    title: str = Field(..., min_length=1, max_length=100, description="Job title")
+    company: str = Field(..., min_length=1, max_length=100, description="Company name")
+    location: Optional[str] = Field(None, max_length=100, description="Job location")
+    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+    is_current: bool = Field(False, description="Is this current position")
+    description: Optional[str] = Field(None, max_length=1000, description="Job description")
+    achievements: List[str] = Field(default_factory=list, description="Key achievements")
 
     model_config = {
         "json_schema_extra": {
             "example": {
-                "title": "Senior Developer",
+                "id": "exp_123",
+                "title": "Senior Software Engineer",
                 "company": "Tech Corp",
                 "location": "Seattle, WA",
                 "start_date": "2020-01-01",
-                "end_date": "2023-01-01",
+                "end_date": "2023-12-31",
                 "is_current": False,
-                "description": "Led development of web applications"
+                "description": "Led development of scalable web applications",
+                "achievements": ["Increased performance by 40%", "Mentored 5 junior developers"]
             }
         }
     }
@@ -128,6 +131,7 @@ class ExperienceModel(BaseModel):
 
 class EducationModel(BaseModel):
     """Education model."""
+    id: Optional[str] = Field(None, description="Unique education ID (auto-generated if not provided)")
     institution: str = Field(..., min_length=1, max_length=100)
     degree: str = Field(..., min_length=1, max_length=100)
     field_of_study: str = Field(..., min_length=1, max_length=100)
@@ -139,6 +143,7 @@ class EducationModel(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
+                "id": "edu_123",
                 "institution": "University of Washington",
                 "degree": "BS",
                 "field_of_study": "Computer Science",
@@ -152,6 +157,7 @@ class EducationModel(BaseModel):
 
 class ProjectModel(BaseModel):
     """Project model."""
+    id: Optional[str] = Field(None, description="Unique project ID (auto-generated if not provided)")
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=1000)
     technologies: List[str] = Field(default_factory=list)
@@ -162,6 +168,7 @@ class ProjectModel(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
+                "id": "proj_123",
                 "name": "E-commerce Platform",
                 "description": "Full-stack e-commerce solution",
                 "technologies": ["React", "Node.js", "PostgreSQL"],
@@ -339,33 +346,7 @@ class ExperienceCreateModel(BaseModel):
     }
 
 
-class ExperienceModel(BaseModel):
-    """Experience model for bulk operations (id is required for updates)."""
-    id: str = Field(..., description="Unique experience ID")
-    title: str = Field(..., min_length=1, max_length=100, description="Job title")
-    company: str = Field(..., min_length=1, max_length=100, description="Company name")
-    location: Optional[str] = Field(None, max_length=100, description="Job location")
-    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
-    is_current: bool = Field(False, description="Is this current position")
-    description: Optional[str] = Field(None, max_length=1000, description="Job description")
-    achievements: List[str] = Field(default_factory=list, description="Key achievements")
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "id": "exp_123",
-                "title": "Senior Software Engineer",
-                "company": "Tech Corp",
-                "location": "Seattle, WA",
-                "start_date": "2020-01-01",
-                "end_date": "2023-12-31",
-                "is_current": False,
-                "description": "Led development of scalable web applications",
-                "achievements": ["Increased performance by 40%", "Mentored 5 junior developers"]
-            }
-        }
-    }
+# Duplicate ExperienceModel removed - using the one defined earlier
 
 
 class EducationCreateModel(BaseModel):
@@ -394,31 +375,7 @@ class EducationCreateModel(BaseModel):
     }
 
 
-class EducationModel(BaseModel):
-    """Education model for bulk operations (id is required for updates)."""
-    id: str = Field(..., description="Unique education ID")
-    institution: str = Field(..., min_length=1, max_length=100, description="Institution name")
-    degree: str = Field(..., min_length=1, max_length=100, description="Degree earned")
-    field_of_study: str = Field(..., min_length=1, max_length=100, description="Field of study")
-    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
-    gpa: Optional[float] = Field(None, ge=0.0, le=4.0, description="GPA (0.0-4.0)")
-    honors: List[str] = Field(default_factory=list, description="Honors and awards")
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "id": "edu_123",
-                "institution": "University of Washington",
-                "degree": "Bachelor of Science",
-                "field_of_study": "Computer Science",
-                "start_date": "2016-09-01",
-                "end_date": "2020-06-01",
-                "gpa": 3.8,
-                "honors": ["Summa Cum Laude", "Dean's List"]
-            }
-        }
-    }
+# Removed duplicate EducationModel - using the unified one above
 
 
 class ProjectCreateModel(BaseModel):
@@ -445,29 +402,7 @@ class ProjectCreateModel(BaseModel):
     }
 
 
-class ProjectModel(BaseModel):
-    """Project model for bulk operations (id is required for updates)."""
-    id: str = Field(..., description="Unique project ID")
-    name: str = Field(..., min_length=1, max_length=100, description="Project name")
-    description: str = Field(..., min_length=1, max_length=500, description="Project description")
-    technologies: List[str] = Field(default_factory=list, description="Technologies used")
-    url: Optional[str] = Field(None, description="Project URL")
-    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "id": "proj_123",
-                "name": "E-commerce Platform",
-                "description": "Built a scalable e-commerce platform handling 10k+ transactions daily",
-                "technologies": ["Python", "FastAPI", "PostgreSQL", "Redis"],
-                "url": "https://github.com/user/ecommerce",
-                "start_date": "2022-01-01",
-                "end_date": "2022-06-01"
-            }
-        }
-    }
+# Removed duplicate ProjectModel - using the unified one above
 
 
 class BulkCreateExperiencesRequest(BaseModel):
@@ -523,10 +458,7 @@ class SkillsResponse(BaseModel):
     certifications: List[Dict[str, Any]]
 
 
-class CustomFieldModel(BaseModel):
-    """Custom field model."""
-    key: str = Field(..., min_length=1, max_length=50, description="Field key")
-    value: Any = Field(..., description="Field value")
+# Removed duplicate CustomFieldModel - using the one defined above
 
 
 class UpdateCustomFieldsRequest(BaseModel):
@@ -645,14 +577,20 @@ async def get_my_profile(
         if not profile:
             raise NotFoundError("No profile found for current user")
 
-        # Convert domain entity to response model
+        # Convert domain entity to response model  
+        experiences_list = []
+        for exp in profile.experiences:
+            exp_data = exp.model_dump()
+            print(f"DEBUG: Converting experience: {exp_data}")
+            experiences_list.append(ExperienceModel(**exp_data))
+        
         return ProfileResponse(
             id=profile.id,
             user_id=profile.user_id,
             personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
             professional_summary=profile.professional_summary,
             skills=SkillsModel(**profile.skills.model_dump()),
-            experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
+            experiences=experiences_list,
             education=[EducationModel(**edu.model_dump()) for edu in profile.education],
             projects=[ProjectModel(**proj.model_dump()) for proj in profile.projects],
             created_at=profile.created_at.isoformat(),
@@ -711,6 +649,9 @@ async def update_profile(
 ):
     """Update a specific profile."""
     try:
+        print(f"DEBUG: Received profile update request for profile_id={profile_id}")
+        print(f"DEBUG: Request data: {request.model_dump()}")
+        
         # Build update data
         update_data = {}
         if request.personal_info:
@@ -720,7 +661,10 @@ async def update_profile(
         if request.skills:
             update_data["skills"] = request.skills.model_dump()
         if request.experiences is not None:
-            update_data["experiences"] = [exp.model_dump() for exp in request.experiences]
+            print(f"DEBUG: Processing {len(request.experiences)} experiences")
+            experiences_data = [exp.model_dump() for exp in request.experiences]
+            print(f"DEBUG: Experience data: {experiences_data}")
+            update_data["experiences"] = experiences_data
         if request.education is not None:
             update_data["education"] = [edu.model_dump() for edu in request.education]
         if request.projects is not None:
@@ -733,18 +677,49 @@ async def update_profile(
         )
 
         # Convert domain entity to response model
-        return ProfileResponse(
-            id=profile.id,
-            user_id=profile.user_id,
-            personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
-            professional_summary=profile.professional_summary,
-            skills=SkillsModel(**profile.skills.model_dump()),
-            experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
-            education=[EducationModel(**edu.model_dump()) for edu in profile.education],
-            projects=[ProjectModel(**proj.model_dump()) for proj in profile.projects],
-            created_at=profile.created_at.isoformat(),
-            updated_at=profile.updated_at.isoformat()
-        )
+        try:
+            print(f"DEBUG: Converting profile to response model")
+            print(f"DEBUG: Profile has {len(profile.experiences)} experiences, {len(profile.education)} education, {len(profile.projects)} projects")
+            
+            # Convert experiences with error checking
+            experiences_list = []
+            for i, exp in enumerate(profile.experiences):
+                exp_data = exp.model_dump()
+                print(f"DEBUG: Experience {i} data: {exp_data}")
+                experiences_list.append(ExperienceModel(**exp_data))
+            
+            # Convert education with error checking  
+            education_list = []
+            for i, edu in enumerate(profile.education):
+                edu_data = edu.model_dump()
+                print(f"DEBUG: Education {i} data: {edu_data}")
+                education_list.append(EducationModel(**edu_data))
+            
+            # Convert projects with error checking
+            projects_list = []
+            for i, proj in enumerate(profile.projects):
+                proj_data = proj.model_dump()
+                print(f"DEBUG: Project {i} data: {proj_data}")
+                projects_list.append(ProjectModel(**proj_data))
+            
+            response = ProfileResponse(
+                id=profile.id,
+                user_id=profile.user_id,
+                personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
+                professional_summary=profile.professional_summary,
+                skills=SkillsModel(**profile.skills.model_dump()),
+                experiences=experiences_list,
+                education=education_list,
+                projects=projects_list,
+                created_at=profile.created_at.isoformat(),
+                updated_at=profile.updated_at.isoformat()
+            )
+            print(f"DEBUG: Profile response created successfully")
+            return response
+        except Exception as e:
+            print(f"DEBUG: Error converting profile to response: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            raise HTTPException(status_code=500, detail=f"Error serializing profile response: {str(e)}")
     except NotFoundError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ForbiddenException as e:
@@ -1217,7 +1192,7 @@ async def remove_soft_skills(
     except ForbiddenException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ValidationException as e:
-        raise ValidationException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 

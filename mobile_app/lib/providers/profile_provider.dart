@@ -52,12 +52,19 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     }
   }
 
+  Future<void> refreshProfile() async {
+    await _loadProfile();
+  }
+
   Future<void> createProfile(Profile profile) async {
     state = state.copyWith(isSaving: true, errorMessage: null);
     try {
+      print('ProfileNotifier: Creating profile with ${profile.experiences.length} experiences');
       final createdProfile = await _profileApi.createProfile(profile);
+      print('ProfileNotifier: Profile created successfully with ${createdProfile.experiences.length} experiences');
       state = state.copyWith(profile: createdProfile, isSaving: false);
     } on DioException catch (e) {
+      print('ProfileNotifier: DioException during profile creation: ${e.response?.data}');
       final errorMessage = _extractErrorMessage(e, 'Failed to create profile');
       state = state.copyWith(
         isSaving: false,
@@ -65,6 +72,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       );
       rethrow;
     } catch (e) {
+      print('ProfileNotifier: Unexpected error during profile creation: $e');
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'An unexpected error occurred while creating profile',
@@ -78,12 +86,15 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     state = state.copyWith(isSaving: true, errorMessage: null);
     try {
+      print('ProfileNotifier: Updating profile with ${profile.experiences.length} experiences');
       final updatedProfile = await _profileApi.updateProfile(
         state.profile!.id,
         profile,
       );
+      print('ProfileNotifier: Profile updated successfully with ${updatedProfile.experiences.length} experiences');
       state = state.copyWith(profile: updatedProfile, isSaving: false);
     } on DioException catch (e) {
+      print('ProfileNotifier: DioException during profile update: ${e.response?.data}');
       final errorMessage = _extractErrorMessage(e, 'Failed to update profile');
       state = state.copyWith(
         isSaving: false,
@@ -91,6 +102,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       );
       rethrow;
     } catch (e) {
+      print('ProfileNotifier: Unexpected error during profile update: $e');
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'An unexpected error occurred while updating profile',

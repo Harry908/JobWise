@@ -34,11 +34,11 @@ class ProfileViewScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: _buildBody(context, profileState),
+      body: _buildBody(context, profileState, ref),
     );
   }
 
-  Widget _buildBody(BuildContext context, ProfileState profileState) {
+  Widget _buildBody(BuildContext context, ProfileState profileState, WidgetRef ref) {
     if (profileState.isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -62,8 +62,8 @@ class ProfileViewScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        // Reload profile by recreating the provider
-        // This is a simple approach, you could also add a refresh method to the provider
+        // Refresh profile data from the server
+        await ref.read(profileProvider.notifier).refreshProfile();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -286,7 +286,7 @@ class ProfileViewScreen extends ConsumerWidget {
                 Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(
-                  _formatDateRange(experience.startDate, experience.endDate),
+                  _formatStringDateRange(experience.startDate, experience.endDate),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey[600],
                   ),
