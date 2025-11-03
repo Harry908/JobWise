@@ -1,8 +1,9 @@
 # Job API Service
 
-**Version**: 1.0
+**Version**: 2.0
 **Base Path**: `/api/v1/jobs`
-**Status**: Implemented
+**Status**: ❌ **Not Implemented** (Fully specified, implementation pending Sprint 3)
+**Last Updated**: November 2, 2025
 
 ## Service Overview
 
@@ -13,8 +14,50 @@ Unified CRUD API for managing job descriptions from multiple sources. Accepts ra
 **Purpose**: Job description management with multi-source support
 **Authentication**: Required (JWT)
 **Authorization**: Users can only manage jobs they created (user_created source)
-**Text Parsing**: LLM-powered extraction (optional, rate-limited)
+**Text Parsing**: Deterministic regex + optional LLM enhancement (rate-limited)
 **Delete Behavior**: Hard delete (immediate removal)
+**Performance**: <200ms for CRUD operations, <3s for text parsing
+
+## Error Codes
+
+| Status Code | Error Type | Description |
+|-------------|------------|-------------|
+| 201 | Created | Job successfully created |
+| 200 | OK | Request successful |
+| 204 | No Content | Delete successful (no response body) |
+| 400 | Bad Request | Validation error or malformed request |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | User doesn't own the resource |
+| 404 | Not Found | Job doesn't exist |
+| 422 | Unprocessable Entity | Parsing failed or validation error |
+| 429 | Too Many Requests | LLM parsing rate limit exceeded |
+| 500 | Internal Server Error | Server error |
+
+## Validation Rules
+
+**Required Fields (Structured Input):**
+- `source`: Must be one of: `user_created`, `indeed`, `linkedin`, `glassdoor`, `mock`, `imported`
+- `title`: Required, 1-200 chars
+- `company`: Required, 1-200 chars
+
+**Optional Fields:**
+- `location`: Max 200 chars, supports "Remote" keyword
+- `description`: Max 10,000 chars
+- `requirements`: Array of strings, max 50 items, each max 500 chars
+- `benefits`: Array of strings, max 30 items, each max 500 chars
+- `salary_range`: Format "min-max" (e.g., "100000-150000") or free text
+- `remote`: Boolean, default false
+- `status`: Must be one of: `active`, `archived`, `draft`
+
+**Raw Text Input:**
+- `raw_text`: Required if structured fields not provided, min 50 chars, max 15,000 chars
+- Parsing extracts: title, company, location, requirements, benefits, keywords
+
+**Parsed Keywords:**
+- Auto-extracted from description and requirements
+- Lowercase, deduplicated
+- Common skills, technologies, tools
+- Max 50 keywords per job
 
 ## Dependencies
 
@@ -27,44 +70,138 @@ Unified CRUD API for managing job descriptions from multiple sources. Accepts ra
 ### External
 - Future: Indeed API, LinkedIn API, Glassdoor API
 
+## Database Schema
+
+### JobModel (jobs table)
+
+**Purpose**: Stores job descriptions from multiple sources with parsed keywords for AI matching
+
+**Fields**:
+```sql
+CREATE TABLE jobs (
+    id TEXT PRIMARY KEY,  -- UUID
+    user_id INTEGER,      -- Foreign key to users.id (nullable for external jobs)
+    source TEXT NOT NULL, -- 'user_created', 'indeed', 'linkedin', 'mock', etc.
+    title TEXT NOT NULL,
+    company TEXT NOT NULL,
+    location TEXT,        -- City, State or "Remote"
+    description TEXT,     -- Full job description
+    raw_text TEXT,        -- Original pasted text (for user_created)
+    parsed_keywords TEXT, -- JSON array: ["python", "fastapi", "aws"]
+    requirements TEXT,    -- JSON array: ["5+ years Python", "AWS experience"]
+    benefits TEXT,        -- JSON array: ["Health insurance", "Remote work"]
+    salary_range TEXT,    -- "100000-150000" or free text
+    remote BOOLEAN DEFAULT 0,
+    status TEXT DEFAULT 'active',  -- 'active', 'archived', 'draft'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX idx_jobs_user_id ON jobs(user_id);
+CREATE INDEX idx_jobs_source ON jobs(source);
+CREATE INDEX idx_jobs_status ON jobs(status);
+CREATE INDEX idx_jobs_created_at ON jobs(created_at);
+CREATE INDEX idx_jobs_user_status ON jobs(user_id, status);
+```
+
+**Field Descriptions**:
+- `id`: UUID primary key
+- `user_id`: Owner (nullable for external/mock jobs, set for user_created)
+- `source`: Job origin (user_created, indeed, linkedin, mock, imported)
+- `title`: Job position title
+- `company`: Company name
+- `location`: City/State or "Remote"
+- `description`: Full job description text
+- `raw_text`: Original pasted text before parsing
+- `parsed_keywords`: JSON array of technical keywords (["python", "aws"])
+- `requirements`: JSON array of qualification strings
+- `benefits`: JSON array of benefit strings
+- `salary_range`: Salary information (format: "min-max" or free text)
+- `remote`: Boolean flag for remote positions
+- `status`: Job status (active, archived, draft)
+- `created_at`: Creation timestamp
+- `updated_at`: Last update timestamp (auto-updates)
+
+**Constraints**:
+- `source` required (identifies origin)
+- `title` and `company` required
+- `user_id` nullable (supports external jobs)
+- `status` defaults to 'active'
+- Foreign key cascade delete (when user deleted, user_created jobs deleted)
+
 ## Data Flow
 
 ```
 Create Job (Raw Text):
 1. Client → POST /jobs {raw_text, source: "user_created"}
 2. API validates JWT → get user_id
-3. API invokes text parser (deterministic rules + optional LLM)
-4. API extracts: title, company, location, requirements, benefits
-5. API creates JobModel with user_id and parsed data
-6. API ← Job response with parsed fields
+3. API invokes text parser (deterministic regex rules)
+4. API extracts: title, company, location, requirements, benefits, keywords
+5. Optional: LLM enhancement for ambiguous fields (rate-limited)
+6. API creates JobModel with user_id and parsed data
+7. API ← Job response (201) with parsed fields
 
 Create Job (Structured):
 1. Client → POST /jobs {title, company, description, source, ...}
 2. API validates JWT → get user_id
-3. API validates structured data
-4. API creates JobModel with user_id
-5. API ← Job response
+3. API validates structured data (Pydantic)
+4. API extracts keywords from description
+5. API creates JobModel with user_id
+6. API ← Job response (201)
 
-List Jobs:
-1. Client → GET /jobs?status=active&source=user_created
+Browse Mock Jobs:
+1. Client → GET /jobs/browse?query=Python&location=Remote&limit=20
+2. API validates JWT → get user_id
+3. API loads mock jobs from JSON file
+4. API filters by query (title, description, keywords)
+5. API filters by location (city, state, "Remote")
+6. API filters by remote flag
+7. API paginates results
+8. API ← Mock jobs array (200) with pagination
+
+List User Jobs:
+1. Client → GET /jobs?status=active&source=user_created&limit=20
 2. API validates JWT → get user_id
 3. API fetches jobs where user_id = current_user.id
 4. API applies filters (status, source)
-5. API ← Job list with pagination
+5. API orders by created_at DESC
+6. API paginates results
+7. API ← Job list (200) with pagination
+
+Get Job Detail:
+1. Client → GET /jobs/{id}
+2. API validates JWT → get user_id
+3. API fetches job by id
+4. API verifies ownership (if user_created source)
+5. API ← Full job object (200)
 
 Update Job:
 1. Client → PUT /jobs/{id} {updated_fields}
 2. API validates JWT → get user_id
-3. API verifies job.user_id == current_user.id
-4. API updates job record
-5. API ← Updated job
+3. API fetches job by id
+4. API verifies job.user_id == current_user.id
+5. API validates update data (Pydantic)
+6. API re-extracts keywords if description changed
+7. API updates job record with updated_at timestamp
+8. API ← Updated job (200)
 
 Delete Job:
 1. Client → DELETE /jobs/{id}
 2. API validates JWT → get user_id
-3. API verifies ownership
-4. API hard deletes job (immediate removal)
-5. API ← 204 No Content
+3. API fetches job by id
+4. API verifies ownership (job.user_id == current_user.id)
+5. API hard deletes job record (immediate removal)
+6. API ← 204 No Content
+
+Save Mock Job:
+1. Client browses mock jobs via GET /jobs/browse
+2. User selects a mock job to save
+3. Client → POST /jobs {mock_job_data, source: "user_created"}
+4. API validates JWT → get user_id
+5. API creates job with user_id
+6. API ← Saved job (201)
 ```
 
 ## API Contract
@@ -169,6 +306,81 @@ Delete Job:
   }
 }
 ```
+
+### GET /jobs/browse
+
+**Description**: Browse mock/external job listings (for discovery and saving)
+
+**Headers**: `Authorization: Bearer <token>`
+
+**Query Parameters**:
+- `query`: string (search keywords, e.g., "Python Developer")
+- `location`: string (city, state, or "Remote")
+- `remote`: boolean (filter for remote jobs only)
+- `limit`: integer (1-100, default: 20)
+- `offset`: integer (default: 0)
+
+**Note**: This endpoint returns jobs from a **mock JSON dataset** (not saved to user's jobs). Users can browse these jobs and save them via POST /jobs with the job data.
+
+**Response** (200 OK):
+```json
+{
+  "jobs": [
+    {
+      "source": "mock",
+      "title": "Senior Python Developer",
+      "company": "Tech Innovations Inc",
+      "location": "San Francisco, CA",
+      "description": "We are seeking an experienced Python developer to join our team...\n\nResponsibilities:\n- Design and implement scalable backend services\n- Collaborate with frontend teams\n- Mentor junior developers\n\nQualifications:\n- 5+ years Python experience\n- Strong knowledge of FastAPI or Django\n- Experience with AWS, Docker, Kubernetes",
+      "requirements": [
+        "5+ years Python experience",
+        "FastAPI or Django framework knowledge",
+        "AWS cloud services experience",
+        "Docker and Kubernetes proficiency"
+      ],
+      "benefits": [
+        "Competitive salary $140k-$180k",
+        "Health, dental, vision insurance",
+        "401k matching",
+        "Flexible remote work",
+        "Unlimited PTO"
+      ],
+      "parsed_keywords": ["python", "fastapi", "django", "aws", "docker", "kubernetes"],
+      "salary_range": "140000-180000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Full Stack Engineer",
+      "company": "Startup XYZ",
+      "location": "Remote",
+      "description": "Join our fast-growing startup...",
+      "requirements": [
+        "3+ years full-stack development",
+        "React and Node.js experience"
+      ],
+      "benefits": [
+        "Equity options",
+        "Remote-first culture"
+      ],
+      "parsed_keywords": ["react", "nodejs", "typescript", "mongodb"],
+      "salary_range": "100000-140000",
+      "remote": true
+    }
+  ],
+  "pagination": {
+    "total": 50,
+    "limit": 20,
+    "offset": 0,
+    "has_next": true,
+    "has_previous": false
+  }
+}
+```
+
+**Errors**:
+- 401: Unauthorized
+- 400: Invalid query parameters
 
 ### GET /jobs/{id}
 
@@ -403,6 +615,165 @@ Consider caching jobs:
 - Sync on network availability
 - Show cached jobs with sync indicator
 - Draft support for offline creation
+
+## LLM-Optimized Data Structure
+
+The job data model is specifically designed for easy LLM/AI processing:
+
+### Key LLM-Friendly Fields
+
+1. **`description`** (string): Full job description text
+   - Used in prompts: "The job description is: {description}"
+   - Raw, unstructured format that LLMs handle well
+
+2. **`parsed_keywords`** (array of strings): Extracted technical keywords
+   - Used in prompts: "Key technologies: {', '.join(parsed_keywords)}"
+   - Example: `["python", "fastapi", "aws", "docker", "kubernetes"]`
+   - Helps LLM focus on relevant skills from profile
+
+3. **`requirements`** (array of strings): Structured list of qualifications
+   - Used in prompts: "Job requirements:\n- {'\n- '.join(requirements)}"
+   - Each item is a complete sentence/phrase
+   - Example: `["5+ years Python experience", "Strong AWS knowledge"]`
+
+4. **`benefits`** (array of strings): Company perks and benefits
+   - Optional in prompts, but useful for cover letter generation
+   - Example: `["Remote work", "Health insurance", "401k matching"]`
+
+5. **`raw_text`** (string): Original pasted text before parsing
+   - Fallback if parsing fails
+   - Used for re-parsing or manual review
+
+### LLM Prompt Template Example
+
+```
+Generate a tailored resume for this candidate:
+
+CANDIDATE PROFILE:
+{profile.professional_summary}
+
+Skills: {', '.join(profile.skills.technical)}
+Experience: {experience_summary}
+
+TARGET JOB:
+Title: {job.title} at {job.company}
+Location: {job.location}
+
+Key Technologies: {', '.join(job.parsed_keywords)}
+
+Job Requirements:
+{'\n'.join(f'- {req}' for req in job.requirements)}
+
+Job Description:
+{job.description}
+
+Please highlight relevant experience and skills that match the job requirements.
+Focus on technologies: {', '.join(job.parsed_keywords)}
+```
+
+### Why This Structure Works for LLMs
+
+- **Hierarchical**: Description → Keywords → Requirements flows from general to specific
+- **Structured Arrays**: Easy to iterate and inject into prompts with proper formatting
+- **Keywords Pre-extracted**: Reduces LLM token usage, faster matching against profile
+- **Requirements as Bullets**: Natural language format that LLMs handle well
+- **Raw Text Preserved**: Allows re-parsing with different strategies
+
+## Mock JSON System Implementation
+
+### Mock Data Structure
+
+Store mock jobs in `backend/data/mock_jobs.json`:
+
+```json
+{
+  "tech_jobs": [
+    {
+      "title": "Senior Python Developer",
+      "company": "Tech Innovations Inc",
+      "location": "San Francisco, CA",
+      "description": "We are seeking an experienced Python developer...\n\n[Full description]",
+      "requirements": [
+        "5+ years Python experience",
+        "FastAPI or Django knowledge",
+        "AWS cloud services"
+      ],
+      "benefits": [
+        "Competitive salary $140k-$180k",
+        "Health insurance",
+        "Remote work"
+      ],
+      "parsed_keywords": ["python", "fastapi", "django", "aws", "docker"],
+      "salary_range": "140000-180000",
+      "remote": true
+    }
+  ],
+  "total_count": 50
+}
+```
+
+### Browse Endpoint Implementation Strategy
+
+```python
+# app/application/services/job_service.py
+
+class JobService:
+    def __init__(self, job_repository, mock_data_loader):
+        self.job_repository = job_repository
+        self.mock_jobs = mock_data_loader.load_jobs()  # Load from JSON
+
+    async def browse_jobs(
+        self,
+        query: str = None,
+        location: str = None,
+        remote: bool = None,
+        limit: int = 20,
+        offset: int = 0
+    ) -> tuple[List[Job], int]:
+        """Browse mock jobs with filtering."""
+        filtered_jobs = self.mock_jobs
+
+        # Simple keyword filtering
+        if query:
+            keywords = query.lower().split()
+            filtered_jobs = [
+                job for job in filtered_jobs
+                if any(kw in job['title'].lower() or
+                      kw in job['description'].lower() or
+                      kw in job['parsed_keywords']
+                      for kw in keywords)
+            ]
+
+        if location:
+            filtered_jobs = [
+                job for job in filtered_jobs
+                if location.lower() in job.get('location', '').lower()
+            ]
+
+        if remote is not None:
+            filtered_jobs = [
+                job for job in filtered_jobs
+                if job.get('remote') == remote
+            ]
+
+        total = len(filtered_jobs)
+        paginated = filtered_jobs[offset:offset + limit]
+
+        return paginated, total
+```
+
+### Mock Job Categories
+
+Organize mock data by job categories:
+- **tech_jobs**: Software engineering, DevOps, Data Science
+- **product_jobs**: Product Manager, UX Designer, Project Manager
+- **marketing_jobs**: Marketing Manager, Content Creator, SEO Specialist
+
+Each category should have 15-20 diverse job listings with:
+- Varied skill requirements
+- Different seniority levels (junior, mid, senior)
+- Mix of remote and on-site positions
+- Representative salary ranges
 
 ## Implementation Notes
 

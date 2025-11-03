@@ -1,13 +1,21 @@
 # Profile API Service
 
-**Version**: 2.1
+**Version**: 2.2
 **Base Path**: `/api/v1/profiles`
 **Status**: ✅ **Fully Implemented** (Core profile CRUD, bulk operations, granular component routes, and analytics all implemented and tested)
 **Test Coverage**: 39 live tests passing (Profile API: 17 tests including core CRUD, Granular Operations: 13 tests for experiences/education/projects/skills/custom fields, Bulk Operations: 9 tests for batch operations)
+**Last Updated**: November 2, 2025 - **Bug fixes**: Profile creation now includes nested arrays, Education endDate optional, Project startDate optional
 
 ## Service Overview
 
-Manages master resume profiles containing personal information, work experience, education, skills, projects, certifications, and custom fields. Supports comprehensive profile creation with multiple experiences, education, and projects in a single request. Provides granular CRUD operations for all profile components with bulk operations support (add/update multiple items of the same type simultaneously). Profiles serve as the source data for AI-generated resumes with efficient batch processing capabilities.
+Manages master resume profiles containing personal information, work experience, education, skills, projects, certifications, and custom fields.
+
+**Progressive Profile Building**:
+- **Required for creation**: Only `personal_info` (name + email)
+- **Completely optional**: experiences, education, projects, skills, professional_summary, custom_fields
+- **Update anytime**: Users can add/update any component at any time through PUT /profiles/{id}
+
+Supports comprehensive profile creation with multiple experiences, education, and projects in a single request. Provides granular CRUD operations for all profile components with bulk operations support (add/update multiple items of the same type simultaneously). Profiles serve as the source data for AI-generated resumes with efficient batch processing capabilities.
 
 **Current Implementation**: ✅ All endpoints implemented and tested including:
 - Core profile CRUD operations (GET /profiles/me, POST/PUT/DELETE /profiles/{id})
@@ -23,6 +31,46 @@ Manages master resume profiles containing personal information, work experience,
 **Authorization**: User can only access their own profiles
 **Performance**: <200ms for CRUD operations
 **Validation**: Pydantic v2 schemas
+
+## Error Codes
+
+| Status Code | Error Type | Description |
+|-------------|------------|-------------|
+| 201 | Created | Resource successfully created |
+| 200 | OK | Request successful |
+| 204 | No Content | Delete successful (no response body) |
+| 400 | Bad Request | Validation error or malformed request |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | User doesn't own the resource |
+| 404 | Not Found | Resource doesn't exist |
+| 409 | Conflict | User already has a profile (create only) |
+| 422 | Unprocessable Entity | Pydantic validation failed |
+| 500 | Internal Server Error | Server error |
+
+## Validation Rules
+
+**Personal Info:**
+- `full_name`: Required, 1-100 chars
+- `email`: Required, valid email format
+- `phone`: Optional, must contain digits if provided
+- `location`: Optional, max 100 chars
+- `linkedin`/`github`/`website`: Optional, must start with http:// or https://
+
+**Dates:**
+- Format: ISO 8601 `YYYY-MM-DD`
+- Experience: `start_date` required, `end_date` optional
+- Experience: `is_current=true` cannot have `end_date`
+- Education: `start_date` required, `end_date` **optional** (as of v2.2)
+- Project: `start_date` **optional**, `end_date` optional (as of v2.2)
+
+**Experiences/Education/Projects:**
+- All fields in nested arrays are validated on create/update
+- IDs auto-generated if not provided (`exp_1`, `edu_1`, `proj_1`, etc.)
+
+**Skills:**
+- Technical/Soft: Cannot contain empty strings
+- Languages: Proficiency must be: `native`, `fluent`, `conversational`, `basic`
+- GPA: Float 0.0-4.0
 
 ## Dependencies
 
@@ -103,7 +151,17 @@ Analytics (✅ Implemented):
 
 **Headers**: `Authorization: Bearer <token>`
 
-**Request**:
+**Minimal Required Request** (name + email only):
+```json
+{
+  "personal_info": {
+    "full_name": "John Doe",
+    "email": "john@example.com"
+  }
+}
+```
+
+**Full Request Example** (all optional fields shown):
 ```json
 {
   "personal_info": {
@@ -298,11 +356,13 @@ Analytics (✅ Implemented):
 
 #### PUT /profiles/{id}
 
-**Description**: Update profile (full replacement)
+**Description**: Update profile (supports full or partial updates)
 
 **Headers**: `Authorization: Bearer <token>`
 
-**Request**: Complete profile update with all optional fields
+**Note**: You can send only the fields you want to update. All fields except `personal_info` are optional. Empty arrays will replace existing data (use bulk operations to add/remove individual items).
+
+**Request Example** (showing all fields - all optional except personal_info):
 ```json
 {
   "personal_info": {
@@ -1129,7 +1189,7 @@ Consider caching profiles locally:
 - Dates: ISO 8601 format
 - Text limits enforced server-side
 
-### Current Implementation Status
+### Current Implementation Status (v2.2 - November 2, 2025)
 - ✅ **Core Profile CRUD**: POST /profiles, GET /profiles/me, GET /profiles/{id}, PUT /profiles/{id}, DELETE /profiles/{id} implemented and tested
 - ✅ **Bulk Operations**: POST/PUT/DELETE for experiences, education, and projects fully implemented and tested
 - ✅ **Granular Skills Management**: GET/PUT /skills, POST/DELETE /skills/technical, POST/DELETE /skills/soft implemented
@@ -1139,6 +1199,11 @@ Consider caching profiles locally:
 - ✅ **Database Models**: All models with JSON storage for flexible data implemented
 - ✅ **Service Layer**: Business logic and validation fully implemented
 - ✅ **API Routes**: All component-specific endpoints implemented and tested
+
+### Recent Bug Fixes (v2.2)
+1. **Profile Creation Fixed** - Now includes experiences/education/projects from create request (previously ignored)
+2. **Education `end_date` Optional** - Changed from required to optional (supports "currently enrolled")
+3. **Project `start_date` Optional** - Changed from required to optional (supports projects without start dates)
 
 ### Testing
 

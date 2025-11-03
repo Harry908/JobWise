@@ -98,7 +98,7 @@ class Education(BaseModel):
     degree: str = Field(..., min_length=1, max_length=100)
     field_of_study: str = Field(..., min_length=1, max_length=100)
     start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date
-    end_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date
+    end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date, optional
     gpa: Optional[float] = Field(None, ge=0.0, le=4.0)
     honors: List[str] = Field(default_factory=list)
 
@@ -117,8 +117,8 @@ class Project(BaseModel):
     description: str = Field(..., min_length=1, max_length=1000)
     technologies: List[str] = Field(default_factory=list)
     url: Optional[str] = Field(None, max_length=200)
-    start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date
-    end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date
+    start_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date, optional
+    end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date, optional
 
     @field_validator('url')
     @classmethod
@@ -131,7 +131,7 @@ class Project(BaseModel):
     @model_validator(mode='after')
     def validate_dates(self):
         """Validate date logic."""
-        if self.end_date and self.start_date > self.end_date:
+        if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError('Start date cannot be after end date')
         return self
 

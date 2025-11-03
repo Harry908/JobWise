@@ -1,8 +1,9 @@
 # Document API Service
 
-**Version**: 1.0
+**Version**: 2.0
 **Base Path**: `/api/v1/documents`
-**Status**: Sprint 2 (In Development)
+**Status**: ❌ **Not Implemented** (Fully specified, implementation pending Sprint 2)
+**Last Updated**: November 2, 2025
 
 ## Service Overview
 
@@ -10,12 +11,49 @@ Manages generated documents (resumes and cover letters) with storage, retrieval,
 
 ## Specification
 
-**Purpose**: Document storage and retrieval
+**Purpose**: Document storage and retrieval with PDF export
 **Authentication**: Required (JWT)
 **Authorization**: Users can only access their own documents
-**File Storage**: Local filesystem (dev), S3 (prod)
-**PDF Generation**: ReportLab library
-**Performance**: <2s for PDF export
+**File Storage**: Local filesystem (dev), AWS S3 (production)
+**PDF Generation**: ReportLab library with ATS-optimized templates
+**Performance**: <2s for PDF generation, <1s for retrieval
+
+## Error Codes
+
+| Status Code | Error Type | Description |
+|-------------|------------|-------------|
+| 201 | Created | Document successfully created |
+| 200 | OK | Request successful |
+| 204 | No Content | Delete successful (no response body) |
+| 400 | Bad Request | Validation error or malformed request |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | User doesn't own the document |
+| 404 | Not Found | Document or PDF file not found |
+| 422 | Unprocessable Entity | PDF generation failed |
+| 500 | Internal Server Error | Server error |
+
+## Validation Rules
+
+**Document Fields:**
+- `document_type`: Must be `resume` or `cover_letter`
+- `title`: 1-200 chars, auto-generated from job if not provided
+- `content.text`: Required, max 50,000 chars
+- `content.html`: Optional, max 100,000 chars
+- `content.markdown`: Optional, max 50,000 chars
+
+**Metadata:**
+- `generation_id`: Must exist (UUID format)
+- `profile_id`: Must exist and belong to user
+- `job_id`: Must exist and belong to user
+- `ats_score`: Float 0.0-1.0
+- `match_percentage`: Integer 0-100
+- `keyword_coverage`: Float 0.0-1.0
+
+**PDF Requirements:**
+- File size: Max 10MB
+- Page count: 1-5 pages
+- Format: PDF/A compliance for ATS
+- Storage: Unique path per user/document
 
 ## Dependencies
 
@@ -29,6 +67,77 @@ Manages generated documents (resumes and cover letters) with storage, retrieval,
 ### External
 - ReportLab: PDF generation library
 - AWS S3: File storage (production)
+
+## Database Schema
+
+### DocumentModel (documents table)
+
+**Purpose**: Stores generated resumes and cover letters with content and metadata
+
+**Fields**:
+```sql
+CREATE TABLE documents (
+    id TEXT PRIMARY KEY,  -- UUID (document_id)
+    user_id INTEGER NOT NULL,
+    generation_id TEXT NOT NULL,
+    profile_id TEXT NOT NULL,
+    job_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,  -- 'resume', 'cover_letter'
+    title TEXT NOT NULL,
+    content_text TEXT NOT NULL,
+    content_html TEXT,
+    content_markdown TEXT,
+    metadata TEXT NOT NULL,  -- JSON: {generation_id, ats_score, template, ...}
+    pdf_url TEXT NOT NULL,
+    pdf_path TEXT NOT NULL,  -- Local path or S3 key
+    pdf_size_bytes INTEGER,
+    pdf_page_count INTEGER DEFAULT 1,
+    notes TEXT,  -- User notes
+    version INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (generation_id) REFERENCES generations(id) ON DELETE CASCADE,
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL,
+    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX idx_documents_user_id ON documents(user_id);
+CREATE INDEX idx_documents_job_id ON documents(job_id);
+CREATE INDEX idx_documents_profile_id ON documents(profile_id);
+CREATE INDEX idx_documents_type ON documents(document_type);
+CREATE INDEX idx_documents_user_type ON documents(user_id, document_type);
+CREATE INDEX idx_documents_created_at ON documents(created_at);
+CREATE INDEX idx_documents_generation_id ON documents(generation_id);
+```
+
+**Field Descriptions**:
+- `id`: UUID primary key (document_id)
+- `user_id`: Owner of the document
+- `generation_id`: Source generation that created this document
+- `profile_id`: Source profile used
+- `job_id`: Target job for tailoring
+- `document_type`: Type ('resume' or 'cover_letter')
+- `title`: Document title (auto-generated or custom)
+- `content_text`: Plain text content
+- `content_html`: HTML formatted content
+- `content_markdown`: Markdown formatted content
+- `metadata`: JSON with generation metadata (ats_score, template, etc.)
+- `pdf_url`: API URL for PDF download
+- `pdf_path`: Storage path (local file path or S3 key)
+- `pdf_size_bytes`: PDF file size
+- `pdf_page_count`: Number of pages
+- `notes`: User-added notes
+- `version`: Document version number
+- `created_at`: Creation timestamp
+- `updated_at`: Last update timestamp
+
+**Constraints**:
+- Foreign key cascade delete for user and generation
+- Foreign key SET NULL for profile and job (preserve docs if profile/job deleted)
+- `document_type` must be: resume or cover_letter
+- `content_text` required (cannot be null)
 
 ## Data Flow
 

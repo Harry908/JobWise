@@ -1,10 +1,10 @@
 # Profile Feature - Mobile Design Document
 
-**Version**: 2.1  
-**Feature**: Master Resume Profile Management  
-**API Service**: Profile API  
-**Status**: ✅ **Sprint 1 Complete** (Core CRUD, bulk operations implemented)  
-**Last Updated**: October 27, 2025
+**Version**: 2.2
+**Feature**: Master Resume Profile Management
+**API Service**: Profile API
+**Status**: ✅ **Sprint 1 Complete** (Core CRUD, bulk operations implemented)
+**Last Updated**: November 2, 2025 - **Backend sync**: Education/Project date validations fixed
 
 ---
 
@@ -33,9 +33,18 @@
 - **Languages**: Model exists, not in profile form
 
 ### ❌ Not Implemented
-- Profile analytics display screen
-- Custom fields management UI
+- Profile analytics display screen (API ready, UI pending)
+- Custom fields management UI (API ready, UI pending)
+- Certifications management UI (model + API ready, dialog missing)
+- Languages management UI (model ready, no API or dialog)
 - Offline profile editing with sync
+- Minimal profile creation flow (backend supports name+email only, mobile forces 4-step form)
+
+### ⚠️ Known Issues (Fixed in Backend v2.2)
+- **RESOLVED**: Education `endDate` validation error - Backend now accepts optional endDate
+- **RESOLVED**: Project `startDate` validation error - Backend now accepts optional startDate
+- Education `isCurrent` field - Mobile has it, backend doesn't use it
+- Project missing fields - `repository_url` and `highlights` not in mobile dialog
 
 ---
 
@@ -56,21 +65,19 @@ Manage master resume profiles containing personal information, work experiences,
 - Comprehensive validation and error handling
 
 ### Profile Creation Requirements
+
 **Required for initial profile creation:**
 - Personal Info: `full_name` and `email` (minimum)
-- Skills: Empty skills object `{}` (auto-created with empty lists)
 
-**Optional components (can be added later):**
+**Completely optional (can be added/updated anytime):**
 - Professional summary
 - Work experiences
 - Education entries
-- Technical/soft skills
+- Skills (technical, soft, languages, certifications)
 - Projects
-- Certifications
-- Languages
 - Custom fields
 
-This allows users to create a basic profile quickly and progressively build it over time.
+**Progressive Profile Building**: Users can create a minimal profile with just name and email, then add or update any component at any time through the profile edit screen. The backend accepts partial updates, so users only need to send changed fields.
 
 ---
 
@@ -1221,23 +1228,36 @@ dependencies:
 
 ---
 
-**Document Status**: ✅ Sprint 1 Complete - Updated to reflect minimal profile creation  
-**Last Updated**: October 27, 2025  
-**Changes**: 
-- **Clarified minimal profile requirements**: Only name + email required for creation
-- **Updated multi-step form design**: Steps 1-3 marked as optional with subtitles
-- **Removed validation on optional steps**: Users can skip experiences/education/projects/skills
-- **Added progressive enhancement section**: Explains how users can build profile over time
+## Backend Sync Status (v2.2 - November 2, 2025)
+
+### ✅ Fixed Validation Issues
+1. **Education `endDate`**: Backend now accepts optional endDate (previously required)
+2. **Project `startDate`**: Backend now accepts optional startDate (previously required)
+3. **Profile Creation**: Backend now properly saves experiences/education/projects on create
+
+### Remaining Discrepancies
+1. **Minimal Profile Flow**: Backend supports name+email only, mobile requires 4-step form
+2. **Certifications**: Mobile has model + API client methods but no UI dialog
+3. **Languages**: Mobile has model but no UI or API endpoints
+4. **Custom Fields**: API ready but no mobile UI for management
+5. **Analytics**: API endpoint exists but no mobile visualization screen
+6. **Project Fields**: Backend supports `repository_url` and `highlights`, mobile dialog missing them
+
+**Document Status**: ✅ Sprint 1 Complete - Backend sync issues resolved
+**Last Updated**: November 2, 2025
+**Changes**:
+- **Backend validation fixed**: Education endDate and Project startDate now optional in backend
+- **Documented missing features**: Certifications, Languages, Custom Fields, Analytics UI
+- **Noted discrepancies**: Mobile enforces 4-step form vs backend minimal profile support
 - Updated implementation status to reflect Sprint 1 completion
 - Removed version field from Profile model
 - Changed from freezed to manual implementation
 - Added date format system (US/European/ISO)
-- Noted certifications/languages not in UI (models/API ready)
-- Noted analytics/custom fields not visualized (API ready)
-- Updated dependencies to remove freezed
 
-**Backend Validation (from tests):**
+**Backend Validation (Verified Working):**
 - ✅ Profile creation with only `personal_info` (name + email) and empty `skills` object works
 - ✅ All other fields (`experiences`, `education`, `projects`, `professional_summary`) are optional
 - ✅ Empty lists for experiences/education/projects are valid
 - ✅ Empty skills lists (technical, soft, languages, certifications) are valid
+- ✅ Education without endDate now validated successfully
+- ✅ Projects without startDate now validated successfully

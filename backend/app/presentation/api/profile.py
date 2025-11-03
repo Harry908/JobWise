@@ -136,7 +136,7 @@ class EducationModel(BaseModel):
     degree: str = Field(..., min_length=1, max_length=100)
     field_of_study: str = Field(..., min_length=1, max_length=100)
     start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
-    end_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
     gpa: Optional[float] = Field(None, ge=0.0, le=4.0)
     honors: List[str] = Field(default_factory=list)
 
@@ -162,7 +162,7 @@ class ProjectModel(BaseModel):
     description: str = Field(..., min_length=1, max_length=1000)
     technologies: List[str] = Field(default_factory=list)
     url: Optional[str] = Field(None, max_length=200)
-    start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    start_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
     end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
 
     model_config = {
@@ -499,7 +499,10 @@ async def create_profile(
             user_id=current_user_id,
             personal_info=request.personal_info.model_dump(),
             professional_summary=request.professional_summary,
-            skills=request.skills.model_dump() if request.skills else None
+            skills=request.skills.model_dump() if request.skills else None,
+            experiences=[exp.model_dump() for exp in request.experiences] if request.experiences else [],
+            education=[edu.model_dump() for edu in request.education] if request.education else [],
+            projects=[proj.model_dump() for proj in request.projects] if request.projects else []
         )
 
         # Convert domain entity to response model

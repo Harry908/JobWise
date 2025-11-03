@@ -1,8 +1,9 @@
 # Generation API Service
 
-**Version**: 1.0
+**Version**: 2.0
 **Base Path**: `/api/v1/generations`
-**Status**: Sprint 2 (In Development)
+**Status**: ❌ **Not Implemented** (Fully specified, implementation pending Sprint 2)
+**Last Updated**: November 2, 2025
 
 ## Service Overview
 
@@ -12,10 +13,51 @@ AI-powered resume and cover letter generation using 5-stage pipeline. Combines u
 
 **Purpose**: AI document generation with ATS optimization
 **Authentication**: Required (JWT)
-**Processing**: Asynchronous (background pipeline)
-**Performance**: <6s total generation time (target)
+**Processing**: Asynchronous (background pipeline with Celery/asyncio)
+**Performance**: <6s total generation time (target p50), <10s (p95)
 **Rate Limiting**: 10 generations/hour per user
 **Token Budget**: 8000 tokens per generation
+**Progress Tracking**: Real-time stage updates via polling (2s intervals)
+
+## Error Codes
+
+| Status Code | Error Type | Description |
+|-------------|------------|-------------|
+| 201 | Created | Generation started successfully |
+| 200 | OK | Request successful (status/result retrieval) |
+| 204 | No Content | Generation cancelled successfully |
+| 400 | Bad Request | Invalid profile_id, job_id, or options |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | User doesn't own profile or job |
+| 404 | Not Found | Generation, profile, or job not found |
+| 422 | Unprocessable Entity | Pipeline stage failed |
+| 429 | Too Many Requests | Rate limit exceeded (>10/hour) |
+| 500 | Internal Server Error | Pipeline error |
+
+## Validation Rules
+
+**Required Fields:**
+- `profile_id`: Must exist and belong to user (UUID format)
+- `job_id`: Must exist and belong to user (UUID format)
+
+**Optional Fields (options object):**
+- `template`: One of: `modern`, `classic`, `creative` (default: `modern`)
+- `length`: One of: `one_page`, `two_page` (default: `one_page`)
+- `focus_areas`: Array of strings, max 5 items
+- `include_cover_letter`: Boolean (default: false)
+- `custom_instructions`: String, max 500 chars
+
+**Rate Limiting:**
+- 10 generations per hour per user
+- `429` response includes `retry_after` seconds
+- Counter resets hourly
+
+**Pipeline Stages:**
+1. **Job Analysis** (Stage 1): 1s, 1500 tokens
+2. **Profile Compilation** (Stage 2): 1s, 2000 tokens
+3. **Content Generation** (Stage 3): 2s, 3000 tokens
+4. **Quality Validation** (Stage 4): 1s, 1500 tokens
+5. **Export Preparation** (Stage 5): 0.5s, 0 tokens
 
 ## Dependencies
 
@@ -26,9 +68,78 @@ AI-powered resume and cover letter generation using 5-stage pipeline. Combines u
 - Document API: Document storage
 - LLM Service: AI generation (via ILLMService port)
 - Database: GenerationModel
+- Background Queue: Celery or asyncio tasks
 
 ### External
 - LLM Provider: OpenAI GPT-4 or Anthropic Claude (via adapter)
+
+## Database Schema
+
+### GenerationModel (generations table)
+
+**Purpose**: Tracks AI generation pipeline progress and results
+
+**Fields**:
+```sql
+CREATE TABLE generations (
+    id TEXT PRIMARY KEY,  -- UUID (generation_id)
+    user_id INTEGER NOT NULL,
+    profile_id TEXT NOT NULL,
+    job_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,  -- 'resume', 'cover_letter'
+    status TEXT DEFAULT 'pending',  -- 'pending', 'generating', 'completed', 'failed', 'cancelled'
+    current_stage INTEGER DEFAULT 0,
+    total_stages INTEGER DEFAULT 5,
+    stage_name TEXT,
+    stage_description TEXT,
+    error_message TEXT,
+    options TEXT,  -- JSON: {"template": "modern", "length": "one_page"}
+    result TEXT,   -- JSON: {"document_id": "...", "ats_score": 0.87, ...}
+    tokens_used INTEGER DEFAULT 0,
+    generation_time REAL,  -- Seconds (float)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    started_at DATETIME,
+    completed_at DATETIME,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
+    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX idx_generations_user_id ON generations(user_id);
+CREATE INDEX idx_generations_status ON generations(status);
+CREATE INDEX idx_generations_job_id ON generations(job_id);
+CREATE INDEX idx_generations_user_status ON generations(user_id, status);
+CREATE INDEX idx_generations_created_at ON generations(created_at);
+```
+
+**Field Descriptions**:
+- `id`: UUID primary key (generation_id)
+- `user_id`: Owner of the generation
+- `profile_id`: Source profile for generation
+- `job_id`: Target job for tailoring
+- `document_type`: Type of document ('resume', 'cover_letter')
+- `status`: Current state (pending, generating, completed, failed, cancelled)
+- `current_stage`: Pipeline stage (0-5)
+- `total_stages`: Total pipeline stages (always 5)
+- `stage_name`: Human-readable stage name
+- `stage_description`: Stage progress description
+- `error_message`: Error details if failed
+- `options`: JSON with generation options
+- `result`: JSON with final result (document_id, ats_score, etc.)
+- `tokens_used`: Total LLM tokens consumed
+- `generation_time`: Total processing time in seconds
+- `created_at`: Generation request timestamp
+- `started_at`: Pipeline start timestamp
+- `completed_at`: Pipeline completion timestamp
+- `updated_at`: Last update timestamp (auto-updates)
+
+**Constraints**:
+- Foreign key cascade delete (when user/profile/job deleted, generations deleted)
+- `status` must be one of: pending, generating, completed, failed, cancelled
+- `document_type` must be: resume or cover_letter
+- `current_stage` range: 0-5
 
 ## Data Flow
 
