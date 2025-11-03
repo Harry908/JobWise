@@ -48,10 +48,12 @@ class JobDetailView extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                job.company,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.primary,
+              Expanded(
+                child: Text(
+                  job.company,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
             ],
@@ -67,9 +69,11 @@ class JobDetailView extends StatelessWidget {
                 color: theme.colorScheme.secondary,
               ),
               const SizedBox(width: 8),
-              Text(
-                job.location ?? (job.remote ? 'Remote' : 'Location not specified'),
-                style: theme.textTheme.bodyLarge,
+              Expanded(
+                child: Text(
+                  job.location ?? (job.remote ? 'Remote' : 'Location not specified'),
+                  style: theme.textTheme.bodyLarge,
+                ),
               ),
               if (job.remote) ...[
                 const SizedBox(width: 12),
@@ -95,10 +99,12 @@ class JobDetailView extends StatelessWidget {
                   color: theme.colorScheme.secondary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  _formatSalaryRange(job.salaryRange!),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    _formatSalaryRange(job.salaryRange!),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -115,10 +121,12 @@ class JobDetailView extends StatelessWidget {
                 color: theme.colorScheme.secondary,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Added ${_formatDate(job.createdAt)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+              Expanded(
+                child: Text(
+                  'Added ${_formatDate(job.createdAt)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ),
             ],
