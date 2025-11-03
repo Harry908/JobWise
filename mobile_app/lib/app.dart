@@ -6,6 +6,10 @@ import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/debug_screen.dart';
+import 'screens/job_browse_screen.dart';
+import 'screens/job_detail_screen.dart';
+import 'screens/job_list_screen.dart';
+import 'screens/job_paste_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/profile_view_screen.dart';
 import 'screens/settings_screen.dart';
@@ -101,6 +105,36 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 48),
             if (profileState.profile != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/jobs');
+                  },
+                  icon: const Icon(Icons.work),
+                  label: const Text('My Jobs'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/jobs/browse');
+                  },
+                  icon: const Icon(Icons.search),
+                  label: const Text('Browse Jobs'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -205,6 +239,26 @@ class _AppState extends ConsumerState<App> {
         GoRoute(
           path: '/profile/view',
           builder: (context, state) => const ProfileViewScreen(),
+        ),
+        // Job routes
+        GoRoute(
+          path: '/jobs',
+          builder: (context, state) => const JobListScreen(),
+        ),
+        GoRoute(
+          path: '/jobs/paste',
+          builder: (context, state) => const JobPasteScreen(),
+        ),
+        GoRoute(
+          path: '/jobs/browse',
+          builder: (context, state) => const JobBrowseScreen(),
+        ),
+        GoRoute(
+          path: '/jobs/:id',
+          builder: (context, state) {
+            final jobId = state.pathParameters['id']!;
+            return JobDetailScreen(jobId: jobId);
+          },
         ),
       ],
       redirect: (context, state) {

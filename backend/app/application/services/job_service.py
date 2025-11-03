@@ -71,6 +71,65 @@ class JobService:
         # Create job via repository
         return await self.repository.create(job_data)
     
+    async def create_structured(
+        self,
+        user_id: int,
+        source: str,
+        title: str,
+        company: str,
+        location: Optional[str] = None,
+        description: Optional[str] = None,
+        requirements: Optional[List[str]] = None,
+        benefits: Optional[List[str]] = None,
+        salary_range: Optional[str] = None,
+        remote: bool = False,
+        status: str = "active"
+    ) -> Job:
+        """Create job from structured data (already parsed).
+        
+        Args:
+            user_id: User ID
+            source: Job source
+            title: Job title
+            company: Company name
+            location: Job location
+            description: Job description
+            requirements: List of requirements
+            benefits: List of benefits
+            salary_range: Salary range
+            remote: Remote work option
+            status: Job status
+            
+        Returns:
+            Created Job entity
+        """
+        # Parse keywords from description and title
+        text_for_keywords = f"{title} {company}"
+        if description:
+            text_for_keywords += f" {description}"
+        
+        keywords = await self._parse_keywords(text_for_keywords)
+        
+        # Create job data dictionary
+        job_data = {
+            "user_id": user_id,
+            "source": source,
+            "title": title,
+            "company": company,
+            "location": location,
+            "description": description,
+            "requirements": requirements or [],
+            "benefits": benefits or [],
+            "parsed_keywords": keywords,
+            "salary_range": salary_range,
+            "remote": remote,
+            "status": status,
+            "raw_text": None  # No raw text for structured input
+        }
+        
+        # Create job via repository
+        return await self.repository.create(job_data)
+    
     async def get_user_jobs(
         self,
         user_id: int,
@@ -122,6 +181,45 @@ class JobService:
         
         # Convert to Job entities
         return [Job(**job_data) for job_data in paginated_jobs]
+    
+    async def count_browse_jobs(self) -> int:
+        """Get total count of browse jobs.
+        
+        Returns:
+            Total number of browse jobs
+        """
+        # Load mock jobs if not cached
+        if self._mock_jobs_cache is None:
+            self._mock_jobs_cache = await self._load_mock_jobs()
+        
+        return len(self._mock_jobs_cache)
+    
+    async def count_user_jobs(
+        self,
+        user_id: int,
+        status: Optional[str] = None,
+        source: Optional[str] = None
+    ) -> int:
+        """Get total count of user's jobs.
+        
+        Args:
+            user_id: User ID
+            status: Filter by status
+            source: Filter by source
+            
+        Returns:
+            Total number of user's jobs
+        """
+        # For now, get all jobs and count them
+        # TODO: Add efficient count method to repository
+        jobs = await self.repository.get_user_jobs(
+            user_id=user_id,
+            status=status,
+            source=source,
+            limit=1000,  # Large limit to get all
+            offset=0
+        )
+        return len(jobs)
     
     async def get_by_id(self, job_id: str) -> Optional[Job]:
         """Get job by ID.

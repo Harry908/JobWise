@@ -9,7 +9,7 @@ from app.core.dependencies import get_current_user, get_job_service
 from app.domain.entities.job import Job
 
 
-router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 
 # Request/Response models
@@ -21,6 +21,20 @@ class JobCreateFromText(BaseModel):
 class JobCreateFromURL(BaseModel):
     """Request model for creating job from URL."""
     url: str = Field(..., min_length=10, max_length=500, description="Job posting URL")
+
+
+class JobCreateStructured(BaseModel):
+    """Request model for creating job with structured data."""
+    source: str = Field(default="user_created", description="Job source")
+    title: str = Field(..., min_length=1, max_length=200, description="Job title")
+    company: str = Field(..., min_length=1, max_length=200, description="Company name")
+    location: Optional[str] = Field(None, max_length=200, description="Job location")
+    description: Optional[str] = Field(None, max_length=10000, description="Job description")
+    requirements: Optional[List[str]] = Field(default_factory=list, description="Job requirements")
+    benefits: Optional[List[str]] = Field(default_factory=list, description="Job benefits")
+    salary_range: Optional[str] = Field(None, max_length=100, description="Salary range")
+    remote: Optional[bool] = Field(default=False, description="Remote work option")
+    status: Optional[str] = Field(default="active", pattern="^(active|archived|draft)$")
 
 
 class JobUpdateRequest(BaseModel):
@@ -37,18 +51,44 @@ class JobDeleteResponse(BaseModel):
     message: str
 
 
+class PaginationMeta(BaseModel):
+    """Pagination metadata."""
+    limit: int
+    offset: int
+    total: int
+    has_more: bool = Field(alias="hasMore")
+    
+    class Config:
+        populate_by_name = True
+
+
+class JobListResponse(BaseModel):
+    """Response model for job lists."""
+    jobs: List[Job]
+    total: int
+    pagination: PaginationMeta
+
+
+class BrowseJobListResponse(BaseModel):
+    """Response model for browse jobs."""
+    jobs: List[Job]
+    total: int
+    pagination: PaginationMeta
+
+
 @router.post("", response_model=Job, status_code=status.HTTP_201_CREATED)
 async def create_job(
-    request: JobCreateFromText | JobCreateFromURL,
+    request: JobCreateFromText | JobCreateFromURL | JobCreateStructured,
     service: JobService = Depends(get_job_service),
     user_id: int = Depends(get_current_user)
 ) -> Job:
     """
     Create a new job posting.
     
-    - **Supports two input methods:**
+    - **Supports three input methods:**
       - `raw_text`: Paste job description text for parsing
       - `url`: Provide URL to fetch job details
+      - Structured: Provide all fields directly
     
     - **Returns:** Created job with parsed details
     - **Authentication:** Required
@@ -66,6 +106,21 @@ async def create_job(
             user_id=user_id,
             url=request.url
         )
+    elif isinstance(request, JobCreateStructured):
+        # Create from structured data
+        return await service.create_structured(
+            user_id=user_id,
+            source=request.source,
+            title=request.title,
+            company=request.company,
+            location=request.location,
+            description=request.description,
+            requirements=request.requirements or [],
+            benefits=request.benefits or [],
+            salary_range=request.salary_range,
+            remote=request.remote or False,
+            status=request.status or "active"
+        )
     else:
         # Handle either type based on fields present
         request_dict = request.model_dump()
@@ -82,11 +137,11 @@ async def create_job(
         else:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Either 'raw_text' or 'url' must be provided"
+                detail="Either 'raw_text', 'url', or structured fields must be provided"
             )
 
 
-@router.get("", response_model=List[Job])
+@router.get("", response_model=JobListResponse)
 async def get_user_jobs(
     status_filter: Optional[str] = Query(None, alias="status", pattern="^(active|archived|draft)$"),
     source: Optional[str] = Query(None, max_length=50),
@@ -94,7 +149,7 @@ async def get_user_jobs(
     offset: int = Query(0, ge=0),
     service: JobService = Depends(get_job_service),
     user_id: int = Depends(get_current_user)
-) -> List[Job]:
+) -> JobListResponse:
     """
     Get list of user's saved jobs.
     
@@ -104,24 +159,38 @@ async def get_user_jobs(
       - `limit`: Max results (1-100, default 20)
       - `offset`: Pagination offset (default 0)
     
-    - **Returns:** List of user's jobs
+    - **Returns:** List of user's jobs with pagination
     - **Authentication:** Required
     """
-    return await service.get_user_jobs(
+    jobs = await service.get_user_jobs(
         user_id=user_id,
         status=status_filter,
         source=source,
         limit=limit,
         offset=offset
     )
+    
+    # Get total count
+    total = await service.count_user_jobs(user_id=user_id, status=status_filter, source=source)
+    
+    return JobListResponse(
+        jobs=jobs,
+        total=total,
+        pagination=PaginationMeta(
+            limit=limit,
+            offset=offset,
+            total=total,
+            hasMore=offset + len(jobs) < total
+        )
+    )
 
 
-@router.get("/browse", response_model=List[Job])
+@router.get("/browse", response_model=BrowseJobListResponse)
 async def browse_jobs(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     service: JobService = Depends(get_job_service)
-) -> List[Job]:
+) -> BrowseJobListResponse:
     """
     Browse mock job listings.
     
@@ -130,12 +199,26 @@ async def browse_jobs(
       - `limit`: Max results (1-100, default 20)
       - `offset`: Pagination offset (default 0)
     
-    - **Returns:** List of mock job postings
+    - **Returns:** List of mock job postings with pagination
     - **Purpose:** Allows users to explore sample jobs before signing up
     """
-    return await service.browse_jobs(
+    jobs = await service.browse_jobs(
         limit=limit,
         offset=offset
+    )
+    
+    # Get total count from service
+    total = await service.count_browse_jobs()
+    
+    return BrowseJobListResponse(
+        jobs=jobs,
+        total=total,
+        pagination=PaginationMeta(
+            limit=limit,
+            offset=offset,
+            total=total,
+            hasMore=offset + len(jobs) < total
+        )
     )
 
 

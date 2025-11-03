@@ -204,7 +204,7 @@ class BaseHttpClient {
         },
       ));
 
-      final response = await refreshDio.post('/api/v1/auth/refresh', data: {
+      final response = await refreshDio.post('/auth/refresh', data: {
         'refresh_token': refreshToken,
       });
 
