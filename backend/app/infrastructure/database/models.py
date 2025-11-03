@@ -119,6 +119,7 @@ class JobModel(Base):
     salary_range = Column(String)
     remote = Column(Boolean, default=False)
     status = Column(String, default="active", index=True)  # active, archived, draft
+    application_status = Column(String, default="not_applied", index=True)  # Application progress tracking
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

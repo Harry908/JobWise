@@ -35,6 +35,7 @@ mixin _$Job {
   String? get salaryRange => throw _privateConstructorUsedError;
   bool get remote => throw _privateConstructorUsedError;
   JobStatus get status => throw _privateConstructorUsedError;
+  ApplicationStatus get applicationStatus => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -67,6 +68,7 @@ abstract class $JobCopyWith<$Res> {
     String? salaryRange,
     bool remote,
     JobStatus status,
+    ApplicationStatus applicationStatus,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -100,6 +102,7 @@ class _$JobCopyWithImpl<$Res, $Val extends Job> implements $JobCopyWith<$Res> {
     Object? salaryRange = freezed,
     Object? remote = null,
     Object? status = null,
+    Object? applicationStatus = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -161,6 +164,10 @@ class _$JobCopyWithImpl<$Res, $Val extends Job> implements $JobCopyWith<$Res> {
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
                       as JobStatus,
+            applicationStatus: null == applicationStatus
+                ? _value.applicationStatus
+                : applicationStatus // ignore: cast_nullable_to_non_nullable
+                      as ApplicationStatus,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -196,6 +203,7 @@ abstract class _$$JobImplCopyWith<$Res> implements $JobCopyWith<$Res> {
     String? salaryRange,
     bool remote,
     JobStatus status,
+    ApplicationStatus applicationStatus,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -226,6 +234,7 @@ class __$$JobImplCopyWithImpl<$Res> extends _$JobCopyWithImpl<$Res, _$JobImpl>
     Object? salaryRange = freezed,
     Object? remote = null,
     Object? status = null,
+    Object? applicationStatus = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -287,6 +296,10 @@ class __$$JobImplCopyWithImpl<$Res> extends _$JobCopyWithImpl<$Res, _$JobImpl>
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
                   as JobStatus,
+        applicationStatus: null == applicationStatus
+            ? _value.applicationStatus
+            : applicationStatus // ignore: cast_nullable_to_non_nullable
+                  as ApplicationStatus,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -318,6 +331,7 @@ class _$JobImpl implements _Job {
     this.salaryRange,
     this.remote = false,
     this.status = JobStatus.active,
+    this.applicationStatus = ApplicationStatus.notApplied,
     required this.createdAt,
     required this.updatedAt,
   }) : _parsedKeywords = parsedKeywords,
@@ -379,13 +393,16 @@ class _$JobImpl implements _Job {
   @JsonKey()
   final JobStatus status;
   @override
+  @JsonKey()
+  final ApplicationStatus applicationStatus;
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'Job(id: $id, userId: $userId, source: $source, title: $title, company: $company, location: $location, description: $description, rawText: $rawText, parsedKeywords: $parsedKeywords, requirements: $requirements, benefits: $benefits, salaryRange: $salaryRange, remote: $remote, status: $status, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Job(id: $id, userId: $userId, source: $source, title: $title, company: $company, location: $location, description: $description, rawText: $rawText, parsedKeywords: $parsedKeywords, requirements: $requirements, benefits: $benefits, salaryRange: $salaryRange, remote: $remote, status: $status, applicationStatus: $applicationStatus, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -416,6 +433,8 @@ class _$JobImpl implements _Job {
                 other.salaryRange == salaryRange) &&
             (identical(other.remote, remote) || other.remote == remote) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.applicationStatus, applicationStatus) ||
+                other.applicationStatus == applicationStatus) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -440,6 +459,7 @@ class _$JobImpl implements _Job {
     salaryRange,
     remote,
     status,
+    applicationStatus,
     createdAt,
     updatedAt,
   );
@@ -474,6 +494,7 @@ abstract class _Job implements Job {
     final String? salaryRange,
     final bool remote,
     final JobStatus status,
+    final ApplicationStatus applicationStatus,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$JobImpl;
@@ -508,6 +529,8 @@ abstract class _Job implements Job {
   bool get remote;
   @override
   JobStatus get status;
+  @override
+  ApplicationStatus get applicationStatus;
   @override
   DateTime get createdAt;
   @override
@@ -1954,15 +1977,12 @@ UpdateJobRequest _$UpdateJobRequestFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$UpdateJobRequest {
-  String? get title => throw _privateConstructorUsedError;
-  String? get company => throw _privateConstructorUsedError;
-  String? get location => throw _privateConstructorUsedError;
-  String? get description => throw _privateConstructorUsedError;
-  List<String>? get requirements => throw _privateConstructorUsedError;
-  List<String>? get benefits => throw _privateConstructorUsedError;
-  String? get salaryRange => throw _privateConstructorUsedError;
-  bool? get remote => throw _privateConstructorUsedError;
-  JobStatus? get status => throw _privateConstructorUsedError;
+  List<String>? get parsedKeywords =>
+      throw _privateConstructorUsedError; // User can refine AI-extracted keywords
+  JobStatus? get status =>
+      throw _privateConstructorUsedError; // User workflow management (active/archived/draft)
+  ApplicationStatus? get applicationStatus =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this UpdateJobRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1982,15 +2002,9 @@ abstract class $UpdateJobRequestCopyWith<$Res> {
   ) = _$UpdateJobRequestCopyWithImpl<$Res, UpdateJobRequest>;
   @useResult
   $Res call({
-    String? title,
-    String? company,
-    String? location,
-    String? description,
-    List<String>? requirements,
-    List<String>? benefits,
-    String? salaryRange,
-    bool? remote,
+    List<String>? parsedKeywords,
     JobStatus? status,
+    ApplicationStatus? applicationStatus,
   });
 }
 
@@ -2009,54 +2023,24 @@ class _$UpdateJobRequestCopyWithImpl<$Res, $Val extends UpdateJobRequest>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? title = freezed,
-    Object? company = freezed,
-    Object? location = freezed,
-    Object? description = freezed,
-    Object? requirements = freezed,
-    Object? benefits = freezed,
-    Object? salaryRange = freezed,
-    Object? remote = freezed,
+    Object? parsedKeywords = freezed,
     Object? status = freezed,
+    Object? applicationStatus = freezed,
   }) {
     return _then(
       _value.copyWith(
-            title: freezed == title
-                ? _value.title
-                : title // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            company: freezed == company
-                ? _value.company
-                : company // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            location: freezed == location
-                ? _value.location
-                : location // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            description: freezed == description
-                ? _value.description
-                : description // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            requirements: freezed == requirements
-                ? _value.requirements
-                : requirements // ignore: cast_nullable_to_non_nullable
+            parsedKeywords: freezed == parsedKeywords
+                ? _value.parsedKeywords
+                : parsedKeywords // ignore: cast_nullable_to_non_nullable
                       as List<String>?,
-            benefits: freezed == benefits
-                ? _value.benefits
-                : benefits // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            salaryRange: freezed == salaryRange
-                ? _value.salaryRange
-                : salaryRange // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            remote: freezed == remote
-                ? _value.remote
-                : remote // ignore: cast_nullable_to_non_nullable
-                      as bool?,
             status: freezed == status
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
                       as JobStatus?,
+            applicationStatus: freezed == applicationStatus
+                ? _value.applicationStatus
+                : applicationStatus // ignore: cast_nullable_to_non_nullable
+                      as ApplicationStatus?,
           )
           as $Val,
     );
@@ -2073,15 +2057,9 @@ abstract class _$$UpdateJobRequestImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    String? title,
-    String? company,
-    String? location,
-    String? description,
-    List<String>? requirements,
-    List<String>? benefits,
-    String? salaryRange,
-    bool? remote,
+    List<String>? parsedKeywords,
     JobStatus? status,
+    ApplicationStatus? applicationStatus,
   });
 }
 
@@ -2099,54 +2077,24 @@ class __$$UpdateJobRequestImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? title = freezed,
-    Object? company = freezed,
-    Object? location = freezed,
-    Object? description = freezed,
-    Object? requirements = freezed,
-    Object? benefits = freezed,
-    Object? salaryRange = freezed,
-    Object? remote = freezed,
+    Object? parsedKeywords = freezed,
     Object? status = freezed,
+    Object? applicationStatus = freezed,
   }) {
     return _then(
       _$UpdateJobRequestImpl(
-        title: freezed == title
-            ? _value.title
-            : title // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        company: freezed == company
-            ? _value.company
-            : company // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        location: freezed == location
-            ? _value.location
-            : location // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        description: freezed == description
-            ? _value.description
-            : description // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        requirements: freezed == requirements
-            ? _value._requirements
-            : requirements // ignore: cast_nullable_to_non_nullable
+        parsedKeywords: freezed == parsedKeywords
+            ? _value._parsedKeywords
+            : parsedKeywords // ignore: cast_nullable_to_non_nullable
                   as List<String>?,
-        benefits: freezed == benefits
-            ? _value._benefits
-            : benefits // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        salaryRange: freezed == salaryRange
-            ? _value.salaryRange
-            : salaryRange // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        remote: freezed == remote
-            ? _value.remote
-            : remote // ignore: cast_nullable_to_non_nullable
-                  as bool?,
         status: freezed == status
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
                   as JobStatus?,
+        applicationStatus: freezed == applicationStatus
+            ? _value.applicationStatus
+            : applicationStatus // ignore: cast_nullable_to_non_nullable
+                  as ApplicationStatus?,
       ),
     );
   }
@@ -2156,59 +2104,34 @@ class __$$UpdateJobRequestImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$UpdateJobRequestImpl implements _UpdateJobRequest {
   const _$UpdateJobRequestImpl({
-    this.title,
-    this.company,
-    this.location,
-    this.description,
-    final List<String>? requirements,
-    final List<String>? benefits,
-    this.salaryRange,
-    this.remote,
+    final List<String>? parsedKeywords,
     this.status,
-  }) : _requirements = requirements,
-       _benefits = benefits;
+    this.applicationStatus,
+  }) : _parsedKeywords = parsedKeywords;
 
   factory _$UpdateJobRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$UpdateJobRequestImplFromJson(json);
 
+  final List<String>? _parsedKeywords;
   @override
-  final String? title;
-  @override
-  final String? company;
-  @override
-  final String? location;
-  @override
-  final String? description;
-  final List<String>? _requirements;
-  @override
-  List<String>? get requirements {
-    final value = _requirements;
+  List<String>? get parsedKeywords {
+    final value = _parsedKeywords;
     if (value == null) return null;
-    if (_requirements is EqualUnmodifiableListView) return _requirements;
+    if (_parsedKeywords is EqualUnmodifiableListView) return _parsedKeywords;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
   }
 
-  final List<String>? _benefits;
-  @override
-  List<String>? get benefits {
-    final value = _benefits;
-    if (value == null) return null;
-    if (_benefits is EqualUnmodifiableListView) return _benefits;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
-  @override
-  final String? salaryRange;
-  @override
-  final bool? remote;
+  // User can refine AI-extracted keywords
   @override
   final JobStatus? status;
+  // User workflow management (active/archived/draft)
+  @override
+  final ApplicationStatus? applicationStatus;
 
   @override
   String toString() {
-    return 'UpdateJobRequest(title: $title, company: $company, location: $location, description: $description, requirements: $requirements, benefits: $benefits, salaryRange: $salaryRange, remote: $remote, status: $status)';
+    return 'UpdateJobRequest(parsedKeywords: $parsedKeywords, status: $status, applicationStatus: $applicationStatus)';
   }
 
   @override
@@ -2216,36 +2139,22 @@ class _$UpdateJobRequestImpl implements _UpdateJobRequest {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$UpdateJobRequestImpl &&
-            (identical(other.title, title) || other.title == title) &&
-            (identical(other.company, company) || other.company == company) &&
-            (identical(other.location, location) ||
-                other.location == location) &&
-            (identical(other.description, description) ||
-                other.description == description) &&
             const DeepCollectionEquality().equals(
-              other._requirements,
-              _requirements,
+              other._parsedKeywords,
+              _parsedKeywords,
             ) &&
-            const DeepCollectionEquality().equals(other._benefits, _benefits) &&
-            (identical(other.salaryRange, salaryRange) ||
-                other.salaryRange == salaryRange) &&
-            (identical(other.remote, remote) || other.remote == remote) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.applicationStatus, applicationStatus) ||
+                other.applicationStatus == applicationStatus));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
     runtimeType,
-    title,
-    company,
-    location,
-    description,
-    const DeepCollectionEquality().hash(_requirements),
-    const DeepCollectionEquality().hash(_benefits),
-    salaryRange,
-    remote,
+    const DeepCollectionEquality().hash(_parsedKeywords),
     status,
+    applicationStatus,
   );
 
   /// Create a copy of UpdateJobRequest
@@ -2267,38 +2176,20 @@ class _$UpdateJobRequestImpl implements _UpdateJobRequest {
 
 abstract class _UpdateJobRequest implements UpdateJobRequest {
   const factory _UpdateJobRequest({
-    final String? title,
-    final String? company,
-    final String? location,
-    final String? description,
-    final List<String>? requirements,
-    final List<String>? benefits,
-    final String? salaryRange,
-    final bool? remote,
+    final List<String>? parsedKeywords,
     final JobStatus? status,
+    final ApplicationStatus? applicationStatus,
   }) = _$UpdateJobRequestImpl;
 
   factory _UpdateJobRequest.fromJson(Map<String, dynamic> json) =
       _$UpdateJobRequestImpl.fromJson;
 
   @override
-  String? get title;
+  List<String>? get parsedKeywords; // User can refine AI-extracted keywords
   @override
-  String? get company;
+  JobStatus? get status; // User workflow management (active/archived/draft)
   @override
-  String? get location;
-  @override
-  String? get description;
-  @override
-  List<String>? get requirements;
-  @override
-  List<String>? get benefits;
-  @override
-  String? get salaryRange;
-  @override
-  bool? get remote;
-  @override
-  JobStatus? get status;
+  ApplicationStatus? get applicationStatus;
 
   /// Create a copy of UpdateJobRequest
   /// with the given fields replaced by the non-null parameter values.

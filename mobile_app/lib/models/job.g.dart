@@ -33,6 +33,12 @@ _$JobImpl _$$JobImplFromJson(Map<String, dynamic> json) => _$JobImpl(
   status:
       $enumDecodeNullable(_$JobStatusEnumMap, json['status']) ??
       JobStatus.active,
+  applicationStatus:
+      $enumDecodeNullable(
+        _$ApplicationStatusEnumMap,
+        json['applicationStatus'],
+      ) ??
+      ApplicationStatus.notApplied,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
 );
@@ -52,6 +58,7 @@ Map<String, dynamic> _$$JobImplToJson(_$JobImpl instance) => <String, dynamic>{
   'salaryRange': instance.salaryRange,
   'remote': instance.remote,
   'status': _$JobStatusEnumMap[instance.status]!,
+  'applicationStatus': _$ApplicationStatusEnumMap[instance.applicationStatus]!,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
 };
@@ -70,6 +77,17 @@ const _$JobStatusEnumMap = {
   JobStatus.active: 'active',
   JobStatus.archived: 'archived',
   JobStatus.draft: 'draft',
+};
+
+const _$ApplicationStatusEnumMap = {
+  ApplicationStatus.notApplied: 'not_applied',
+  ApplicationStatus.preparing: 'preparing',
+  ApplicationStatus.applied: 'applied',
+  ApplicationStatus.interviewing: 'interviewing',
+  ApplicationStatus.offerReceived: 'offer_received',
+  ApplicationStatus.rejected: 'rejected',
+  ApplicationStatus.accepted: 'accepted',
+  ApplicationStatus.withdrawn: 'withdrawn',
 };
 
 _$BrowseJobImpl _$$BrowseJobImplFromJson(Map<String, dynamic> json) =>
@@ -204,31 +222,20 @@ Map<String, dynamic> _$$CreateJobFromUrlRequestImplToJson(
 _$UpdateJobRequestImpl _$$UpdateJobRequestImplFromJson(
   Map<String, dynamic> json,
 ) => _$UpdateJobRequestImpl(
-  title: json['title'] as String?,
-  company: json['company'] as String?,
-  location: json['location'] as String?,
-  description: json['description'] as String?,
-  requirements: (json['requirements'] as List<dynamic>?)
+  parsedKeywords: (json['parsedKeywords'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
-  benefits: (json['benefits'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-  salaryRange: json['salaryRange'] as String?,
-  remote: json['remote'] as bool?,
   status: $enumDecodeNullable(_$JobStatusEnumMap, json['status']),
+  applicationStatus: $enumDecodeNullable(
+    _$ApplicationStatusEnumMap,
+    json['applicationStatus'],
+  ),
 );
 
 Map<String, dynamic> _$$UpdateJobRequestImplToJson(
   _$UpdateJobRequestImpl instance,
 ) => <String, dynamic>{
-  'title': instance.title,
-  'company': instance.company,
-  'location': instance.location,
-  'description': instance.description,
-  'requirements': instance.requirements,
-  'benefits': instance.benefits,
-  'salaryRange': instance.salaryRange,
-  'remote': instance.remote,
+  'parsedKeywords': instance.parsedKeywords,
   'status': _$JobStatusEnumMap[instance.status],
+  'applicationStatus': _$ApplicationStatusEnumMap[instance.applicationStatus],
 };

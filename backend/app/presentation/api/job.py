@@ -44,6 +44,7 @@ class JobUpdateRequest(BaseModel):
     location: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = Field(None, max_length=10000)
     status: Optional[str] = Field(None, pattern="^(active|archived|draft)$")
+    application_status: Optional[str] = Field(None, pattern="^(not_applied|preparing|applied|interviewing|offer_received|rejected|accepted|withdrawn)$")
 
 
 class JobDeleteResponse(BaseModel):

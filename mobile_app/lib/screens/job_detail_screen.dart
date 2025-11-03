@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../models/job.dart';
 import '../providers/job_provider.dart';
 import '../widgets/job_detail_view.dart';
 
@@ -75,9 +75,34 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     }
   }
 
-  void _editJob() {
-    // Navigate to edit screen (to be implemented)
-    context.push('/jobs/${widget.jobId}/edit');
+  Future<void> _updateApplicationStatus(ApplicationStatus newStatus) async {
+    final currentJob = ref.read(jobProvider).selectedJob;
+    if (currentJob == null) return;
+
+    final updatedJob = await ref.read(jobProvider.notifier).updateJob(
+      jobId: currentJob.id,
+      parsedKeywords: currentJob.parsedKeywords,
+      status: currentJob.status,
+      applicationStatus: newStatus,
+    );
+
+    if (!mounted) return;
+
+    if (updatedJob != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Application status updated')),
+      );
+      // Reload the job to get updated data
+      ref.read(jobProvider.notifier).loadJobById(widget.jobId);
+    } else {
+      final error = ref.read(jobProvider).error ?? 'Failed to update status';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   void _generateResume() {
@@ -85,6 +110,15 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Resume generation feature coming soon'),
+      ),
+    );
+  }
+
+  void _generateCoverLetter() {
+    // Navigate to cover letter generation (to be implemented)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cover letter generation feature coming soon'),
       ),
     );
   }
@@ -97,11 +131,6 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       appBar: AppBar(
         title: const Text('Job Details'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: state.selectedJob != null ? _editJob : null,
-            tooltip: 'Edit Job',
-          ),
           IconButton(
             icon: const Icon(Icons.delete),
             onPressed: state.selectedJob != null ? _deleteJob : null,
@@ -198,9 +227,10 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     // Job Details View
     return JobDetailView(
       job: state.selectedJob!,
-      onEdit: _editJob,
+      onApplicationStatusChanged: _updateApplicationStatus,
       onDelete: _deleteJob,
       onGenerateResume: _generateResume,
+      onGenerateCoverLetter: _generateCoverLetter,
     );
   }
 }

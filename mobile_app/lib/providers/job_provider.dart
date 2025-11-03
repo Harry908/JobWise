@@ -280,33 +280,22 @@ class JobNotifier extends StateNotifier<JobState> {
     }
   }
 
-  /// Update job
+  /// Update job metadata (keywords, status, application status)
+  /// Job posting content is READ-ONLY
   Future<Job?> updateJob({
     required String jobId,
-    String? title,
-    String? company,
-    String? location,
-    String? description,
-    List<String>? requirements,
-    List<String>? benefits,
-    String? salaryRange,
-    bool? remote,
+    List<String>? parsedKeywords,
     JobStatus? status,
+    ApplicationStatus? applicationStatus,
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
       final updatedJob = await _jobsApi.updateJob(
         jobId: jobId,
-        title: title,
-        company: company,
-        location: location,
-        description: description,
-        requirements: requirements,
-        benefits: benefits,
-        salaryRange: salaryRange,
-        remote: remote,
+        parsedKeywords: parsedKeywords,
         status: status,
+        applicationStatus: applicationStatus,
       );
 
       // Update in user jobs list

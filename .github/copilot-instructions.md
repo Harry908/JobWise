@@ -96,6 +96,7 @@ flutter analyze
 - **Error Extraction**: Parse `DioException` → extract `response.data['detail']` or `response.data['message']`
 - **Date Format**: Configurable US/European/ISO in settings, convert to `YYYY-MM-DD` for API
 - **Navigation**: Use `context.push('/path')` for secondary screens (shows back button) vs `context.go()` for top-level
+- **Job Editing**: Job postings are READ-ONLY (external content). Users can only edit metadata (keywords, status, notes)
 
 ### Critical Gotchas
 1. **Adapter Stubs**: Files in `backend/infrastructure/adapters/` exist but contain ONLY empty class definitions—implementation pending

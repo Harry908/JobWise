@@ -8,6 +8,8 @@ class JobDetailView extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onGenerateResume;
+  final VoidCallback? onGenerateCoverLetter;
+  final Function(ApplicationStatus)? onApplicationStatusChanged;
 
   const JobDetailView({
     super.key,
@@ -15,6 +17,8 @@ class JobDetailView extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onGenerateResume,
+    this.onGenerateCoverLetter,
+    this.onApplicationStatusChanged,
   });
 
   @override
@@ -122,8 +126,13 @@ class JobDetailView extends StatelessWidget {
 
           const Divider(height: 32),
 
+          // Application Status Section
+          _buildApplicationStatusSection(context, theme),
+
+          const Divider(height: 32),
+
           // Action Buttons
-          if (onEdit != null || onDelete != null || onGenerateResume != null) ...[
+          if (onEdit != null || onDelete != null || onGenerateResume != null || onGenerateCoverLetter != null) ...[
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -133,6 +142,12 @@ class JobDetailView extends StatelessWidget {
                     onPressed: onGenerateResume,
                     icon: const Icon(Icons.description),
                     label: const Text('Generate Resume'),
+                  ),
+                if (onGenerateCoverLetter != null)
+                  FilledButton.icon(
+                    onPressed: onGenerateCoverLetter,
+                    icon: const Icon(Icons.mail),
+                    label: const Text('Generate Cover Letter'),
                   ),
                 if (onEdit != null)
                   FilledButton.tonalIcon(
@@ -289,6 +304,192 @@ class JobDetailView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildApplicationStatusSection(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Application Status',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (onApplicationStatusChanged != null) ...[
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => _showApplicationStatusPicker(context),
+                icon: const Icon(Icons.edit, size: 16),
+                label: const Text('Change'),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: onApplicationStatusChanged != null
+              ? () => _showApplicationStatusPicker(context)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _getApplicationStatusIcon(job.applicationStatus),
+                  color: _getApplicationStatusColor(job.applicationStatus),
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _formatApplicationStatus(job.applicationStatus),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: _getApplicationStatusColor(job.applicationStatus),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (onApplicationStatusChanged != null)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.5),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showApplicationStatusPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Application Status'),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: ApplicationStatus.values.map((status) {
+                final isSelected = status == job.applicationStatus;
+                return RadioListTile<ApplicationStatus>(
+                  value: status,
+                  groupValue: job.applicationStatus,
+                  onChanged: (value) {
+                    if (value != null && onApplicationStatusChanged != null) {
+                      Navigator.pop(context);
+                      onApplicationStatusChanged!(value);
+                    }
+                  },
+                  title: Row(
+                    children: [
+                      Icon(
+                        _getApplicationStatusIcon(status),
+                        color: _getApplicationStatusColor(status),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _formatApplicationStatus(status),
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: _getApplicationStatusColor(status),
+                        ),
+                      ),
+                    ],
+                  ),
+                  activeColor: _getApplicationStatusColor(status),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _getApplicationStatusColor(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.notApplied:
+        return Colors.grey;
+      case ApplicationStatus.preparing:
+        return Colors.amber;
+      case ApplicationStatus.applied:
+        return Colors.blue;
+      case ApplicationStatus.interviewing:
+        return Colors.green;
+      case ApplicationStatus.offerReceived:
+        return Colors.purple;
+      case ApplicationStatus.rejected:
+        return Colors.red;
+      case ApplicationStatus.accepted:
+        return Colors.teal;
+      case ApplicationStatus.withdrawn:
+        return Colors.orange;
+    }
+  }
+
+  IconData _getApplicationStatusIcon(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.notApplied:
+        return Icons.circle_outlined;
+      case ApplicationStatus.preparing:
+        return Icons.edit_note;
+      case ApplicationStatus.applied:
+        return Icons.send;
+      case ApplicationStatus.interviewing:
+        return Icons.person_search;
+      case ApplicationStatus.offerReceived:
+        return Icons.card_giftcard;
+      case ApplicationStatus.rejected:
+        return Icons.cancel;
+      case ApplicationStatus.accepted:
+        return Icons.check_circle;
+      case ApplicationStatus.withdrawn:
+        return Icons.undo;
+    }
+  }
+
+  String _formatApplicationStatus(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.notApplied:
+        return 'Not Applied';
+      case ApplicationStatus.preparing:
+        return 'Preparing Application';
+      case ApplicationStatus.applied:
+        return 'Applied';
+      case ApplicationStatus.interviewing:
+        return 'Interviewing';
+      case ApplicationStatus.offerReceived:
+        return 'Offer Received';
+      case ApplicationStatus.rejected:
+        return 'Rejected';
+      case ApplicationStatus.accepted:
+        return 'Accepted';
+      case ApplicationStatus.withdrawn:
+        return 'Withdrawn';
+    }
   }
 
   String _formatSalaryRange(String range) {

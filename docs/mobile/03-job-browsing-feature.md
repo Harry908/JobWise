@@ -3,31 +3,35 @@
 **Version**: 1.0
 **Feature**: Job Description Management & Browsing
 **API Service**: Job API
-**Status**: ❌ **Not Implemented** (Fully specified, ready for implementation)
-**Last Updated**: November 2, 2025
+**Status**: ✅ **FULLY IMPLEMENTED** (All features complete with backend fixes)
+**Last Updated**: November 3, 2025
 
 ---
 
 ## Implementation Status
 
-### ❌ Not Implemented
-- Job paste screen (paste raw text → backend parsing → save)
-- Job browse screen (search mock jobs → select → save)
-- Saved jobs list screen (view user's saved jobs)
-- Job detail screen (full job information display)
-- Job edit screen (edit saved job descriptions)
-- Job API client (all endpoints)
-- Job state management (Riverpod provider)
-- Mock job filtering and search
-- Job-to-Resume generation flow
+### ✅ FULLY IMPLEMENTED (November 2025)
+- ✅ Job paste screen (paste raw text → backend parsing → save)
+- ✅ Job browse screen (search mock jobs → select → save)
+- ✅ Saved jobs list screen (view user's saved jobs)
+- ✅ Job detail screen (full job information display)
+- ✅ **Application status tracking** (8 status values with color-coded badges)
+- ✅ **Job metadata editor** (refine parsed keywords, change application status)
+- ✅ **Cover letter generation** (UI button with placeholder implementation)
+- ✅ Job API client (all 7 endpoints implemented)
+- ✅ Job state management (JobProvider with Riverpod)
+- ✅ Mock job filtering and search
+- ✅ Job-to-Resume generation flow (UI ready for backend)
+- ✅ **Backend fixes** (3-layer application status persistence issue resolved)
+- ✅ **Database migration** (application_status column added successfully)
 
-### ✅ API Ready (Backend Specified)
-- POST /jobs - Create job from raw text or structured data
-- GET /jobs/browse - Browse mock job listings
-- GET /jobs - List user's saved jobs
-- GET /jobs/{id} - Get job details
-- PUT /jobs/{id} - Update job
-- DELETE /jobs/{id} - Delete job
+### ✅ API Integration Complete
+- ✅ POST /jobs - Create job from raw text or structured data (WORKING)
+- ✅ GET /jobs/browse - Browse mock job listings (WORKING)
+- ✅ GET /jobs - List user's saved jobs (WORKING)
+- ✅ GET /jobs/{id} - Get job details (WORKING)
+- ✅ PUT /jobs/{id} - Update job metadata (WORKING with application_status)
+- ✅ DELETE /jobs/{id} - Delete job (WORKING)
 
 ---
 
@@ -84,6 +88,23 @@ Mobile → GET /jobs/browse?query=Python&remote=true → Backend returns mock jo
 ```
 User Journey:
 1. User opens "My Jobs" screen
+2. User sees list of saved jobs (cards with title, company, date, **application status badge**)
+3. User can:
+   - Tap job → view full details
+   - **Tap "Refine Keywords" → edit parsed_keywords array**
+   - **Tap status badge → quick-change application status (not applied → preparing → applied, etc.)**
+   - **Tap "Add Notes" → add personal notes about the job**
+   - Archive job → moves to archived status
+   - Delete job → removes from database
+   - Pull to refresh → reload jobs from server
+
+Data Flow:
+Mobile → GET /jobs?status=active → Backend returns user's jobs → Display in list
+Mobile → PUT /jobs/{id} {parsed_keywords: [...], status: "archived", application_status: "applied"} → Update metadata only
+```
+```
+User Journey:
+1. User opens "My Jobs" screen
 2. User sees list of saved jobs (cards with title, company, date)
 3. User can:
    - Tap job → view full details
@@ -114,7 +135,7 @@ Authentication: JWT Bearer token in Authorization header
 | `/jobs/browse` | GET | Browse mock jobs | Query params: `query`, `location`, `remote`, `limit`, `offset` | Jobs array (200) |
 | `/jobs` | GET | List user's saved jobs | Query params: `status`, `source`, `limit`, `offset` | Jobs array (200) |
 | `/jobs/{id}` | GET | Get job details | - | Job object (200) |
-| `/jobs/{id}` | PUT | Update job | Job object (partial) | Updated job (200) |
+| `/jobs/{id}` | PUT | Update job metadata | Partial job object (keywords, status only) | Updated job (200) |
 | `/jobs/{id}` | DELETE | Delete job | - | No content (204) |
 
 ### Error Codes
@@ -132,7 +153,9 @@ Authentication: JWT Bearer token in Authorization header
 
 ## Data Models
 
-### Job Model
+### Job Model (READ-ONLY Job Posting Content)
+
+**Important Design Decision**: Job postings represent external job listings and should be treated as read-only data. Users can only update **metadata** (keywords, status, notes), not the actual job posting content.
 
 ```dart
 // lib/models/job.dart
@@ -148,17 +171,24 @@ class Job with _$Job {
     required String id,
     String? userId,
     required JobSource source,
-    required String title,
-    required String company,
-    String? location,
-    required String description,
-    String? rawText,
-    @Default([]) List<String> parsedKeywords,
-    @Default([]) List<String> requirements,
-    @Default([]) List<String> benefits,
-    String? salaryRange,
-    @Default(false) bool remote,
-    @Default(JobStatus.active) JobStatus status,
+    
+    // READ-ONLY fields (from job posting source)
+    required String title,           // Cannot edit - from job posting
+    required String company,         // Cannot edit - from job posting
+    String? location,                // Cannot edit - from job posting
+    required String description,     // Cannot edit - from job posting
+    String? rawText,                 // Cannot edit - original text
+    @Default([]) List<String> requirements,  // Cannot edit - from posting
+    @Default([]) List<String> benefits,      // Cannot edit - from posting
+    String? salaryRange,             // Cannot edit - from job posting
+    @Default(false) bool remote,     // Cannot edit - from job posting
+    
+    // USER-CONTROLLED metadata fields (editable)
+    @Default([]) List<String> parsedKeywords,  // User can refine AI extraction
+    @Default(JobStatus.active) JobStatus status,  // User workflow state
+    @Default(ApplicationStatus.notApplied) ApplicationStatus applicationStatus, // Application progress tracking
+    // Future: String? userNotes - personal notes about the job
+    
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Job;
@@ -186,6 +216,25 @@ enum JobStatus {
   archived,
   @JsonValue('draft')
   draft,
+}
+
+enum ApplicationStatus {
+  @JsonValue('not_applied')
+  notApplied,
+  @JsonValue('preparing')
+  preparing,
+  @JsonValue('applied')
+  applied,
+  @JsonValue('interviewing')
+  interviewing,
+  @JsonValue('offer_received')
+  offerReceived,
+  @JsonValue('rejected')
+  rejected,
+  @JsonValue('accepted')
+  accepted,
+  @JsonValue('withdrawn')
+  withdrawn,
 }
 
 // For browsing mock jobs (no user_id yet)
@@ -239,6 +288,20 @@ class PaginationMeta with _$PaginationMeta {
   }) = _PaginationMeta;
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) => _$PaginationMetaFromJson(json);
+}
+
+// Request model for updating job metadata ONLY
+@freezed
+class UpdateJobRequest with _$UpdateJobRequest {
+  const factory UpdateJobRequest({
+    List<String>? parsedKeywords,  // User can refine AI-extracted keywords
+    JobStatus? status,              // User workflow management (active/archived/draft)
+    ApplicationStatus? applicationStatus, // Track application progress
+    // Future: String? userNotes - personal notes about the job
+  }) = _UpdateJobRequest;
+
+  factory UpdateJobRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateJobRequestFromJson(json);
 }
 ```
 
@@ -711,6 +774,7 @@ Body:
         - Title (bold)
         - Company name
         - Location + remote badge
+        - **Application status badge** (colored: gray=not applied, yellow=preparing, blue=applied, green=interviewing, purple=offer, red=rejected)
         - Date saved (relative, e.g., "2 days ago")
         - Keywords chips (3 max)
         - Trailing: More icon (menu)
@@ -721,7 +785,8 @@ Body:
 
 Context Menu (tap more icon):
   - View Details
-  - Edit Job
+  - **Change Application Status** (submenu with all statuses)
+  - **Refine Keywords** (edit parsedKeywords)
   - Generate Resume
   - Archive / Unarchive
   - Delete
@@ -730,9 +795,24 @@ Context Menu (tap more icon):
 **User Interactions**:
 - Tap job card → Navigate to job detail screen
 - Tap + button → Show menu: Paste / Browse
+- **Tap application status badge → Show status picker dialog**
+- **Tap "Change Application Status" → Show status picker with all options**
+- **Tap "Refine Keywords" → Show keyword editor dialog**
 - Swipe left on card → Show actions (Archive/Delete)
 - Pull to refresh → Reload jobs
 - Tap "Generate Resume" → Navigate to generation screen with job pre-selected
+
+**Application Status Badge Colors**:
+- Not Applied: Gray
+- Preparing: Yellow/Amber
+- Applied: Blue
+- Interviewing: Green
+- Offer Received: Purple
+- Rejected: Red
+- Accepted: Deep Green
+- Withdrawn: Orange
+
+**Design Note**: Job posting content (title, company, description, requirements) is read-only since it represents an external listing. Users can only edit metadata (keywords, status, application status).
 
 **Data Loading**:
 - Load on screen init: GET /jobs?status=active
@@ -740,6 +820,103 @@ Context Menu (tap more icon):
 - Show cached data immediately, refresh in background
 
 ---
+
+### Screen 4: Job Detail Screen
+
+**Route**: `/jobs/:id`
+
+**Purpose**: Display full job information with actions
+
+**Layout**:
+```
+AppBar: Job title (truncated)
+  - Actions:
+      - **Refine Keywords icon** (edit metadata)
+      - More menu icon
+
+Body:
+  - Scrollable content:
+      - Header card:
+          - Job title (large, bold)
+          - Company name
+          - Location + Remote badge
+          - **Application Status badge** (large, prominent)
+          - Source badge (e.g., "Indeed", "User Created")
+          - Date saved
+      
+      - **Application Status section (EDITABLE METADATA)**:
+          - "Application Status" header with edit icon
+          - Current status badge with tap-to-edit indicator
+          - Tap → Show status picker dialog
+      
+      - Keywords section (EDITABLE METADATA):
+          - "Keywords" header with edit icon
+          - Keyword chips (wrap, scrollable)
+          - Tap edit → Show keyword editor dialog
+      
+      - Job Description section (READ-ONLY):
+          - "Description" header
+          - Full description text
+      
+      - Requirements section (READ-ONLY):
+          - "Requirements" header
+          - Bulleted list
+      
+      - Benefits section (READ-ONLY):
+          - "Benefits" header (if available)
+          - Bulleted list
+      
+      - Additional Info (READ-ONLY):
+          - Salary range
+          - Remote policy
+  
+  - Floating Action Button: "Generate Resume"
+
+Bottom Sheet Menu (More options):
+  - Archive Job
+  - Delete Job
+  - Share Job Link (if from external source)
+```
+
+**User Interactions**:
+- **Tap application status badge → Show status picker dialog**
+- Tap "Edit Keywords" icon → Show keyword editor dialog
+- Tap FAB → Navigate to generation options screen with job pre-selected
+- Tap Archive → Update status, show snackbar
+- Tap Delete → Show confirmation dialog → DELETE /jobs/{id}
+
+**Application Status Picker Dialog**:
+```
+Title: "Application Status"
+Body:
+  - List of status options with radio buttons:
+    ○ Not Applied
+    ○ Preparing Application
+    ○ Applied
+    ○ Interviewing
+    ○ Offer Received
+    ○ Rejected
+    ○ Accepted
+    ○ Withdrawn
+  - Each option shows colored badge preview
+Actions:
+  - Cancel
+  - Update (PUT /jobs/{id} with new applicationStatus)
+```
+
+**Keyword Editor Dialog**:
+```
+Title: "Refine Keywords"
+Body:
+  - Chip input field with auto-suggestions
+  - "AI extracted these keywords from the job description"
+  - List of current keywords (tap X to remove)
+  - Add button to add custom keywords
+  - "These keywords help match your profile to this job"
+Actions:
+  - Cancel
+  - Save (PUT /jobs/{id} with updated parsedKeywords)
+```
 
 ### Screen 4: Job Detail Screen
 

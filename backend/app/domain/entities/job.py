@@ -22,6 +22,7 @@ class Job(BaseModel):
     salary_range: Optional[str] = Field(None, description="Salary range")
     remote: bool = Field(default=False, description="Remote position flag")
     status: str = Field(default="active", description="Job status: active, archived, draft")
+    application_status: str = Field(default="not_applied", description="Application status: not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
     
@@ -42,6 +43,7 @@ class Job(BaseModel):
                 "salary_range": "120000-180000",
                 "remote": True,
                 "status": "active",
+                "application_status": "not_applied",
                 "created_at": "2025-11-02T10:00:00Z",
                 "updated_at": "2025-11-02T10:00:00Z"
             }

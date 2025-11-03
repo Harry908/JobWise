@@ -219,32 +219,21 @@ class JobsApiClient {
     }
   }
 
-  /// Update job details
+  /// Update job metadata (keywords, status, application status)
+  /// Job posting content is READ-ONLY
   /// PUT /api/v1/jobs/{id}
   Future<Job> updateJob({
     required String jobId,
-    String? title,
-    String? company,
-    String? location,
-    String? description,
-    List<String>? requirements,
-    List<String>? benefits,
-    String? salaryRange,
-    bool? remote,
+    List<String>? parsedKeywords,
     JobStatus? status,
+    ApplicationStatus? applicationStatus,
   }) async {
     try {
       final updateData = <String, dynamic>{};
 
-      if (title != null) updateData['title'] = title;
-      if (company != null) updateData['company'] = company;
-      if (location != null) updateData['location'] = location;
-      if (description != null) updateData['description'] = description;
-      if (requirements != null) updateData['requirements'] = requirements;
-      if (benefits != null) updateData['benefits'] = benefits;
-      if (salaryRange != null) updateData['salary_range'] = salaryRange;
-      if (remote != null) updateData['remote'] = remote;
+      if (parsedKeywords != null) updateData['parsed_keywords'] = parsedKeywords;
       if (status != null) updateData['status'] = _statusToString(status);
+      if (applicationStatus != null) updateData['application_status'] = _applicationStatusToString(applicationStatus);
 
       final response = await _client.put(
         '/jobs/$jobId',
@@ -296,6 +285,27 @@ class JobsApiClient {
         return 'archived';
       case JobStatus.draft:
         return 'draft';
+    }
+  }
+
+  String _applicationStatusToString(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.notApplied:
+        return 'not_applied';
+      case ApplicationStatus.preparing:
+        return 'preparing';
+      case ApplicationStatus.applied:
+        return 'applied';
+      case ApplicationStatus.interviewing:
+        return 'interviewing';
+      case ApplicationStatus.offerReceived:
+        return 'offer_received';
+      case ApplicationStatus.rejected:
+        return 'rejected';
+      case ApplicationStatus.accepted:
+        return 'accepted';
+      case ApplicationStatus.withdrawn:
+        return 'withdrawn';
     }
   }
 

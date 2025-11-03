@@ -184,6 +184,7 @@ class JobRepository:
             salary_range=model.salary_range,
             remote=model.remote,
             status=model.status,
+            application_status=model.application_status or "not_applied",
             created_at=model.created_at,
             updated_at=model.updated_at
         )

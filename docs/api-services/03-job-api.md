@@ -48,6 +48,7 @@ Unified CRUD API for managing job descriptions from multiple sources. Accepts ra
 - `salary_range`: Format "min-max" (e.g., "100000-150000") or free text
 - `remote`: Boolean, default false
 - `status`: Must be one of: `active`, `archived`, `draft`
+- `application_status`: Must be one of: `not_applied`, `preparing`, `applied`, `interviewing`, `offer_received`, `rejected`, `accepted`, `withdrawn` (default: `not_applied`)
 
 **Raw Text Input:**
 - `raw_text`: Required if structured fields not provided, min 50 chars, max 15,000 chars
@@ -121,6 +122,7 @@ CREATE INDEX idx_jobs_user_status ON jobs(user_id, status);
 - `salary_range`: Salary information (format: "min-max" or free text)
 - `remote`: Boolean flag for remote positions
 - `status`: Job status (active, archived, draft)
+- `application_status`: User's application progress (not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn)
 - `created_at`: Creation timestamp
 - `updated_at`: Last update timestamp (auto-updates)
 
@@ -396,16 +398,29 @@ Save Mock Job:
 
 ### PUT /jobs/{id}
 
-**Description**: Update job
+**Description**: Update parsed metadata (keywords, status, application status) - NOT job posting content
 
 **Headers**: `Authorization: Bearer <token>`
 
-**Request**: Partial or full job object (same structure as POST)
+**Note**: Job posting content (title, company, description, requirements from source) is READ-ONLY. 
+Only user-controlled fields can be updated:
+- `parsed_keywords`: Array of strings (user can refine AI-extracted keywords)
+- `status`: active, archived, draft (job listing visibility)
+- `application_status`: not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn (user's application progress tracking)
 
-**Response** (200 OK): Updated job
+**Request**:
+```json
+{
+  "parsed_keywords": ["python", "fastapi", "aws", "docker"],
+  "status": "active",
+  "application_status": "applied"
+}
+```
+
+**Response** (200 OK): Updated job with modified fields only
 
 **Errors**:
-- 400: Validation error
+- 400: Validation error (e.g., trying to update read-only fields like title, company)
 - 404: Job not found
 - 403: Not authorized
 

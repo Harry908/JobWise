@@ -21,6 +21,7 @@ class Job with _$Job {
     String? salaryRange,
     @Default(false) bool remote,
     @Default(JobStatus.active) JobStatus status,
+    @Default(ApplicationStatus.notApplied) ApplicationStatus applicationStatus,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Job;
@@ -46,7 +47,7 @@ enum JobSource {
   urlImport,
 }
 
-/// Job status enum
+/// Job status enum (for job listing visibility)
 enum JobStatus {
   @JsonValue('active')
   active,
@@ -54,6 +55,26 @@ enum JobStatus {
   archived,
   @JsonValue('draft')
   draft,
+}
+
+/// Application status enum (tracks user's application progress)
+enum ApplicationStatus {
+  @JsonValue('not_applied')
+  notApplied,
+  @JsonValue('preparing')
+  preparing,
+  @JsonValue('applied')
+  applied,
+  @JsonValue('interviewing')
+  interviewing,
+  @JsonValue('offer_received')
+  offerReceived,
+  @JsonValue('rejected')
+  rejected,
+  @JsonValue('accepted')
+  accepted,
+  @JsonValue('withdrawn')
+  withdrawn,
 }
 
 /// Represents a browsable job (from mock data or external sources)
@@ -153,19 +174,14 @@ class CreateJobFromUrlRequest with _$CreateJobFromUrlRequest {
       };
 }
 
-/// Request model for updating a job
+/// Request model for updating a job's metadata (keywords, status, application status)
+/// Job posting content (title, company, description, etc.) is READ-ONLY
 @freezed
 class UpdateJobRequest with _$UpdateJobRequest {
   const factory UpdateJobRequest({
-    String? title,
-    String? company,
-    String? location,
-    String? description,
-    List<String>? requirements,
-    List<String>? benefits,
-    String? salaryRange,
-    bool? remote,
-    JobStatus? status,
+    List<String>? parsedKeywords, // User can refine AI-extracted keywords
+    JobStatus? status, // User workflow management (active/archived/draft)
+    ApplicationStatus? applicationStatus, // Track application progress
   }) = _UpdateJobRequest;
 
   factory UpdateJobRequest.fromJson(Map<String, dynamic> json) =>
