@@ -2,8 +2,10 @@
 
 import os
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
 from app.infrastructure.database.connection import get_database_url
@@ -47,6 +49,26 @@ def setup_database(request):
 def client():
     """Create test HTTP client."""
     return AsyncClient(app=app, base_url="http://testserver")
+
+
+@pytest_asyncio.fixture
+async def db_session():
+    """Create async database session for testing."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    
+    database_url = get_database_url()
+    engine = create_async_engine(database_url, echo=False, future=True)
+    
+    async_session_factory = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    
+    async with async_session_factory() as session:
+        yield session
+    
+    await engine.dispose()
 
 
 @pytest.fixture

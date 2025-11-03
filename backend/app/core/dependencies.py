@@ -5,9 +5,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.auth_service import AuthService
+from app.application.services.job_service import JobService
 from app.core.security import get_user_id_from_token
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.repositories.user_repository import UserRepository
+from app.infrastructure.repositories.job_repository import JobRepository
 
 
 # Security scheme
@@ -53,3 +55,15 @@ async def get_current_user(
             detail="Invalid authentication token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_job_repository(db: AsyncSession = Depends(get_db_session)) -> JobRepository:
+    """Get job repository instance."""
+    return JobRepository(db)
+
+
+async def get_job_service(
+    job_repo: JobRepository = Depends(get_job_repository)
+) -> JobService:
+    """Get job service instance."""
+    return JobService(job_repo)

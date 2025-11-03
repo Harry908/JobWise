@@ -99,3 +99,28 @@ class ProjectModel(Base):
     url = Column(String)
     start_date = Column(String, nullable=False)  # ISO date string
     end_date = Column(String)  # ISO date string
+
+
+class JobModel(Base):
+    """Job database model."""
+    __tablename__ = "jobs"
+
+    id = Column(String, primary_key=True)  # UUID as string
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=True, index=True)
+    source = Column(String, nullable=False, index=True)  # user_created, indeed, linkedin, mock, etc.
+    title = Column(String(200), nullable=False)
+    company = Column(String(200), nullable=False)
+    location = Column(String(200))
+    description = Column(Text)
+    raw_text = Column(Text)
+    parsed_keywords = Column(JSON)  # List of keyword strings
+    requirements = Column(JSON)  # List of requirement strings
+    benefits = Column(JSON)  # List of benefit strings
+    salary_range = Column(String)
+    remote = Column(Boolean, default=False)
+    status = Column(String, default="active", index=True)  # active, archived, draft
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("UserModel", backref="jobs")

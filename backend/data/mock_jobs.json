@@ -1,0 +1,632 @@
+{
+  "tech_jobs": [
+    {
+      "source": "mock",
+      "title": "Senior Python Backend Developer",
+      "company": "TechCore Solutions",
+      "location": "Seattle, WA",
+      "description": "We are seeking a skilled Python Backend Developer to join our engineering team and build robust, scalable server-side applications. You will design and implement APIs, manage databases, and ensure high-performance backend systems that power our applications. This role offers the opportunity to work with cutting-edge Python technologies, collaborate with cross-functional teams, and contribute to mission-critical systems that serve thousands of users.",
+      "parsed_keywords": ["python", "fastapi", "django", "postgresql", "redis", "docker", "aws", "microservices", "restful-api", "sql"],
+      "requirements": [
+        "5+ years of experience in backend development using Python",
+        "Advanced proficiency in Python and related technologies",
+        "Experience with web frameworks such as Flask or Django",
+        "Strong understanding of database management systems (PostgreSQL, MySQL)",
+        "Experience with cloud platforms (AWS, Azure)",
+        "Proven experience with RESTful API design and implementation",
+        "Strong understanding of software engineering principles",
+        "Experience with microservices architecture",
+        "Knowledge of Docker and containerization",
+        "Excellent problem-solving and analytical abilities"
+      ],
+      "benefits": [
+        "Competitive salary: $120,000 - $180,000",
+        "Health insurance (medical, dental, vision)",
+        "401k matching up to 6%",
+        "Remote work options",
+        "Professional development budget",
+        "Flexible work hours",
+        "Stock options"
+      ],
+      "salary_range": "120000-180000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Full Stack Software Engineer",
+      "company": "InnovateLabs Inc",
+      "location": "San Francisco, CA",
+      "description": "Full Stack Developer work in the IT department performing both front- and back-end operations on websites and computer systems. They design front-end website architecture and work closely with Graphic Designers to ensure website applications collaborate well with their design elements. Full Stack Developers oversee entire projects from start to finish, evaluating user needs and analyzing technical issues to program highly functional systems.",
+      "parsed_keywords": ["javascript", "react", "nodejs", "python", "mongodb", "postgresql", "html5", "css3", "typescript", "express", "git", "docker"],
+      "requirements": [
+        "3-5 years of hands-on software development experience",
+        "Bachelor's degree in Computer Science or equivalent professional experience",
+        "Expertise in front-end technologies including JavaScript, CSS3, HTML5, React.js",
+        "Knowledge of server-side programming languages including Python, Node.js, Java",
+        "Familiarity with DBMS technology (SQLServer, MongoDB, MySQL)",
+        "Experience with caching mechanisms (Redis, Memcached)",
+        "Knowledge of UI/UX and basic prototype design",
+        "Experience working with Nginx or Apache servers",
+        "Excellent writing and communication skills",
+        "Ability to visualize a proposed system and build it"
+      ],
+      "benefits": [
+        "Competitive compensation: $100,000 - $150,000",
+        "Comprehensive health insurance",
+        "Unlimited PTO",
+        "Remote-friendly culture",
+        "Learning and development stipend",
+        "Modern tech stack",
+        "Collaborative team environment"
+      ],
+      "salary_range": "100000-150000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Software Development Engineer",
+      "company": "CloudTech Systems",
+      "location": "Austin, TX",
+      "description": "A Software Development Engineer is responsible for developing software programs or systems that align with user needs. We need a Senior Staff Software Engineer with a minimum of 10+ years in software engineering leading teams with a focus on solving complex problems with robust solutions, and product expansion to join our team. You will work on cutting-edge cloud technologies and distributed systems.",
+      "parsed_keywords": ["java", "spring-boot", "kubernetes", "aws", "microservices", "sql", "nosql", "git", "jenkins", "terraform"],
+      "requirements": [
+        "Bachelor's/Master's degree in software engineering or information technology",
+        "At least 3-5 years of experience in software development",
+        "Strong expertise in Java and Spring Boot framework",
+        "Experience with cloud platforms (AWS, Azure, GCP)",
+        "Knowledge of containerization (Docker, Kubernetes)",
+        "Experience with CI/CD pipelines (Jenkins, GitLab CI)",
+        "Understanding of microservices architecture",
+        "Strong problem-solving skills",
+        "Experience with Agile/Scrum methodologies",
+        "Excellent communication and collaboration abilities"
+      ],
+      "benefits": [
+        "Salary range: $110,000 - $160,000",
+        "Health, dental, and vision insurance",
+        "401k with company match",
+        "Flexible remote work",
+        "Professional certification reimbursement",
+        "Annual performance bonuses",
+        "Team building events"
+      ],
+      "salary_range": "110000-160000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Backend API Developer",
+      "company": "DataStream Analytics",
+      "location": "Remote",
+      "description": "Join our backend team to design, develop, and maintain scalable Python backend applications using FastAPI. You'll build robust RESTful APIs that serve frontend applications and third-party integrations, implement secure authentication systems, and optimize database performance. This position offers significant technical challenges and the opportunity to shape our backend development practices.",
+      "parsed_keywords": ["python", "fastapi", "postgresql", "redis", "celery", "oauth", "jwt", "docker", "kubernetes", "api-design"],
+      "requirements": [
+        "3+ years of experience in backend development using Python",
+        "Strong expertise in FastAPI or similar modern Python frameworks",
+        "Experience designing RESTful APIs and GraphQL endpoints",
+        "Proficiency with PostgreSQL or MySQL",
+        "Knowledge of authentication systems (JWT, OAuth2)",
+        "Experience with asynchronous processing (Celery, Redis)",
+        "Understanding of API security best practices",
+        "Experience with API documentation (OpenAPI/Swagger)",
+        "Strong testing practices (pytest, unittest)",
+        "Excellent debugging and optimization skills"
+      ],
+      "benefits": [
+        "Competitive salary: $105,000 - $145,000",
+        "Fully remote position",
+        "Health insurance coverage",
+        "Home office stipend",
+        "Flexible working hours",
+        "Professional development opportunities",
+        "Quarterly team retreats"
+      ],
+      "salary_range": "105000-145000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Junior Python Developer",
+      "company": "StartupHub Technologies",
+      "location": "Boston, MA",
+      "description": "We're looking for an enthusiastic Junior Python Developer to join our growing engineering team. This is an excellent opportunity to learn from experienced developers while working on real-world projects. You'll contribute to building and maintaining web applications, writing clean code, and collaborating with cross-functional teams.",
+      "parsed_keywords": ["python", "django", "flask", "git", "sql", "html", "css", "javascript", "rest-api", "linux"],
+      "requirements": [
+        "Bachelor's degree in Computer Science or related field",
+        "1-2 years of experience with Python programming",
+        "Basic understanding of web frameworks (Django or Flask)",
+        "Familiarity with SQL databases (PostgreSQL, MySQL)",
+        "Knowledge of version control (Git)",
+        "Understanding of RESTful API principles",
+        "Basic knowledge of HTML, CSS, and JavaScript",
+        "Strong willingness to learn and grow",
+        "Good communication skills",
+        "Problem-solving mindset"
+      ],
+      "benefits": [
+        "Starting salary: $70,000 - $90,000",
+        "Mentorship program",
+        "Health and dental insurance",
+        "Flexible work arrangements",
+        "Learning budget for courses and conferences",
+        "Career growth opportunities",
+        "Modern office with free snacks"
+      ],
+      "salary_range": "70000-90000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "DevOps Engineer",
+      "company": "CloudScale Inc",
+      "location": "Denver, CO",
+      "description": "We're seeking a DevOps Engineer to join our infrastructure team. You'll be responsible for designing, implementing, and maintaining CI/CD pipelines, managing cloud infrastructure, and ensuring system reliability. This role requires a strong understanding of automation, containerization, and cloud technologies.",
+      "parsed_keywords": ["aws", "kubernetes", "docker", "terraform", "jenkins", "python", "bash", "ci-cd", "monitoring", "linux"],
+      "requirements": [
+        "3+ years of experience in DevOps or Site Reliability Engineering",
+        "Strong experience with AWS or Azure cloud platforms",
+        "Expertise in containerization (Docker, Kubernetes)",
+        "Experience with Infrastructure as Code (Terraform, CloudFormation)",
+        "Proficiency in scripting (Python, Bash, PowerShell)",
+        "Knowledge of CI/CD tools (Jenkins, GitLab CI, GitHub Actions)",
+        "Experience with monitoring tools (Prometheus, Grafana, ELK)",
+        "Understanding of networking and security best practices",
+        "Strong troubleshooting and problem-solving skills",
+        "Excellent communication and documentation abilities"
+      ],
+      "benefits": [
+        "Salary: $115,000 - $165,000",
+        "Comprehensive health benefits",
+        "401k matching",
+        "Remote work flexibility",
+        "Professional certification support",
+        "On-call compensation",
+        "Stock options"
+      ],
+      "salary_range": "115000-165000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Frontend React Developer",
+      "company": "UXFirst Design",
+      "location": "New York, NY",
+      "description": "Join our frontend team to build beautiful, performant user interfaces using React and modern JavaScript. You'll work closely with designers and backend developers to create seamless user experiences. We're looking for someone passionate about clean code, component architecture, and user-centric design.",
+      "parsed_keywords": ["react", "javascript", "typescript", "html5", "css3", "redux", "webpack", "jest", "git", "responsive-design"],
+      "requirements": [
+        "3+ years of experience with React and modern JavaScript (ES6+)",
+        "Strong proficiency in TypeScript",
+        "Experience with state management (Redux, Context API, Zustand)",
+        "Solid understanding of HTML5, CSS3, and responsive design",
+        "Experience with build tools (Webpack, Vite)",
+        "Knowledge of testing frameworks (Jest, React Testing Library)",
+        "Understanding of RESTful APIs and async operations",
+        "Experience with Git and version control workflows",
+        "Strong attention to detail and UI/UX sensibilities",
+        "Excellent problem-solving skills"
+      ],
+      "benefits": [
+        "Competitive pay: $95,000 - $135,000",
+        "Health, dental, vision insurance",
+        "Hybrid work model (3 days remote)",
+        "Professional development budget",
+        "Modern office in downtown Manhattan",
+        "Catered lunches twice a week",
+        "Annual bonus potential"
+      ],
+      "salary_range": "95000-135000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Data Engineer",
+      "company": "BigData Analytics Corp",
+      "location": "Chicago, IL",
+      "description": "We're looking for a Data Engineer to design and build scalable data pipelines that process billions of events daily. You'll work with cutting-edge big data technologies, optimize data storage and retrieval, and enable data-driven decision making across the organization.",
+      "parsed_keywords": ["python", "spark", "airflow", "sql", "aws", "kafka", "hadoop", "etl", "data-warehouse", "bigquery"],
+      "requirements": [
+        "4+ years of experience in data engineering",
+        "Strong proficiency in Python and SQL",
+        "Experience with Apache Spark and distributed computing",
+        "Knowledge of workflow orchestration tools (Airflow, Dagster)",
+        "Experience with cloud data platforms (AWS, GCP, Azure)",
+        "Understanding of data warehousing concepts (Snowflake, BigQuery, Redshift)",
+        "Experience with streaming platforms (Kafka, Kinesis)",
+        "Strong understanding of ETL/ELT processes",
+        "Experience with data modeling and schema design",
+        "Excellent analytical and problem-solving skills"
+      ],
+      "benefits": [
+        "Salary range: $125,000 - $175,000",
+        "Comprehensive health coverage",
+        "401k with generous match",
+        "Remote work options",
+        "Learning and conference budget",
+        "Stock options",
+        "Collaborative team culture"
+      ],
+      "salary_range": "125000-175000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Mobile App Developer (Flutter)",
+      "company": "MobileFirst Solutions",
+      "location": "Remote",
+      "description": "Join our mobile team to build cross-platform applications using Flutter. You'll develop features for both iOS and Android, work with RESTful APIs, and create smooth, responsive user interfaces. This role is perfect for developers passionate about mobile experiences and Flutter framework.",
+      "parsed_keywords": ["flutter", "dart", "mobile-development", "ios", "android", "rest-api", "firebase", "git", "ui-design", "state-management"],
+      "requirements": [
+        "2+ years of mobile development experience",
+        "Strong proficiency in Flutter and Dart",
+        "Experience with iOS and Android development",
+        "Knowledge of state management solutions (Provider, Riverpod, Bloc)",
+        "Experience integrating RESTful APIs",
+        "Understanding of mobile UI/UX best practices",
+        "Experience with Firebase or similar backend services",
+        "Knowledge of app store deployment processes",
+        "Strong debugging and performance optimization skills",
+        "Excellent communication abilities"
+      ],
+      "benefits": [
+        "Salary: $90,000 - $130,000",
+        "100% remote position",
+        "Health and wellness benefits",
+        "Home office equipment budget",
+        "Flexible working hours",
+        "Professional development support",
+        "Annual company retreat"
+      ],
+      "salary_range": "90000-130000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Machine Learning Engineer",
+      "company": "AI Innovations Lab",
+      "location": "San Jose, CA",
+      "description": "We're seeking a Machine Learning Engineer to develop and deploy ML models at scale. You'll work on exciting projects involving natural language processing, computer vision, and recommendation systems. This role combines software engineering with applied machine learning research.",
+      "parsed_keywords": ["python", "tensorflow", "pytorch", "machine-learning", "nlp", "computer-vision", "aws", "docker", "mlops", "scikit-learn"],
+      "requirements": [
+        "3+ years of experience in machine learning engineering",
+        "Strong proficiency in Python and ML frameworks (TensorFlow, PyTorch)",
+        "Experience with NLP and/or computer vision",
+        "Knowledge of MLOps practices and tools",
+        "Experience deploying models to production",
+        "Strong understanding of statistics and mathematics",
+        "Experience with cloud ML services (AWS SageMaker, GCP AI Platform)",
+        "Proficiency with data processing libraries (pandas, numpy)",
+        "Experience with containerization (Docker, Kubernetes)",
+        "Master's degree in Computer Science, Statistics, or related field preferred"
+      ],
+      "benefits": [
+        "Competitive salary: $140,000 - $200,000",
+        "Comprehensive benefits package",
+        "Equity options",
+        "Remote work flexibility",
+        "Conference and research paper support",
+        "GPU workstation provided",
+        "Cutting-edge project work"
+      ],
+      "salary_range": "140000-200000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "QA Automation Engineer",
+      "company": "TestPro Technologies",
+      "location": "Portland, OR",
+      "description": "Join our quality assurance team to build and maintain automated testing frameworks. You'll ensure software quality through comprehensive test coverage, CI/CD integration, and performance testing. This role requires both technical expertise and attention to detail.",
+      "parsed_keywords": ["python", "selenium", "pytest", "cypress", "javascript", "ci-cd", "api-testing", "automation", "jenkins", "jira"],
+      "requirements": [
+        "3+ years of experience in QA automation",
+        "Strong proficiency in Python or JavaScript for test automation",
+        "Experience with test frameworks (Selenium, Cypress, Playwright)",
+        "Knowledge of API testing tools (Postman, REST Assured)",
+        "Experience with CI/CD integration (Jenkins, GitLab)",
+        "Understanding of testing methodologies and best practices",
+        "Experience with test management tools (JIRA, TestRail)",
+        "Strong analytical and debugging skills",
+        "Experience with performance testing tools (JMeter, k6)",
+        "Excellent communication and documentation skills"
+      ],
+      "benefits": [
+        "Salary: $85,000 - $120,000",
+        "Health and dental insurance",
+        "401k plan",
+        "Hybrid work model",
+        "Professional certification support",
+        "Career advancement opportunities",
+        "Collaborative work environment"
+      ],
+      "salary_range": "85000-120000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Security Engineer",
+      "company": "CyberShield Systems",
+      "location": "Washington, DC",
+      "description": "We're looking for a Security Engineer to protect our systems and data from cyber threats. You'll conduct security assessments, implement security controls, monitor for vulnerabilities, and respond to security incidents. This role requires deep knowledge of security principles and hands-on technical skills.",
+      "parsed_keywords": ["cybersecurity", "penetration-testing", "python", "network-security", "aws", "linux", "vulnerability-assessment", "siem", "firewall", "encryption"],
+      "requirements": [
+        "4+ years of experience in cybersecurity or information security",
+        "Strong knowledge of security frameworks (NIST, ISO 27001)",
+        "Experience with penetration testing and vulnerability assessments",
+        "Proficiency in scripting (Python, Bash, PowerShell)",
+        "Knowledge of network security and protocols",
+        "Experience with SIEM tools (Splunk, ELK)",
+        "Understanding of cloud security (AWS, Azure)",
+        "Experience with security tools (Nmap, Metasploit, Burp Suite)",
+        "Relevant certifications (CISSP, CEH, OSCP) preferred",
+        "Strong analytical and incident response skills"
+      ],
+      "benefits": [
+        "Salary range: $120,000 - $170,000",
+        "Comprehensive health benefits",
+        "Security clearance sponsorship",
+        "Professional certification reimbursement",
+        "Flexible work arrangements",
+        "Cutting-edge security tools",
+        "Career advancement opportunities"
+      ],
+      "salary_range": "120000-170000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Site Reliability Engineer (SRE)",
+      "company": "ScaleOps Inc",
+      "location": "Remote",
+      "description": "Join our SRE team to ensure the reliability, performance, and scalability of our production systems. You'll build automation, improve monitoring, participate in on-call rotations, and work closely with development teams to build reliable software.",
+      "parsed_keywords": ["kubernetes", "docker", "terraform", "python", "go", "prometheus", "grafana", "aws", "linux", "monitoring"],
+      "requirements": [
+        "4+ years of experience in SRE or similar role",
+        "Strong experience with Kubernetes and container orchestration",
+        "Proficiency in programming (Python, Go, or similar)",
+        "Experience with Infrastructure as Code (Terraform, Ansible)",
+        "Deep knowledge of Linux systems administration",
+        "Experience with monitoring and observability (Prometheus, Grafana, Datadog)",
+        "Understanding of distributed systems and microservices",
+        "Experience with incident management and postmortems",
+        "Strong troubleshooting and debugging skills",
+        "Excellent communication and collaboration abilities"
+      ],
+      "benefits": [
+        "Competitive pay: $130,000 - $180,000",
+        "100% remote work",
+        "Comprehensive health coverage",
+        "On-call compensation",
+        "Professional development budget",
+        "Home office setup allowance",
+        "Stock options"
+      ],
+      "salary_range": "130000-180000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Software Engineer in Test (SDET)",
+      "company": "QualityFirst Software",
+      "location": "Raleigh, NC",
+      "description": "We're seeking a Software Development Engineer in Test to build robust test automation frameworks and ensure software quality. You'll work closely with developers, design test strategies, and implement automated testing at all levels. This role combines software engineering with quality assurance expertise.",
+      "parsed_keywords": ["python", "java", "selenium", "api-testing", "ci-cd", "test-automation", "junit", "testng", "docker", "git"],
+      "requirements": [
+        "3+ years of experience as SDET or similar role",
+        "Strong programming skills in Python or Java",
+        "Experience building test automation frameworks from scratch",
+        "Proficiency with Selenium, Appium, or similar tools",
+        "Experience with API testing and tools (REST Assured, Postman)",
+        "Knowledge of CI/CD pipelines and integration",
+        "Understanding of testing methodologies (unit, integration, E2E)",
+        "Experience with containerization (Docker)",
+        "Strong analytical and problem-solving skills",
+        "Excellent communication and collaboration abilities"
+      ],
+      "benefits": [
+        "Salary: $95,000 - $135,000",
+        "Health, dental, vision insurance",
+        "401k matching",
+        "Hybrid work model (3 days remote)",
+        "Professional development support",
+        "Annual performance bonuses",
+        "Collaborative team culture"
+      ],
+      "salary_range": "95000-135000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Cloud Solutions Architect",
+      "company": "CloudNative Consultants",
+      "location": "Atlanta, GA",
+      "description": "We're looking for a Cloud Solutions Architect to design and implement cloud-based solutions for enterprise clients. You'll work on complex cloud migrations, architect scalable systems, and provide technical leadership. This role requires deep cloud expertise and excellent client-facing skills.",
+      "parsed_keywords": ["aws", "azure", "gcp", "cloud-architecture", "terraform", "kubernetes", "microservices", "serverless", "devops", "networking"],
+      "requirements": [
+        "5+ years of experience in cloud architecture",
+        "Expert knowledge of AWS, Azure, or GCP",
+        "Experience designing and implementing cloud migrations",
+        "Strong understanding of cloud-native architectures",
+        "Experience with Infrastructure as Code (Terraform, CloudFormation)",
+        "Knowledge of containerization and orchestration (Docker, Kubernetes)",
+        "Understanding of serverless architectures (Lambda, Cloud Functions)",
+        "Experience with networking and security in cloud environments",
+        "Relevant certifications (AWS Solutions Architect, Azure Architect)",
+        "Excellent presentation and client communication skills"
+      ],
+      "benefits": [
+        "Salary range: $140,000 - $190,000",
+        "Comprehensive benefits package",
+        "Travel opportunities",
+        "Certification reimbursement",
+        "Flexible work arrangements",
+        "Professional development budget",
+        "Performance bonuses"
+      ],
+      "salary_range": "140000-190000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Backend Engineer (Node.js)",
+      "company": "RealTime Systems",
+      "location": "Los Angeles, CA",
+      "description": "Join our backend team to build real-time, event-driven applications using Node.js. You'll work on high-traffic systems, implement WebSocket connections, and design scalable APIs. This role is perfect for engineers passionate about asynchronous programming and performance optimization.",
+      "parsed_keywords": ["nodejs", "javascript", "typescript", "express", "mongodb", "redis", "websocket", "microservices", "docker", "aws"],
+      "requirements": [
+        "3+ years of backend development with Node.js",
+        "Strong proficiency in JavaScript and TypeScript",
+        "Experience with Express.js or similar frameworks",
+        "Knowledge of NoSQL databases (MongoDB, Redis)",
+        "Experience with real-time communication (WebSockets, Socket.io)",
+        "Understanding of event-driven architectures",
+        "Experience with message queues (RabbitMQ, Kafka)",
+        "Knowledge of RESTful API design",
+        "Experience with testing frameworks (Jest, Mocha)",
+        "Strong performance optimization skills"
+      ],
+      "benefits": [
+        "Competitive salary: $110,000 - $155,000",
+        "Health and wellness benefits",
+        "401k plan with matching",
+        "Remote work flexibility",
+        "Learning and development budget",
+        "Modern tech stack",
+        "Collaborative team environment"
+      ],
+      "salary_range": "110000-155000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Platform Engineer",
+      "company": "InfraTech Solutions",
+      "location": "Remote",
+      "description": "We're seeking a Platform Engineer to build and maintain internal developer platforms. You'll create tools and services that improve developer productivity, implement CI/CD pipelines, and ensure platform reliability. This role sits at the intersection of DevOps, infrastructure, and developer experience.",
+      "parsed_keywords": ["kubernetes", "terraform", "python", "go", "ci-cd", "docker", "aws", "gitops", "helm", "monitoring"],
+      "requirements": [
+        "4+ years of experience in platform engineering or DevOps",
+        "Strong experience with Kubernetes and container orchestration",
+        "Proficiency in programming (Python, Go, or similar)",
+        "Experience with Infrastructure as Code (Terraform, Pulumi)",
+        "Knowledge of CI/CD tools and practices (GitLab CI, ArgoCD)",
+        "Experience with GitOps workflows",
+        "Understanding of service mesh (Istio, Linkerd)",
+        "Experience with monitoring and observability tools",
+        "Strong automation and scripting skills",
+        "Excellent documentation and communication abilities"
+      ],
+      "benefits": [
+        "Salary: $125,000 - $170,000",
+        "100% remote position",
+        "Comprehensive health coverage",
+        "Home office stipend",
+        "Professional development budget",
+        "Flexible working hours",
+        "Stock options"
+      ],
+      "salary_range": "125000-170000",
+      "remote": true
+    },
+    {
+      "source": "mock",
+      "title": "Database Administrator (DBA)",
+      "company": "DataCore Enterprises",
+      "location": "Dallas, TX",
+      "description": "Join our database team to manage and optimize critical database systems. You'll be responsible for database design, performance tuning, backup and recovery, and ensuring high availability. This role requires deep database expertise and strong operational skills.",
+      "parsed_keywords": ["postgresql", "mysql", "sql", "database-design", "performance-tuning", "backup-recovery", "replication", "monitoring", "linux", "scripting"],
+      "requirements": [
+        "5+ years of experience as a Database Administrator",
+        "Expert knowledge of PostgreSQL and/or MySQL",
+        "Strong SQL skills and query optimization",
+        "Experience with database design and normalization",
+        "Knowledge of replication and high availability solutions",
+        "Experience with backup and disaster recovery",
+        "Proficiency in scripting (Bash, Python, SQL)",
+        "Understanding of database security best practices",
+        "Experience with monitoring tools (Prometheus, Grafana)",
+        "Strong troubleshooting and problem-solving skills"
+      ],
+      "benefits": [
+        "Salary range: $105,000 - $145,000",
+        "Health, dental, vision insurance",
+        "401k matching",
+        "Hybrid work model",
+        "Professional certification support",
+        "On-call compensation",
+        "Career growth opportunities"
+      ],
+      "salary_range": "105000-145000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Embedded Systems Engineer",
+      "company": "IoT Innovations",
+      "location": "San Diego, CA",
+      "description": "We're looking for an Embedded Systems Engineer to develop firmware for IoT devices. You'll work on low-level programming, hardware integration, and real-time systems. This role requires strong C/C++ skills and experience with embedded platforms.",
+      "parsed_keywords": ["c", "cpp", "embedded-systems", "firmware", "rtos", "microcontrollers", "iot", "linux", "debugging", "hardware"],
+      "requirements": [
+        "3+ years of experience in embedded systems development",
+        "Strong proficiency in C and C++",
+        "Experience with microcontrollers (ARM, ESP32, STM32)",
+        "Knowledge of RTOS (FreeRTOS, Zephyr)",
+        "Understanding of hardware interfaces (I2C, SPI, UART)",
+        "Experience with debugging tools (JTAG, oscilloscope)",
+        "Knowledge of embedded Linux",
+        "Experience with version control (Git)",
+        "Strong problem-solving and analytical skills",
+        "Bachelor's degree in Computer Engineering or related field"
+      ],
+      "benefits": [
+        "Competitive pay: $100,000 - $140,000",
+        "Health and wellness benefits",
+        "401k plan",
+        "On-site laboratory and equipment",
+        "Professional development support",
+        "Patent bonus program",
+        "Innovative projects"
+      ],
+      "salary_range": "100000-140000",
+      "remote": false
+    },
+    {
+      "source": "mock",
+      "title": "Technical Lead - Microservices",
+      "company": "Enterprise Solutions Group",
+      "location": "Charlotte, NC",
+      "description": "We're seeking a Technical Lead to guide our microservices architecture transformation. You'll lead a team of engineers, make architectural decisions, and ensure best practices. This role combines technical leadership with hands-on development.",
+      "parsed_keywords": ["microservices", "java", "spring-boot", "kubernetes", "docker", "kafka", "api-design", "leadership", "architecture", "aws"],
+      "requirements": [
+        "7+ years of software engineering experience",
+        "3+ years in technical leadership roles",
+        "Expert knowledge of microservices architecture",
+        "Strong proficiency in Java and Spring Boot",
+        "Experience with container orchestration (Kubernetes)",
+        "Knowledge of event-driven architectures (Kafka, RabbitMQ)",
+        "Experience with API design and management",
+        "Strong understanding of distributed systems",
+        "Excellent communication and mentoring skills",
+        "Experience with Agile methodologies"
+      ],
+      "benefits": [
+        "Salary range: $150,000 - $200,000",
+        "Comprehensive benefits package",
+        "Leadership development programs",
+        "401k with generous matching",
+        "Remote work options",
+        "Stock options",
+        "Performance bonuses"
+      ],
+      "salary_range": "150000-200000",
+      "remote": true
+    }
+  ],
+  "total_count": 20,
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-11-02",
+    "description": "Mock job listings for JobWise application - realistic tech job descriptions based on 2025 industry standards",
+    "sources": "Indeed, LinkedIn, company job boards",
+    "categories": ["Backend Development", "Full Stack Development", "DevOps", "Mobile Development", "Machine Learning", "Quality Assurance", "Security", "Cloud Architecture", "Database Administration", "Embedded Systems"]
+  }
+}
