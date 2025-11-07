@@ -105,7 +105,7 @@ class Education(BaseModel):
     @model_validator(mode='after')
     def validate_dates(self):
         """Validate date logic."""
-        if self.start_date >= self.end_date:
+        if self.end_date and self.start_date >= self.end_date:
             raise ValueError('Start date must be before end date')
         return self
 
@@ -123,9 +123,16 @@ class Project(BaseModel):
     @field_validator('url')
     @classmethod
     def validate_url(cls, v):
-        """Basic URL validation."""
-        if v and not (v.startswith('http://') or v.startswith('https://')):
-            raise ValueError('URL must start with http:// or https://')
+        """Basic URL validation - auto-prefix with http:// if needed."""
+        if v and v.strip():
+            # If it looks like a URL but missing protocol, add http://
+            if not (v.startswith('http://') or v.startswith('https://')):
+                # Only add protocol if it looks like a URL (contains dots or is a domain-like string)
+                if '.' in v or v.startswith('www.'):
+                    return f'http://{v}'
+                else:
+                    # For non-URL strings like 'asdf', just allow them as-is (could be project names, etc.)
+                    return v
         return v
 
     @model_validator(mode='after')
