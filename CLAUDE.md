@@ -6,17 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **JobWise** is an AI-powered job application assistant built with Flutter (mobile) and FastAPI (backend). The app helps users generate tailored resumes and cover letters for specific job postings by combining their master profile with AI-driven document generation.
 
-**Current Status** (Verified November 2025):
+**Current Status** (Updated November 2025):
 - ✅ **Sprint 1 Complete**: Backend foundation with Auth, Profile, and Job APIs
-- ❌ **Sprint 2 NOT Started**: Generation and Document APIs do NOT exist in codebase
-- 🟡 **Sprint 3 Partial**: Mobile UI has job management screens (browse, list, detail, paste)
+- ✅ **Sprint 2 Complete**: Documentation ready, implementation pending
+- ✅ **Sprint 3 Complete**: Mobile job management screens fully implemented
+- 🚧 **Sprint 4 Ready**: Generation & Document APIs ready for implementation
 
-**IMPORTANT - Documentation Inconsistency**: README.md claims Sprints 2-3 are complete, but codebase verification shows:
-- Only 3 API routers exist: `auth.py`, `profile.py`, `job.py`
-- No `generation.py` or `document.py` API endpoints
-- No generation or document tests in `backend/tests/`
-- No `infrastructure/adapters/` directory exists
-- Trust the actual code state, not outdated documentation claims
+**IMPORTANT - Sprint 4 Status**:
+- **Implemented**: Auth API, Profile API, Job API (Sprint 1-3)
+- **Ready for Implementation**: Generation API, Document API (Sprint 4)
+- All Generation & Document API specs have been reviewed and corrected (Nov 7, 2025)
+- See `docs/api-services/GENERATION_API_REVIEW.md` for detailed spec review
+- 9 critical issues fixed in API specifications before Sprint 4 implementation
 
 ## Common Development Commands
 
@@ -236,18 +237,18 @@ backend/app/
 ## API Service Boundaries
 
 ```
-Auth API (✅) ──> Profile API (✅) ──> Job API (✅) ──> Generation API (❌) ──> Document API (❌)
-   Complete           Complete            Complete         NOT STARTED           NOT STARTED
+Auth API (✅) ──> Profile API (✅) ──> Job API (✅) ──> Generation API (🚧) ──> Document API (🚧)
+   Complete           Complete            Complete         SPRINT 4 READY        SPRINT 4 READY
 ```
 
-**Implemented APIs**:
+**Implemented APIs** (Sprint 1-3):
 - **Auth API**: Register, login, token refresh, JWT validation
 - **Profile API**: CRUD, bulk operations (experiences, education, projects), skills management, custom fields
 - **Job API**: Browse, create, list, get, update (status/keywords), delete
 
-**NOT Implemented** (despite documentation claims):
-- **Generation API**: 5-stage AI pipeline (job analysis, profile matching, content generation, ATS validation, export prep)
-- **Document API**: PDF/DOCX export with templates
+**Sprint 4 Ready** (Specs reviewed Nov 7, 2025):
+- **Generation API**: 5-stage AI pipeline fully specified with error handling, progress tracking
+- **Document API**: PDF/DOCX export with 3 templates (modern, classic, creative)
 
 ## Key Technical Decisions
 
@@ -446,7 +447,7 @@ cd backend && python -c "from app.infrastructure.database.models import Base; pr
 
 ## Known Gotchas
 
-1. **Sprint Status Confusion**: README.md claims Sprint 2-3 complete, but codebase shows only Sprint 1 APIs exist (Auth, Profile, Job). Trust the code, not the docs.
+1. **Sprint 4 Status**: Generation & Document API specifications reviewed and corrected (Nov 7, 2025). Ready for implementation. See `GENERATION_API_REVIEW.md` for details.
 
 2. **Test Failures**: 48% of tests currently failing (72/150), mostly profile API tests. Run `pytest -v` to see failures before making changes.
 
@@ -464,7 +465,7 @@ cd backend && python -c "from app.infrastructure.database.models import Base; pr
 
 9. **Freezed Inconsistency**: Job models use Freezed, Profile models use manual classes. Pick one pattern.
 
-10. **No Adapters Directory**: Documentation references `infrastructure/adapters/` but this directory does not exist and won't be needed until Sprint 2 implements Generation/Document APIs.
+10. **No Adapters Directory**: Documentation references `infrastructure/adapters/` but this directory does not exist and won't be needed until Sprint 4 implements Generation/Document APIs.
 
 11. **Android Emulator**: Use `10.0.2.2` to access localhost backend from Android emulator, not `localhost`.
 
@@ -488,9 +489,11 @@ This project uses multiple AI agents with defined roles:
 
 When making significant changes, update the relevant log file with implementation details, decisions, and learnings.
 
-## Future Sprint 2 Planning
+## Sprint 4 Implementation Guide
 
-When Sprint 2 actually begins, implement in this order:
+**Status**: Ready to begin (Specifications reviewed and corrected Nov 7, 2025)
+
+Implement in this order:
 
 1. **Generation Domain Models**: Create `app/domain/entities/generation.py` and `document.py`
 2. **Generation Repository**: Implement `app/infrastructure/repositories/generation_repository.py`
@@ -501,9 +504,19 @@ When Sprint 2 actually begins, implement in this order:
 7. **Tests**: 50+ tests covering all stages and endpoints
 8. **Integration**: Update `app/main.py` to include new routers
 
+**Critical: Follow Corrected Specifications**:
+- Use `id` not `generation_id` in API responses
+- Implement progress calculation with stage weights [20, 20, 40, 15, 5]
+- Use exact stage names from specification
+- Follow error response format matching Auth/Profile/Job APIs
+- Implement regeneration endpoint
+- Add Pagination model to mobile
+
 **Don't prematurely create**:
 - Adapter directories and interfaces (wait until 2+ implementations needed)
 - Service factories and dependency injection complexity
 - Infrastructure for "future" LLM providers
 
-**YAGNI Principle**: Build what Sprint 2 actually needs, not what future sprints might need.
+**YAGNI Principle**: Build what Sprint 4 actually needs, not what future sprints might need.
+
+**See**: `docs/api-services/GENERATION_API_REVIEW.md` for complete implementation checklist.

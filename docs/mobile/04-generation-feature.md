@@ -1,10 +1,10 @@
 # Generation Feature - Mobile Design Document
 
-**Version**: 1.0
+**Version**: 1.1
 **Feature**: AI-Powered Resume and Cover Letter Generation
 **API Service**: Generation API
-**Status**: ❌ **Not Implemented** (Fully specified, ready for implementation)
-**Last Updated**: November 2, 2025
+**Status**: 🚧 **Sprint 4 Ready** (Fully specified, ready for Sprint 4 implementation)
+**Last Updated**: November 7, 2025
 
 ---
 
@@ -191,6 +191,19 @@ class Generation with _$Generation {
   }) = _Generation;
 
   factory Generation.fromJson(Map<String, dynamic> json) => _$GenerationFromJson(json);
+}
+
+@freezed
+class Pagination with _$Pagination {
+  const factory Pagination({
+    required int total,
+    required int limit,
+    required int offset,
+    required bool hasNext,
+    required bool hasPrevious,
+  }) = _Pagination;
+
+  factory Pagination.fromJson(Map<String, dynamic> json) => _$PaginationFromJson(json);
 }
 
 enum GenerationStatus {
@@ -385,6 +398,17 @@ class GenerationApiClient {
     return GenerationResult.fromJson(response.data);
   }
 
+  /// Regenerate with updated options
+  Future<Generation> regenerateGeneration({
+    required String id,
+    GenerationOptions? options,
+  }) async {
+    final response = await _client.post('/generations/$id/regenerate', data: {
+      if (options != null) 'options': options.toJson(),
+    });
+    return Generation.fromJson(response.data);
+  }
+
   /// List user's generations
   Future<(List<Generation>, Pagination)> getGenerations({
     String? jobId,
@@ -426,7 +450,7 @@ class GenerationApiClient {
   Stream<Generation> pollGeneration(
     String id, {
     Duration interval = const Duration(seconds: 2),
-    int maxAttempts = 150, // 5 minutes max
+    int maxAttempts = 60, // 2 minutes max (20x expected duration of 6s)
   }) async* {
     int attempts = 0;
     while (attempts < maxAttempts) {
@@ -442,7 +466,7 @@ class GenerationApiClient {
     }
 
     if (attempts >= maxAttempts) {
-      throw TimeoutException('Generation polling timeout after 5 minutes');
+      throw TimeoutException('Generation polling timeout after 2 minutes');
     }
   }
 }

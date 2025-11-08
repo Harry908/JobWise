@@ -1,9 +1,9 @@
 # Generation API Service
 
-**Version**: 2.0
+**Version**: 2.1
 **Base Path**: `/api/v1/generations`
-**Status**: ❌ **Not Implemented** (Fully specified, implementation pending Sprint 2)
-**Last Updated**: November 2, 2025
+**Status**: 🚧 **Sprint 4 Ready** (Fully specified, ready for Sprint 4 implementation)
+**Last Updated**: November 7, 2025
 
 ## Service Overview
 
@@ -34,6 +34,67 @@ AI-powered resume and cover letter generation using 5-stage pipeline. Combines u
 | 429 | Too Many Requests | Rate limit exceeded (>10/hour) |
 | 500 | Internal Server Error | Pipeline error |
 
+## Error Response Format
+
+All error responses follow this consistent structure (matching Auth/Profile/Job APIs):
+
+```json
+{
+  "error": {
+    "code": "error_code_snake_case",
+    "message": "Human-readable error message",
+    "details": {}
+  }
+}
+```
+
+### Example Error Responses
+
+**400 Bad Request** (Invalid input):
+```json
+{
+  "error": {
+    "code": "invalid_profile_id",
+    "message": "Profile not found or does not belong to user",
+    "details": {
+      "profile_id": "invalid-uuid",
+      "user_id": 123
+    }
+  }
+}
+```
+
+**429 Too Many Requests** (Rate limit):
+```json
+{
+  "error": {
+    "code": "rate_limit_exceeded",
+    "message": "Generation limit reached. Try again in 30 minutes.",
+    "details": {
+      "current_usage": 10,
+      "limit": 10,
+      "retry_after": 1800,
+      "reset_at": "2025-11-07T15:30:00Z"
+    }
+  }
+}
+```
+
+**422 Unprocessable Entity** (Pipeline failure):
+```json
+{
+  "error": {
+    "code": "pipeline_stage_failed",
+    "message": "Content generation stage failed: LLM service timeout",
+    "details": {
+      "stage": 3,
+      "stage_name": "Content Generation",
+      "error_type": "timeout"
+    }
+  }
+}
+```
+
 ## Validation Rules
 
 **Required Fields:**
@@ -53,11 +114,63 @@ AI-powered resume and cover letter generation using 5-stage pipeline. Combines u
 - Counter resets hourly
 
 **Pipeline Stages:**
-1. **Job Analysis** (Stage 1): 1s, 1500 tokens
-2. **Profile Compilation** (Stage 2): 1s, 2000 tokens
-3. **Content Generation** (Stage 3): 2s, 3000 tokens
-4. **Quality Validation** (Stage 4): 1s, 1500 tokens
-5. **Export Preparation** (Stage 5): 0.5s, 0 tokens
+1. **Job Analysis** (Stage 1): 1s, 1500 tokens, Weight: 20%
+2. **Profile Compilation** (Stage 2): 1s, 2000 tokens, Weight: 20%
+3. **Content Generation** (Stage 3): 2s, 3000 tokens, Weight: 40%
+4. **Quality Validation** (Stage 4): 1s, 1500 tokens, Weight: 15%
+5. **Export Preparation** (Stage 5): 0.5s, 0 tokens, Weight: 5%
+
+## Progress Calculation
+
+Progress percentage is calculated based on stage weights that reflect actual processing time:
+
+```python
+# Stage weights (must sum to 100)
+STAGE_WEIGHTS = [20, 20, 40, 15, 5]  # Stages 1-5
+
+# Calculate progress percentage
+def calculate_progress(current_stage: int) -> int:
+    """
+    Calculate progress percentage based on completed stages.
+
+    Args:
+        current_stage: 0-5 (0 = queued, 1-5 = stages in progress/complete)
+
+    Returns:
+        Progress percentage (0-100)
+    """
+    if current_stage == 0:
+        return 0
+    if current_stage >= 5:
+        return 100
+
+    # Sum weights of completed stages
+    return sum(STAGE_WEIGHTS[:current_stage])
+
+# Examples:
+# current_stage=0 → 0%   (queued)
+# current_stage=1 → 20%  (Stage 1 complete)
+# current_stage=2 → 40%  (Stages 1-2 complete)
+# current_stage=3 → 80%  (Stages 1-3 complete)
+# current_stage=4 → 95%  (Stages 1-4 complete)
+# current_stage=5 → 100% (All stages complete)
+```
+
+## Stage Names and Descriptions
+
+Each stage has an exact name and description string for consistent UI display:
+
+| Stage | current_stage | stage_name | stage_description |
+|-------|---------------|------------|-------------------|
+| Queued | 0 | `null` | "Queued for processing" |
+| Stage 1 | 1 | "Job Analysis" | "Extracting requirements and keywords from job description" |
+| Stage 2 | 2 | "Profile Compilation" | "Scoring profile content by relevance" |
+| Stage 3 | 3 | "Content Generation" | "Generating tailored resume content" |
+| Stage 4 | 4 | "Quality Validation" | "Validating ATS compliance and quality" |
+| Stage 5 | 5 | "Export Preparation" | "Preparing PDF export" |
+| Complete | 5 | "Export Preparation" | "Completed" |
+
+**Note**: Backend must use these exact strings for frontend consistency.
 
 ## Dependencies
 
@@ -115,7 +228,7 @@ CREATE INDEX idx_generations_created_at ON generations(created_at);
 ```
 
 **Field Descriptions**:
-- `id`: UUID primary key (generation_id)
+- `id`: UUID primary key (returned as `id` in API responses, not `generation_id`)
 - `user_id`: Owner of the generation
 - `profile_id`: Source profile for generation
 - `job_id`: Target job for tailoring
@@ -123,10 +236,10 @@ CREATE INDEX idx_generations_created_at ON generations(created_at);
 - `status`: Current state (pending, generating, completed, failed, cancelled)
 - `current_stage`: Pipeline stage (0-5)
 - `total_stages`: Total pipeline stages (always 5)
-- `stage_name`: Human-readable stage name
-- `stage_description`: Stage progress description
+- `stage_name`: Human-readable stage name (see Stage Names table)
+- `stage_description`: Stage progress description (see Stage Names table)
 - `error_message`: Error details if failed
-- `options`: JSON with generation options
+- `options`: JSON with generation options (see Options JSON Schema)
 - `result`: JSON with final result (document_id, ats_score, etc.)
 - `tokens_used`: Total LLM tokens consumed
 - `generation_time`: Total processing time in seconds
@@ -134,6 +247,57 @@ CREATE INDEX idx_generations_created_at ON generations(created_at);
 - `started_at`: Pipeline start timestamp
 - `completed_at`: Pipeline completion timestamp
 - `updated_at`: Last update timestamp (auto-updates)
+
+## Options JSON Schema
+
+The `options` field stores generation parameters as JSON. Schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "template": {
+      "type": "string",
+      "enum": ["modern", "classic", "creative"],
+      "default": "modern",
+      "description": "Resume template style"
+    },
+    "length": {
+      "type": "string",
+      "enum": ["one_page", "two_page"],
+      "default": "one_page",
+      "description": "Target resume length"
+    },
+    "focus_areas": {
+      "type": "array",
+      "items": {"type": "string"},
+      "maxItems": 5,
+      "description": "Skills/experiences to emphasize"
+    },
+    "include_cover_letter": {
+      "type": "boolean",
+      "default": false,
+      "description": "Generate matching cover letter"
+    },
+    "custom_instructions": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Additional generation instructions"
+    }
+  }
+}
+```
+
+**Example stored options**:
+```json
+{
+  "template": "modern",
+  "length": "one_page",
+  "focus_areas": ["leadership", "cloud_architecture"],
+  "include_cover_letter": false,
+  "custom_instructions": "Emphasize AWS and team management experience"
+}
+```
 
 **Constraints**:
 - Foreign key cascade delete (when user/profile/job deleted, generations deleted)
@@ -221,7 +385,7 @@ Final State:
 **Response** (201 Created):
 ```json
 {
-  "generation_id": "gen-uuid",
+  "id": "gen-uuid",
   "status": "pending",
   "progress": {
     "current_stage": 0,
@@ -238,7 +402,7 @@ Final State:
 ```
 
 **Response Headers**:
-- `Location: /api/v1/generations/{generation_id}`
+- `Location: /api/v1/generations/{id}`
 
 **Errors**:
 - 400: Invalid profile_id or job_id
@@ -276,7 +440,7 @@ Final State:
 **Response (In Progress)** (200 OK):
 ```json
 {
-  "generation_id": "gen-uuid",
+  "id": "gen-uuid",
   "status": "generating",
   "progress": {
     "current_stage": 2,
@@ -297,13 +461,13 @@ Final State:
 **Response (Completed)** (200 OK):
 ```json
 {
-  "generation_id": "gen-uuid",
+  "id": "gen-uuid",
   "status": "completed",
   "progress": {
     "current_stage": 5,
     "total_stages": 5,
     "percentage": 100,
-    "stage_name": "PDF Export",
+    "stage_name": "Export Preparation",
     "stage_description": "Completed"
   },
   "result": {
@@ -330,7 +494,7 @@ Final State:
 **Response (Failed)** (200 OK):
 ```json
 {
-  "generation_id": "gen-uuid",
+  "id": "gen-uuid",
   "status": "failed",
   "progress": {
     "current_stage": 3,
@@ -357,7 +521,7 @@ Final State:
 **Response** (200 OK):
 ```json
 {
-  "generation_id": "gen-uuid",
+  "id": "gen-uuid",
   "document_id": "doc-uuid",
   "document_type": "resume",
   "content": {
@@ -403,7 +567,7 @@ Final State:
 }
 ```
 
-**Response** (201 Created): New generation object (new generation_id)
+**Response** (201 Created): New generation object (new id)
 
 **Errors**:
 - 404: Original generation not found
@@ -439,7 +603,7 @@ Final State:
 {
   "generations": [
     {
-      "generation_id": "gen-uuid",
+      "id": "gen-uuid",
       "status": "completed",
       "document_type": "resume",
       "job_title": "Senior Python Developer",
