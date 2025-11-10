@@ -1,0 +1,16 @@
+Test Prompt:
+
+Generate a professional summary for a software engineer with these qualifications:
+- 5+ years experience in Python backend development
+- Expert in FastAPI, SQLAlchemy, PostgreSQL
+- Experience with AWS cloud services
+- Led teams and mentored junior developers
+- Strong problem-solving and communication skills
+
+Write a 2-3 sentence professional summary suitable for a resume.
+
+
+Generated Output:
+Here is a professional summary for a software engineer with the given qualifications:
+
+Results-driven software engineer with 5+ years of experience in designing and developing scalable Python backend applications using FastAPI, SQLAlchemy, and PostgreSQL. Proven leader with a strong track record of mentoring junior developers and leveraging AWS cloud services to drive technical innovation. With exceptional problem-solving and communication skills, I deliver high-quality solutions that meet business needs and exceed expectations.
