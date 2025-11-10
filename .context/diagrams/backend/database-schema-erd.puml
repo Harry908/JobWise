@@ -271,7 +271,7 @@ entity GenerationModel {
 
 note right of GenerationModel
     **F7 Mock AI Pipeline Structure Ready**
-    - 5-stage pipeline scaffolding
+    - 2-stage pipeline scaffolding
     - Generation tracking entity
     - Multiple LLM provider support
     - Job or custom job description support
@@ -409,7 +409,7 @@ note bottom
     • Unified search/filtering across all job types (6/6 tests passing)
   
   **🚧 STRUCTURE READY (F7-F8):**
-  - **F7 Mock AI Pipeline**: Entity models in place, 5-stage pipeline scaffolding
+  - **F7 Mock AI Pipeline**: Entity models in place, 2-stage pipeline scaffolding
   - **F8 Export System**: Document storage structure, PDF generation support
   
   **📊 PERFORMANCE OPTIMIZATIONS:**

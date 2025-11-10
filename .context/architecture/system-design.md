@@ -378,27 +378,26 @@ Factory Pattern:
 
 ## AI Orchestrator Domain Service
 
-### 5-Stage Pipeline Architecture
+### 2-Stage Pipeline Architecture
 ```
 AIOrchestrator (Domain Service):
-- Stage1: JobAnalyzer
-- Stage2: ProfileCompiler  
-- Stage3: DocumentGenerator
-- Stage4: QualityValidator
-- Stage5: PDFExporter
+- Stage1: Analysis & Matching
+- Stage2: Generation & Validation
 
 Each Stage:
 - Input/Output interfaces
-- Error handling
+- Error handling  
 - Progress reporting
-- Token budget tracking
+- Token budget tracking (2500 tokens per stage)
 ```
 
 ### Pipeline Execution Flow
 ```
 1. Validate inputs (profile + job)
-2. Check token budget availability
-3. Execute stages sequentially
+2. Check token budget availability (5000 total)
+3. Execute 2 stages sequentially:
+   - Stage 1 (40%): Analysis & Matching
+   - Stage 2 (60%): Generation & Validation
 4. Handle errors with retry logic
 5. Update progress status
 6. Return result or error
@@ -425,7 +424,7 @@ Recovery Strategies:
 ```
 1. Flutter App → FastAPI /generate endpoint
 2. GenerateResumeUseCase validates command
-3. AIOrchestrator executes 5-stage pipeline
+3. AIOrchestrator executes 2-stage pipeline
 4. Results persisted via DocumentRepository
 5. Status updates sent to client
 6. PDF generated and cached

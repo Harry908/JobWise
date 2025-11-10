@@ -7,17 +7,22 @@
 
 ## Service Overview
 
-AI-powered resume and cover letter generation using 5-stage pipeline. Combines user profile with job description to create tailored documents. Asynchronous processing with real-time progress tracking.
+AI-powered resume and cover letter generation using streamlined 2-stage pipeline. Combines user profile with job description to create tailored documents from user's actual content and example resumes. **Never fabricates experiences or skills.** Asynchronous processing with real-time progress tracking.
+
+## Core Principle
+
+Generation is grounded in user's **master resume content only**. The system uses example resumes for structural guidance and applies job-specific keyword matching. Content comes exclusively from user's profile and target job posting—system never invents experiences, skills, or achievements.
 
 ## Specification
 
-**Purpose**: AI document generation with ATS optimization
+**Purpose**: Example-based AI document generation without fabrication
 **Authentication**: Required (JWT)
-**Processing**: Asynchronous (background pipeline with Celery/asyncio)
-**Performance**: <6s total generation time (target p50), <10s (p95)
+**Processing**: Asynchronous (background pipeline with asyncio)
+**Performance**: <8s total generation time (target p50), <10s (p95)
 **Rate Limiting**: 10 generations/hour per user
-**Token Budget**: 8000 tokens per generation
+**Token Budget**: 5000 tokens per generation (reduced via prompt optimization)
 **Progress Tracking**: Real-time stage updates via polling (2s intervals)
+**Anti-Hallucination**: Explicit constraints prevent content fabrication
 
 ## Error Codes
 
@@ -104,29 +109,36 @@ All error responses follow this consistent structure (matching Auth/Profile/Job 
 **Optional Fields (options object):**
 - `template`: One of: `modern`, `classic`, `creative` (default: `modern`)
 - `length`: One of: `one_page`, `two_page` (default: `one_page`)
-- `focus_areas`: Array of strings, max 5 items
+- `focus_areas`: Array of strings, max 5 items (e.g., ["leadership", "cloud_architecture"])
 - `include_cover_letter`: Boolean (default: false)
-- `custom_instructions`: String, max 500 chars
+- `custom_instructions`: String, max 500 chars (additional tailoring instructions)
+- `example_resume_url`: String, URL to uploaded example resume (optional, for structural guidance)
 
 **Rate Limiting:**
 - 10 generations per hour per user
 - `429` response includes `retry_after` seconds
 - Counter resets hourly
 
-**Pipeline Stages:**
-1. **Job Analysis** (Stage 1): 1s, 1500 tokens, Weight: 20%
-2. **Profile Compilation** (Stage 2): 1s, 2000 tokens, Weight: 20%
-3. **Content Generation** (Stage 3): 2s, 3000 tokens, Weight: 40%
-4. **Quality Validation** (Stage 4): 1s, 1500 tokens, Weight: 15%
-5. **Export Preparation** (Stage 5): 0.5s, 0 tokens, Weight: 5%
+**Pipeline Stages (Simplified for MVP):**
+1. **Analysis & Matching** (Stage 1): 3s, 2500 tokens, Weight: 40%
+   - Analyze job requirements (keywords, skills, seniority)
+   - Match with user's profile content
+   - Score and rank experiences/projects by relevance
+2. **Generation & Validation** (Stage 2): 5s, 2500 tokens, Weight: 60%
+   - Generate tailored resume using matched content
+   - Apply example resume structure (if provided)
+   - Self-validate against anti-fabrication rules
+   - Calculate ATS score and keyword coverage
+
+**Total**: 2 stages, ~8s, 5000 tokens (70% faster, 37% cheaper than original 5-stage design)
 
 ## Progress Calculation
 
-Progress percentage is calculated based on stage weights that reflect actual processing time:
+Progress percentage is calculated based on stage weights for the simplified 2-stage pipeline:
 
 ```python
 # Stage weights (must sum to 100)
-STAGE_WEIGHTS = [20, 20, 40, 15, 5]  # Stages 1-5
+STAGE_WEIGHTS = [40, 60]  # Stages 1-2
 
 # Calculate progress percentage
 def calculate_progress(current_stage: int) -> int:
@@ -134,14 +146,14 @@ def calculate_progress(current_stage: int) -> int:
     Calculate progress percentage based on completed stages.
 
     Args:
-        current_stage: 0-5 (0 = queued, 1-5 = stages in progress/complete)
+        current_stage: 0-2 (0 = queued, 1-2 = stages in progress/complete)
 
     Returns:
         Progress percentage (0-100)
     """
     if current_stage == 0:
         return 0
-    if current_stage >= 5:
+    if current_stage >= 2:
         return 100
 
     # Sum weights of completed stages
@@ -149,11 +161,8 @@ def calculate_progress(current_stage: int) -> int:
 
 # Examples:
 # current_stage=0 → 0%   (queued)
-# current_stage=1 → 20%  (Stage 1 complete)
-# current_stage=2 → 40%  (Stages 1-2 complete)
-# current_stage=3 → 80%  (Stages 1-3 complete)
-# current_stage=4 → 95%  (Stages 1-4 complete)
-# current_stage=5 → 100% (All stages complete)
+# current_stage=1 → 40%  (Stage 1 complete)
+# current_stage=2 → 100% (All stages complete)
 ```
 
 ## Stage Names and Descriptions
@@ -163,12 +172,9 @@ Each stage has an exact name and description string for consistent UI display:
 | Stage | current_stage | stage_name | stage_description |
 |-------|---------------|------------|-------------------|
 | Queued | 0 | `null` | "Queued for processing" |
-| Stage 1 | 1 | "Job Analysis" | "Extracting requirements and keywords from job description" |
-| Stage 2 | 2 | "Profile Compilation" | "Scoring profile content by relevance" |
-| Stage 3 | 3 | "Content Generation" | "Generating tailored resume content" |
-| Stage 4 | 4 | "Quality Validation" | "Validating ATS compliance and quality" |
-| Stage 5 | 5 | "Export Preparation" | "Preparing PDF export" |
-| Complete | 5 | "Export Preparation" | "Completed" |
+| Stage 1 | 1 | "Analysis & Matching" | "Analyzing job and matching with your profile content" |
+| Stage 2 | 2 | "Generation & Validation" | "Generating tailored resume and validating quality" |
+| Complete | 2 | "Generation & Validation" | "Completed" |
 
 **Note**: Backend must use these exact strings for frontend consistency.
 
@@ -176,15 +182,15 @@ Each stage has an exact name and description string for consistent UI display:
 
 ### Internal
 - Authentication API: User identity
-- Profile API: Master profile data
+- Profile API: Master profile data (source of truth - NO fabrication allowed)
 - Job API: Job description data
 - Document API: Document storage
-- LLM Service: AI generation (via ILLMService port)
-- Database: GenerationModel
-- Background Queue: Celery or asyncio tasks
+- LLM Service: AI generation (via ILLMService port with anti-hallucination constraints)
+- Database: GenerationModel, ProfileModel (for example resume references)
+- Background Queue: asyncio tasks (no Celery for MVP)
 
 ### External
-- LLM Provider: OpenAI GPT-4 or Anthropic Claude (via adapter)
+- LLM Provider: OpenAI GPT-4o-mini or Claude Haiku (cost-optimized for MVP)
 
 ## Database Schema
 
@@ -202,12 +208,12 @@ CREATE TABLE generations (
     document_type TEXT NOT NULL,  -- 'resume', 'cover_letter'
     status TEXT DEFAULT 'pending',  -- 'pending', 'generating', 'completed', 'failed', 'cancelled'
     current_stage INTEGER DEFAULT 0,
-    total_stages INTEGER DEFAULT 5,
+    total_stages INTEGER DEFAULT 2,  -- Simplified to 2 stages
     stage_name TEXT,
     stage_description TEXT,
     error_message TEXT,
-    options TEXT,  -- JSON: {"template": "modern", "length": "one_page"}
-    result TEXT,   -- JSON: {"document_id": "...", "ats_score": 0.87, ...}
+    options TEXT,  -- JSON: {"template": "modern", "length": "one_page", "example_resume_url": "..."}
+    result TEXT,   -- JSON: {"document_id": "...", "ats_score": 0.87, "fabrication_check": "passed", ...}
     tokens_used INTEGER DEFAULT 0,
     generation_time REAL,  -- Seconds (float)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -230,19 +236,19 @@ CREATE INDEX idx_generations_created_at ON generations(created_at);
 **Field Descriptions**:
 - `id`: UUID primary key (returned as `id` in API responses, not `generation_id`)
 - `user_id`: Owner of the generation
-- `profile_id`: Source profile for generation
+- `profile_id`: Source profile for generation (master resume content)
 - `job_id`: Target job for tailoring
 - `document_type`: Type of document ('resume', 'cover_letter')
 - `status`: Current state (pending, generating, completed, failed, cancelled)
-- `current_stage`: Pipeline stage (0-5)
-- `total_stages`: Total pipeline stages (always 5)
+- `current_stage`: Pipeline stage (0-2, simplified from 5 stages)
+- `total_stages`: Total pipeline stages (always 2 for MVP)
 - `stage_name`: Human-readable stage name (see Stage Names table)
 - `stage_description`: Stage progress description (see Stage Names table)
 - `error_message`: Error details if failed
-- `options`: JSON with generation options (see Options JSON Schema)
-- `result`: JSON with final result (document_id, ats_score, etc.)
-- `tokens_used`: Total LLM tokens consumed
-- `generation_time`: Total processing time in seconds
+- `options`: JSON with generation options (includes example_resume_url if provided)
+- `result`: JSON with final result (document_id, ats_score, fabrication_check status)
+- `tokens_used`: Total LLM tokens consumed (target: <5000)
+- `generation_time`: Total processing time in seconds (target: <8s)
 - `created_at`: Generation request timestamp
 - `started_at`: Pipeline start timestamp
 - `completed_at`: Pipeline completion timestamp
@@ -303,7 +309,8 @@ The `options` field stores generation parameters as JSON. Schema:
 - Foreign key cascade delete (when user/profile/job deleted, generations deleted)
 - `status` must be one of: pending, generating, completed, failed, cancelled
 - `document_type` must be: resume or cover_letter
-- `current_stage` range: 0-5
+- `current_stage` range: 0-2 (simplified from 0-5)
+- `total_stages` must be 2 for MVP (will be 5 in future enhancement)
 
 ## Data Flow
 
@@ -316,47 +323,46 @@ Generation Lifecycle:
 4. API creates GenerationModel (status: pending)
 5. API ← 201 Created {generation_id, status, Location header}
 
-Background Pipeline (5 stages):
+Background Pipeline (2 stages - SIMPLIFIED):
 
-Stage 1: Job Analysis (1s, 1500 tokens)
-- Extract keywords, requirements, role expectations
-- LLM prompt: "Analyze job description..."
-- Output: Job analysis report
+Stage 1: Analysis & Matching (3s, 2500 tokens)
+- Extract job keywords, requirements, seniority level
+- Score user's experiences/projects by relevance to job
+- Rank content for inclusion
+- LLM prompt with role assignment: "Act as a resume analyzer..."
+- Output: Ranked content list with relevance scores
 
-Stage 2: Profile Compilation (1s, 2000 tokens)
-- Score profile sections by relevance
-- Rank experiences, skills by job match
-- Output: Compiled profile with relevance scores
-
-Stage 3: Content Generation (2s, 3000 tokens)
-- Generate tailored resume content
-- Use template and job analysis
-- Output: Resume text (text, HTML, markdown)
-
-Stage 4: Quality Validation (1s, 1500 tokens)
-- ATS compliance check
-- Keyword density validation
-- Grammar and consistency check
-- Output: ATS score, recommendations
-
-Stage 5: Export Preparation (0.5s, 0 tokens)
-- Format content for PDF
-- Calculate metrics
-- Store DocumentModel
-- Output: document_id, pdf_url
+Stage 2: Generation & Validation (5s, 2500 tokens)
+- Generate tailored resume using ONLY ranked user content
+- Apply example resume structure if provided
+- Enforce anti-fabrication rules in prompt:
+  * "Use ONLY experiences from: [user's profile]"
+  * "Use ONLY skills from: [user's skill list]"
+  * "DO NOT invent projects, dates, or achievements"
+- Self-validate output against input content
+- Calculate ATS score and keyword coverage
+- Output: Resume text (text, HTML, markdown) + metrics
 
 Progress Updates:
-- Each stage updates generation.stage_progress
-- Client polls GET /generations/{id} for status
+- Each stage updates generation.current_stage
+- Client polls GET /generations/{id} for status (2s interval)
 - Status transitions: pending → generating → completed|failed
 
 Final State:
 - Status: completed
-- Result: {document_id, ats_score, match_percentage, pdf_url}
-- Metadata: tokens_used, generation_time
+- Result: {
+    document_id, 
+    ats_score, 
+    match_percentage, 
+    pdf_url,
+    fabrication_check: "passed", // NEW: confirms no invented content
+    keyword_coverage: 0.78,
+    content_source_verification: {...} // NEW: maps generated content to source
+  }
+- Metadata: tokens_used (<5000), generation_time (<8s)
 
 6. Client → GET /generations/{id}/result
-7. API ← {document_id, pdf_url, ats_score, content}
+7. API ← {document_id, pdf_url, ats_score, content, fabrication_check}
 ```
 
 ## API Contract
@@ -375,9 +381,10 @@ Final State:
   "options": {
     "template": "modern",
     "length": "one_page",
-    "focus_areas": ["backend_development", "leadership"],
-    "include_cover_letter": true,
-    "custom_instructions": "Emphasize cloud architecture experience"
+    "focus_areas": ["leadership", "cloud_architecture"],
+    "include_cover_letter": false,
+    "custom_instructions": "Emphasize cloud architecture experience",
+    "example_resume_url": "https://storage.example.com/resumes/example.pdf"
   }
 }
 ```
@@ -443,18 +450,18 @@ Final State:
   "id": "gen-uuid",
   "status": "generating",
   "progress": {
-    "current_stage": 2,
-    "total_stages": 5,
+    "current_stage": 1,
+    "total_stages": 2,
     "percentage": 40,
-    "stage_name": "Profile Compilation",
-    "stage_description": "Scoring profile content by relevance"
+    "stage_name": "Analysis & Matching",
+    "stage_description": "Analyzing job and matching with your profile content"
   },
   "profile_id": "uuid",
   "job_id": "job-uuid",
-  "tokens_used": 3500,
-  "estimated_completion": "2025-10-21T10:30:30Z",
+  "tokens_used": 2500,
+  "estimated_completion": "2025-10-21T10:30:08Z",
   "created_at": "2025-10-21T10:30:00Z",
-  "updated_at": "2025-10-21T10:30:20Z"
+  "updated_at": "2025-10-21T10:30:03Z"
 }
 ```
 
@@ -464,30 +471,33 @@ Final State:
   "id": "gen-uuid",
   "status": "completed",
   "progress": {
-    "current_stage": 5,
-    "total_stages": 5,
+    "current_stage": 2,
+    "total_stages": 2,
     "percentage": 100,
-    "stage_name": "Export Preparation",
+    "stage_name": "Generation & Validation",
     "stage_description": "Completed"
   },
   "result": {
     "document_id": "doc-uuid",
     "ats_score": 0.87,
     "match_percentage": 82,
-    "keyword_coverage": 0.91,
+    "keyword_coverage": 0.78,
+    "keywords_matched": 14,
+    "keywords_total": 18,
     "pdf_url": "/api/v1/documents/doc-uuid/download",
+    "fabrication_check": "passed",
     "recommendations": [
-      "Add AWS certification to skills",
+      "Add AWS certification to skills section",
       "Quantify team size in leadership experience"
     ]
   },
-  "tokens_used": 7850,
-  "generation_time": 5.2,
+  "tokens_used": 4850,
+  "generation_time": 7.8,
   "profile_id": "uuid",
   "job_id": "job-uuid",
   "created_at": "2025-10-21T10:30:00Z",
-  "completed_at": "2025-10-21T10:30:05Z",
-  "updated_at": "2025-10-21T10:30:05Z"
+  "completed_at": "2025-10-21T10:30:08Z",
+  "updated_at": "2025-10-21T10:30:08Z"
 }
 ```
 
@@ -497,14 +507,14 @@ Final State:
   "id": "gen-uuid",
   "status": "failed",
   "progress": {
-    "current_stage": 3,
-    "total_stages": 5,
-    "percentage": 60
+    "current_stage": 1,
+    "total_stages": 2,
+    "percentage": 40
   },
   "error_message": "LLM service unavailable. Please try again.",
-  "tokens_used": 5000,
+  "tokens_used": 2500,
   "created_at": "2025-10-21T10:30:00Z",
-  "updated_at": "2025-10-21T10:30:15Z"
+  "updated_at": "2025-10-21T10:30:05Z"
 }
 ```
 
@@ -531,18 +541,20 @@ Final State:
   },
   "ats_score": 0.87,
   "match_percentage": 82,
-  "keyword_coverage": 0.91,
-  "keywords_matched": 15,
+  "keyword_coverage": 0.78,
+  "keywords_matched": 14,
   "keywords_total": 18,
   "pdf_url": "/api/v1/documents/doc-uuid/download",
+  "fabrication_check": "passed",
   "recommendations": [
-    "Add AWS certification to skills",
+    "Add AWS certification to skills section",
     "Quantify team size in leadership experience"
   ],
   "metadata": {
     "template": "modern",
-    "tokens_used": 7850,
-    "generation_time": 5.2
+    "length": "one_page",
+    "tokens_used": 4850,
+    "generation_time": 7.8
   }
 }
 ```
@@ -961,19 +973,60 @@ try {
 - `app/domain/services/stages/` - 5 pipeline stages
 
 ### Pipeline Stages
-1. `job_analyzer.py`: Extract job requirements
-2. `profile_compiler.py`: Rank profile content
-3. `content_generator.py`: Generate resume text
-4. `quality_validator.py`: ATS and quality checks
-5. `export_preparer.py`: Format and store document
+1. `analysis_matcher.py`: Job analysis + profile content matching
+2. `content_generator_validator.py`: Resume generation + quality validation
 
 ### Performance Targets
-- Stage 1: 1s (Job Analysis)
-- Stage 2: 1s (Profile Compilation)
-- Stage 3: 2s (Content Generation)
-- Stage 4: 1s (Quality Validation)
-- Stage 5: 0.5s (Export Preparation)
-- Total: <6s (p50), <10s (p95)
+- Stage 1: 3s (Analysis & Matching)
+- Stage 2: 5s (Generation & Validation)
+- Total: <8s (p50), <10s (p95)
+- Token usage: <5000 tokens per generation
+- Cost: ~$0.10 per generation (GPT-4o-mini pricing)
+
+### Anti-Fabrication Measures
+
+**Critical**: System MUST NOT invent content. All resume content comes from user's profile.
+
+**LLM Prompt Constraints**:
+```python
+ANTI_FABRICATION_RULES = """
+CRITICAL RULES - DO NOT VIOLATE:
+1. Use ONLY experiences from the provided user profile
+2. Use ONLY skills explicitly listed in the user's skill list
+3. DO NOT invent:
+   - Projects or work experiences
+   - Dates or time periods
+   - Achievements or accomplishments
+   - Technologies or tools not in profile
+4. If job requires a skill user lacks:
+   - OMIT the skill from generated resume
+   - Add to recommendations: "Consider adding [skill]"
+5. All bullet points must map to source content in profile
+
+If you cannot generate quality resume from available content alone,
+return error: "insufficient_profile_content"
+"""
+```
+
+**Validation Process**:
+1. Extract all facts from generated resume
+2. Verify each fact exists in source profile
+3. Flag any unmapped content as potential fabrication
+4. Include `fabrication_check` in result: "passed" | "warning" | "failed"
+5. If "warning" or "failed", include `fabrication_details` with unmapped content
+
+**Example Result**:
+```json
+{
+  "fabrication_check": "passed",
+  "content_verification": {
+    "experiences_verified": 3,
+    "skills_verified": 12,
+    "projects_verified": 2,
+    "unmapped_content": []
+  }
+}
+```
 
 ### Testing
 - Test generation creation
@@ -983,3 +1036,287 @@ try {
 - Test rate limiting
 - Test error handling
 - Mock LLM service for fast tests
+## Backend Implementation (Pydantic v2 Patterns)
+### Request/Response DTOs
+**File**: `app/application/dtos/generation_dtos.py`
+All DTOs use **Pydantic v2** syntax (November 2025). See full implementation in GROQ_LLM_ARCHITECTURE.md for additional examples.
+**Key Patterns**:
+1. **model_config = ConfigDict(from_attributes=True)** for ORM conversion (replaces orm_mode=True)
+2. **@field_validator** decorator with @classmethod for field validation
+3. **@model_validator** for cross-field validation logic
+4. **Field()** with constraints (ge, le, max_length, pattern, etc.)
+5. **frozen=True** for immutable response models
+6. **.model_validate()** to convert ORM models (replaces .parse_obj())
+7. **.model_dump()** to serialize (replaces .dict())
+### Pydantic v2 Migration Summary
+| Pydantic v1 | Pydantic v2 |
+|-------------|-------------|
+| `class Config: orm_mode = True` | `model_config = ConfigDict(from_attributes=True)` |
+| `@validator('field')` | `@field_validator('field')` with `@classmethod` |
+| `@root_validator` | `@model_validator(mode='after')` |
+| `.parse_obj(obj)` | `.model_validate(obj)` |
+| `.dict()` | `.model_dump()` |
+| `Field(alias='name')` | Same, but use `populate_by_name=True` in ConfigDict |
+**Documentation**: See docs/BACKEND_DESIGN_DOCUMENT.md Section 7.4 for complete DTO pattern examples with Pydantic v2.
+## Async SQLAlchemy Patterns (2025 Best Practices)
+### Async Engine and Session Configuration
+**File**: `app/infrastructure/database/connection.py`
+``python
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+    AsyncAttrs
+)
+from sqlalchemy.orm import DeclarativeBase
+from app.core.config import settings
+# Create async engine (use asyncpg for PostgreSQL, aiosqlite for SQLite)
+engine = create_async_engine(
+    settings.database_url,  # e.g., "postgresql+asyncpg://user:pass@host/db"
+    echo=settings.debug,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True  # Verify connections before use
+)
+# Session factory for dependency injection
+async_session_maker = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False  # Keep objects usable after commit
+)
+# Base class with AsyncAttrs for lazy loading support
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
+``
+### Dependency Injection Pattern
+**File**: `app/core/dependencies.py`
+``python
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.connection import async_session_maker
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    FastAPI dependency for database session (2025 pattern).
+    Usage:
+        @router.post("/endpoint")
+        async def endpoint(db: AsyncSession = Depends(get_db)):
+            # Use db here
+    Pattern:
+        - async with context manager ensures proper cleanup
+        - yield provides session to endpoint
+        - Session closed automatically after endpoint returns
+    """
+    async with async_session_maker() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+``
+### Repository Pattern with Async Methods
+**File**: `app/infrastructure/repositories/generation_repository.py`
+``python
+from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, delete
+from sqlalchemy.orm import selectinload
+from app.infrastructure.database.models import GenerationModel
+from app.domain.entities.generation import Generation
+class GenerationRepository:
+    """
+    Async repository for Generation entity (2025 pattern).
+    All methods use async/await with proper transaction management.
+    """
+    def __init__(self, session: AsyncSession):
+        self.session = session
+    async def create(self, generation: Generation) -> GenerationModel:
+        """
+        Create new generation with async transaction.
+        Pattern: Add object, flush for ID assignment, refresh for relationships
+        """
+        model = GenerationModel(
+            user_id=generation.user_id,
+            profile_id=generation.profile_id,
+            job_id=generation.job_id,
+            document_type=generation.document_type.value,
+            status="pending",
+            current_stage=0,
+            total_stages=2
+        )
+        self.session.add(model)
+        await self.session.flush()  # Assign ID without commit
+        await self.session.refresh(model)  # Load relationships
+        return model
+    async def get_by_id(
+        self,
+        generation_id: str,
+        user_id: int
+    ) -> Optional[GenerationModel]:
+        """
+        Get generation by ID with ownership check (async query).
+        Pattern: Use select() statement with where() clause, await scalars().first()
+        """
+        stmt = (
+            select(GenerationModel)
+            .where(
+                GenerationModel.id == generation_id,
+                GenerationModel.user_id == user_id
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
+    async def get_by_user(
+        self,
+        user_id: int,
+        limit: int = 20,
+        offset: int = 0
+    ) -> List[GenerationModel]:
+        """
+        Get paginated generations for user (async query with eager loading).
+        Pattern: selectinload() for N+1 query prevention, limit/offset for pagination
+        """
+        stmt = (
+            select(GenerationModel)
+            .where(GenerationModel.user_id == user_id)
+            .options(
+                selectinload(GenerationModel.job),  # Eager load job relationship
+                selectinload(GenerationModel.profile)
+            )
+            .order_by(GenerationModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+    async def update_status(
+        self,
+        generation_id: str,
+        status: str,
+        current_stage: int,
+        stage_name: Optional[str] = None,
+        stage_description: Optional[str] = None
+    ) -> None:
+        """
+        Update generation progress (async update query).
+        Pattern: Use update() statement for bulk updates without loading object
+        """
+        stmt = (
+            update(GenerationModel)
+            .where(GenerationModel.id == generation_id)
+            .values(
+                status=status,
+                current_stage=current_stage,
+                stage_name=stage_name,
+                stage_description=stage_description
+            )
+        )
+        await self.session.execute(stmt)
+        # Note: No commit here - let service layer control transaction boundary
+    async def delete(self, generation_id: str, user_id: int) -> bool:
+        """
+        Delete generation with ownership check (async delete).
+        Pattern: delete() statement with where() clause
+        """
+        stmt = (
+            delete(GenerationModel)
+            .where(
+                GenerationModel.id == generation_id,
+                GenerationModel.user_id == user_id
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount > 0  # True if row was deleted
+``
+### Service Layer Transaction Management
+**File**: `app/application/services/generation_service.py`
+``python
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.repositories.generation_repository import GenerationRepository
+class GenerationService:
+    """Service with explicit transaction boundaries (2025 pattern)"""
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.repository = GenerationRepository(session)
+    async def create_generation(
+        self,
+        user_id: int,
+        profile_id: str,
+        job_id: str
+    ) -> GenerationModel:
+        """
+        Create generation with async transaction.
+        Pattern: Service controls commit/rollback, repository does I/O
+        """
+        # Validate ownership first
+        profile = await self._validate_profile_ownership(user_id, profile_id)
+        job = await self._validate_job_ownership(user_id, job_id)
+        # Create generation
+        generation = Generation(
+            user_id=user_id,
+            profile_id=profile_id,
+            job_id=job_id
+        )
+        model = await self.repository.create(generation)
+        # Commit transaction (async)
+        await self.session.commit()
+        return model
+    async def _validate_profile_ownership(
+        self,
+        user_id: int,
+        profile_id: str
+    ) -> ProfileModel:
+        """Async query with error handling"""
+        stmt = select(ProfileModel).where(ProfileModel.id == profile_id)
+        result = await self.session.execute(stmt)
+        profile = result.scalars().first()
+        if not profile:
+            raise NotFoundError("Profile not found")
+        if profile.user_id != user_id:
+            raise ForbiddenError("Profile does not belong to user")
+        return profile
+``
+### API Endpoint with Transaction Handling
+**File**: `app/presentation/api/v1/generation.py`
+``python
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.dependencies import get_db
+from app.application.services.generation_service import GenerationService
+router = APIRouter(prefix="/generations")
+@router.post("/resume")
+async def create_resume_generation(
+    request: CreateResumeGenerationRequest,
+    db: AsyncSession = Depends(get_db)  # Dependency injection
+):
+    """
+    API endpoint with async database operations (2025 pattern).
+    Pattern:
+        - FastAPI injects AsyncSession via Depends(get_db)
+        - Session lifecycle managed by dependency
+        - Service handles transaction commit
+        - Automatic rollback on exception
+    """
+    service = GenerationService(session=db)
+    try:
+        generation = await service.create_generation(
+            user_id=current_user["id"],
+            profile_id=request.profile_id,
+            job_id=request.job_id
+        )
+        return GenerationResponse.model_validate(generation)
+    except Exception as e:
+        # Session automatically rolled back by dependency cleanup
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+``
+### Key Async SQLAlchemy Patterns
+1. **Engine Creation**: Use `create_async_engine()` with async driver (asyncpg, aiosqlite)
+2. **Session Factory**: Use `async_sessionmaker()` for dependency injection
+3. **Queries**: Use `select()` with `await session.execute()`, then `.scalars()` for results
+4. **Updates**: Use `update()` statement with `await session.execute()`
+5. **Deletes**: Use `delete()` statement with `await session.execute()`
+6. **Eager Loading**: Use `selectinload()` or `joinedload()` to avoid N+1 queries
+7. **Transaction Control**: Service layer calls `await session.commit()` or `await session.rollback()`
+8. **Dependency Injection**: Use `async with async_session_maker() as session` in FastAPI dependencies
+9. **AsyncAttrs**: Use for lazy loading relationships (`await model.awaitable_attrs.relationship`)
+10. **Context Managers**: Use `async with session.begin()` for auto-commit/rollback
+**Documentation**: See SQLAlchemy 2.0 async documentation for complete reference.

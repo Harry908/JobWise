@@ -17,6 +17,13 @@ class Settings(BaseSettings):
 
     # CORS
     allowed_origins: list[str] = ["*"]  # Override in .env
+    
+    # Groq LLM Configuration
+    groq_api_key: str = ""  # Override in .env
+    groq_timeout: int = 30
+    groq_max_retries: int = 3
+    llm_stage1_model: str = "llama-3.1-8b-instant"
+    llm_stage2_model: str = "llama-3.3-70b-versatile"
 
     model_config = SettingsConfigDict(env_file=".env")
 

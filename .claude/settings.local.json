@@ -7,7 +7,11 @@
       "Bash(python:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(alembic revision:*)",
+      "Bash($null)",
+      "Bash(dir:*)",
+      "Bash(flutter pub run build_runner build:*)"
     ],
     "deny": [],
     "ask": []

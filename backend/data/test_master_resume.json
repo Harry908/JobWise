@@ -1,0 +1,530 @@
+{
+  "user_id": "test-user-001",
+  "profile_id": "huy-ky-master-resume-001",
+  "personal_info": {
+    "full_name": "Huy (Harry) Ky", 
+    "email": "huyky26@gmail.com",
+    "phone": "(425) 470-9340",
+    "location": "Everett, WA",
+    "linkedin": "https://www.linkedin.com/in/huy-ky-7282a918a",
+    "github": "https://github.com/Harry908",
+    "website": null
+  },
+  "professional_summary": "First-generation computer science student with a 4.0 GPA pursuing a B.S. in Software Engineering. Experienced in AI orchestration, full-stack development, and system architecture with a strong foundation in algorithms, data structures, and cross-platform development. Passionate about building scalable solutions and mentoring peers, seeking to apply technical expertise and collaborative skills in software engineering and systems design.",
+  "technical_skills": {
+    "programming_languages": [
+      {"name": "C++", "proficiency": "advanced", "years_experience": 3},
+      {"name": "C#", "proficiency": "advanced", "years_experience": 3},
+      {"name": "Python", "proficiency": "advanced", "years_experience": 4},
+      {"name": "Java", "proficiency": "intermediate", "years_experience": 2},
+      {"name": "SQL", "proficiency": "intermediate", "years_experience": 2},
+      {"name": "JavaScript", "proficiency": "intermediate", "years_experience": 2},
+      {"name": "HTML/CSS", "proficiency": "intermediate", "years_experience": 2},
+      {"name": "MIPS", "proficiency": "beginner", "years_experience": 1}
+    ],
+    "frameworks_tools": [
+      {"name": "WPF", "proficiency": "advanced", "category": "frontend"},
+      {"name": "Blazor", "proficiency": "intermediate", "category": "web"},
+      {"name": "WinForms", "proficiency": "intermediate", "category": "desktop"},
+      {"name": "PyTorch", "proficiency": "intermediate", "category": "ml"},
+      {"name": "Unity", "proficiency": "intermediate", "category": "game_dev"},
+      {"name": "Azure SDK", "proficiency": "intermediate", "category": "cloud"},
+      {"name": "PostgreSQL", "proficiency": "intermediate", "category": "database"},
+      {"name": "Flask", "proficiency": "beginner", "category": "web"},
+      {"name": "OpenCV", "proficiency": "beginner", "category": "computer_vision"},
+      {"name": "Git", "proficiency": "advanced", "category": "version_control"},
+      {"name": "Visual Studio", "proficiency": "advanced", "category": "ide"},
+      {"name": "Eclipse", "proficiency": "intermediate", "category": "ide"},
+      {"name": "PyCharm", "proficiency": "intermediate", "category": "ide"}
+    ],
+    "testing_frameworks": [
+      {"name": "NUnit", "proficiency": "intermediate", "language": "C#"},
+      {"name": "JUnit", "proficiency": "intermediate", "language": "Java"}, 
+      {"name": "Mockito", "proficiency": "beginner", "language": "Java"}
+    ],
+    "concepts": [
+      "Object-Oriented Programming (OOP)",
+      "Data Structures & Algorithms",
+      "Software Development Life Cycle (SDLC)",
+      "AI/ML Integration",
+      "Cloud Computing",
+      "IoT Development",
+      "Test-Driven Development (TDD)",
+      "MVVM Architecture",
+      "System Architecture",
+      "API Integration"
+    ]
+  },
+  "education": [
+    {
+      "id": "education-001",
+      "institution": "Washington State University",
+      "location": "Everett, WA",
+      "degree": "Bachelor of Science",
+      "major": "Software Engineering",
+      "gpa": "4.0",
+      "start_date": "2023-09",
+      "end_date": "2025-12",
+      "is_current": true,
+      "relevant_coursework": [
+        "Advanced Data Structures",
+        "Design & Analysis of Algorithms", 
+        "Software Engineering Principles",
+        "Object-Oriented Programming",
+        "Database Systems",
+        "Artificial Intelligence",
+        "Software Testing"
+      ]
+    },
+    {
+      "id": "education-002", 
+      "institution": "Everett Community College",
+      "location": "Everett, WA",
+      "degree": "Associate in Art and Science",
+      "major": "Computer Science",
+      "gpa": "3.93",
+      "start_date": "2021-09",
+      "end_date": "2023-08",
+      "is_current": false,
+      "relevant_coursework": []
+    }
+  ],
+  "professional_experience": [
+    {
+      "id": "exp-001",
+      "title": "Software Engineering Tutor",
+      "company": "Washington State University",
+      "location": "Everett, WA",
+      "start_date": "2024-10",
+      "end_date": null,
+      "is_current": true,
+      "employment_type": "part_time",
+      "industry": "Education",
+      "description": "Provide technical tutoring and mentorship to computer science students across multiple programming languages and concepts.",
+      "key_responsibilities": [
+        "Assist students with technical challenges across programming languages and mathematical concepts",
+        "Break down complex algorithms and software design principles into clear explanations", 
+        "Adapt tutoring approaches to meet diverse learning styles and skill levels"
+      ],
+      "achievements": [
+        "Successfully tutored students in C++, C#, Python, Java, and advanced algorithms",
+        "Developed individualized support strategies to enhance student problem-solving skills",
+        "Fostered inclusive and effective learning environments for diverse student populations"
+      ],
+      "technologies": ["C++", "C#", "Python", "Java", "Algorithms", "Data Structures"]
+    },
+    {
+      "id": "exp-002",
+      "title": "Undergraduate Research Assistant",
+      "company": "Washington State University",
+      "location": "Everett, WA", 
+      "start_date": "2025-06",
+      "end_date": "2025-08",
+      "is_current": false,
+      "employment_type": "full_time_temp",
+      "industry": "Research",
+      "description": "Led development of AI-powered Virtual Reality applications for academic research in immersive technologies.",
+      "key_responsibilities": [
+        "Architected AI-powered Sommelier NPC for VR wine tasting simulation in Unity 6",
+        "Implemented end-to-end AI orchestration pipeline with voice recognition and LLMs",
+        "Resolved compatibility issues between AI systems and Meta XR SDK",
+        "Collaborated with faculty advisors on system architecture and integration challenges"
+      ],
+      "achievements": [
+        "Successfully integrated Speechify voice recognition with Hugging Face LLMs",
+        "Delivered seamless conversational VR experiences with real-time performance",
+        "Solved complex compatibility issues between emerging VR and AI technologies",
+        "Contributed to cutting-edge research in AI-powered immersive environments"
+      ],
+      "technologies": ["Unity 6", "C#", "Meta XR SDK", "Hugging Face", "Speechify", "AI Orchestration", "VR Development"]
+    },
+    {
+      "id": "exp-003",
+      "title": "Teaching Assistant - CPT_S 321 Object-Oriented Programming", 
+      "company": "Washington State University",
+      "location": "Everett, WA",
+      "start_date": "2025-01",
+      "end_date": "2025-05",
+      "is_current": false,
+      "employment_type": "part_time",
+      "industry": "Education",
+      "description": "Mentored students in advanced object-oriented programming concepts and provided academic support for a 100+ student course.",
+      "key_responsibilities": [
+        "Mentored dedicated cohort of 15 students within 100+ student class",
+        "Led code review sessions and one-on-one consultations",
+        "Supported course instructors with grading and curriculum feedback"
+      ],
+      "achievements": [
+        "Provided weekly guidance on object-oriented design principles and debugging",
+        "Helped students develop clean, maintainable code and strengthen OOP understanding", 
+        "Identified common learning gaps to improve curriculum delivery",
+        "Maintained high student satisfaction scores in mentorship evaluations"
+      ],
+      "technologies": ["C#", "Object-Oriented Programming", "Code Review", "Debugging"]
+    },
+    {
+      "id": "exp-004",
+      "title": "Program and Data Coordinator",
+      "company": "Everett Community College",
+      "location": "Everett, WA",
+      "start_date": "2022-02",
+      "end_date": "2023-08", 
+      "is_current": false,
+      "employment_type": "part_time",
+      "industry": "Education",
+      "description": "Managed data automation systems and improved operational efficiency for campus energy management programs.",
+      "key_responsibilities": [
+        "Diagnosed and resolved automation issues in utility data transfer pipelines",
+        "Ensured data accuracy and integrity in Energy Star Portfolio Manager software",
+        "Streamlined data workflows and reporting processes"
+      ],
+      "achievements": [
+        "Reduced manual intervention in data transfer processes by 75%",
+        "Improved operational efficiency across departmental systems",
+        "Maintained 99%+ data accuracy in Energy Star reporting systems",
+        "Developed troubleshooting procedures for automated data pipelines"
+      ],
+      "technologies": ["Energy Star Portfolio Manager", "Data Pipeline Automation", "SQL", "Reporting Systems"]
+    },
+    {
+      "id": "exp-005",
+      "title": "Student Senator",
+      "company": "Everett Community College", 
+      "location": "Everett, WA",
+      "start_date": "2022-09",
+      "end_date": "2023-06",
+      "is_current": false,
+      "employment_type": "volunteer",
+      "industry": "Education",
+      "description": "Elected representative advocating for student technology needs and campus resource allocation.",
+      "key_responsibilities": [
+        "Analyzed survey data addressing student concerns about campus technology resources",
+        "Presented findings and budget recommendations to college leadership",
+        "Facilitated communication between administration and student body"
+      ],
+      "achievements": [
+        "Successfully advocated for $50K budget allocation for campus technology upgrades",
+        "Improved student satisfaction with campus technology resources by 40%",
+        "Contributed to policy improvements affecting 8,000+ students",
+        "Led initiative resulting in expanded WiFi coverage across campus"
+      ],
+      "technologies": ["Data Analysis", "Survey Research", "Policy Development", "Student Advocacy"]
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-001",
+      "name": "Azure Cloud Capstone Project",
+      "description": "Microsoft-sponsored IoT and cloud computing project implementing end-to-end sensor data collection, processing, and machine learning analysis for energy consumption optimization.",
+      "status": "completed",
+      "start_date": "2024-09",
+      "end_date": "2024-12",
+      "url": null,
+      "github_url": null,
+      "technologies": ["C/C++", "C#", "Python", "PyTorch", "HTML", "Blazor", "Arduino", "Azure IoT Hub", "Azure App Service", "MQTT", "ESP8266"],
+      "key_features": [
+        "Implemented C++ firmware for ESP8266 microcontroller using Azure SDK",
+        "Built and deployed Blazor web application on Azure App Service",
+        "Designed and trained denoising autoencoder model in PyTorch",
+        "Integrated LLM pipeline for personalized energy-saving recommendations"
+      ],
+      "achievements": [
+        "Successfully collected and published real-time sensor data via MQTT protocol",
+        "Achieved 92% accuracy in energy consumption pattern disaggregation",
+        "Deployed scalable cloud-based data processing and visualization system",
+        "Applied end-to-end IoT architecture from embedded systems to ML deployment"
+      ],
+      "team_size": 1,
+      "role": "Solo Developer"
+    },
+    {
+      "id": "project-002", 
+      "name": "Recipe Generator Application",
+      "description": "Award-winning desktop application that generates optimized recipe suggestions from available ingredients using graph algorithms and MVVM architecture.",
+      "status": "completed", 
+      "start_date": "2024-03",
+      "end_date": "2024-03",
+      "url": null,
+      "github_url": null,
+      "technologies": ["C#", "WPF", "MVVM Architecture", "PostgreSQL", "Graph Algorithms"],
+      "key_features": [
+        "Architected high-performance desktop application with MVVM pattern",
+        "Implemented efficient graph algorithms for recipe optimization",
+        "Designed PostgreSQL database schema for recipe and ingredient management",
+        "Created intuitive user interface for ingredient selection and recipe display"
+      ],
+      "achievements": [
+        "Won 2nd Place at WSU Everett CougHacks 24 hackathon",
+        "Completed full application development within 24-hour timeframe", 
+        "Achieved sub-second recipe generation response times",
+        "Demonstrated clean separation of business logic and UI components"
+      ],
+      "team_size": 2,
+      "role": "Lead Developer",
+      "recognition": "2nd Place, WSU Everett CougHacks 24"
+    },
+    {
+      "id": "project-003",
+      "name": "MapRSS",
+      "description": "Desktop RSS reader with integrated geographic mapping that categorizes articles and displays location-based relevance using Bing Maps API.",
+      "status": "completed",
+      "start_date": "2024-01", 
+      "end_date": "2024-05",
+      "url": null,
+      "github_url": null,
+      "technologies": ["C#", "WPF", "MVVM Architecture", "Bing Maps API", "RSS Parsing"],
+      "key_features": [
+        "Developed RSS reader with automatic article categorization",
+        "Integrated Bing Maps API for geographic article visualization",
+        "Implemented keyword-based topic classification algorithm",
+        "Applied software engineering principles with iterative development"
+      ],
+      "achievements": [
+        "Successfully parsed and categorized articles from multiple RSS feeds",
+        "Delivered polished, user-friendly desktop application",
+        "Applied requirements analysis and design documentation best practices", 
+        "Achieved seamless integration between RSS data and geographic mapping"
+      ],
+      "team_size": 1,
+      "role": "Solo Developer"
+    },
+    {
+      "id": "project-004",
+      "name": "Spreadsheet Application", 
+      "description": "Full-featured desktop spreadsheet application with formula support, dependency tracking, and automatic cell updates using expression tree data structures.",
+      "status": "completed",
+      "start_date": "2023-09",
+      "end_date": "2023-12",
+      "url": null,
+      "github_url": null,
+      "technologies": ["C#", "NUnit", "WinForms", "Expression Trees", "Test-Driven Development"],
+      "key_features": [
+        "Built fully functional spreadsheet with formula support",
+        "Implemented dependency tracking and automatic cell updates",
+        "Used expression tree data structures for formula evaluation",
+        "Applied test-driven development with comprehensive unit test coverage"
+      ],
+      "achievements": [
+        "Achieved 95%+ unit test coverage with NUnit framework",
+        "Implemented robust error handling for formula parsing and evaluation",
+        "Applied object-oriented design principles with clear separation of concerns",
+        "Delivered modular, extensible codebase suitable for future enhancements"
+      ],
+      "team_size": 1,
+      "role": "Solo Developer"
+    },
+    {
+      "id": "project-005",
+      "name": "Eclipse Checkstyle Plug-in",
+      "description": "Eclipse IDE plug-in for detecting structural software metrics in Java code using static analysis techniques with comprehensive testing strategy.",
+      "status": "completed",
+      "start_date": "2024-01",
+      "end_date": "2024-05", 
+      "url": null,
+      "github_url": null,
+      "technologies": ["Java", "JUnit", "Mockito", "Pitclipse", "Eclipse Plugin Development", "Static Analysis"],
+      "key_features": [
+        "Developed Eclipse plug-in for structural software metrics detection",
+        "Implemented static analysis techniques for Java code assessment",
+        "Created comprehensive testing strategy with multiple testing methodologies",
+        "Integrated white-box, black-box, and mutation testing approaches"
+      ],
+      "achievements": [
+        "Successfully deployed working Eclipse plug-in for code analysis",
+        "Achieved high reliability and accuracy through comprehensive testing",
+        "Applied advanced testing techniques including mutation testing with Pitclipse",
+        "Demonstrated proficiency in Eclipse plugin development ecosystem"
+      ],
+      "team_size": 2,
+      "role": "Co-Developer"
+    },
+    {
+      "id": "project-006",
+      "name": "Image Steganography",
+      "description": "Python application for secure message encryption and decryption within images using LSB algorithm with modular architecture for interchangeable encryption methods.",
+      "status": "completed",
+      "start_date": "2023-09",
+      "end_date": "2023-12",
+      "url": null, 
+      "github_url": null,
+      "technologies": ["Python", "Tkinter", "OpenCV", "Pillow", "LSB Algorithm", "Cryptography"],
+      "key_features": [
+        "Built Python application for encrypting and decrypting hidden messages in images",
+        "Implemented Least Significant Bit (LSB) algorithm for steganography",
+        "Designed modular architecture supporting interchangeable encryption algorithms", 
+        "Created intuitive GUI using Tkinter for user interaction"
+      ],
+      "achievements": [
+        "Successfully implemented secure message hiding with minimal image quality degradation",
+        "Demonstrated software design flexibility and extensibility principles",
+        "Applied cybersecurity concepts in practical application development",
+        "Created user-friendly interface for complex cryptographic operations"
+      ],
+      "team_size": 1,
+      "role": "Solo Developer"
+    },
+    {
+      "id": "project-007",
+      "name": "Sentiment Analysis Web Application",
+      "description": "Web application performing real-time sentiment analysis using fine-tuned T5 transformer model with Flask backend and responsive frontend interface.",
+      "status": "completed",
+      "start_date": "2024-09",
+      "end_date": "2024-12",
+      "url": null,
+      "github_url": null, 
+      "technologies": ["Python", "Flask", "HTML/CSS", "JavaScript", "T5 Transformer", "Machine Learning"],
+      "key_features": [
+        "Designed and implemented responsive front-end user interface",
+        "Integrated interface with Python Flask backend for sentiment analysis",
+        "Utilized fine-tuned T5 transformer model for text processing",
+        "Implemented real-time sentiment analysis with immediate results display"
+      ],
+      "achievements": [
+        "Created intuitive user experience for complex AI functionality",
+        "Successfully integrated transformer models with web application architecture",
+        "Delivered real-time text sentiment analysis with high accuracy",
+        "Applied modern web development practices with focus on user experience"
+      ],
+      "team_size": 3,
+      "role": "Frontend Developer"
+    },
+    {
+      "id": "project-008",
+      "name": "Business Analysis Application",
+      "description": "Desktop application analyzing business performance metrics from Yelp academic dataset using optimized PostgreSQL schema and efficient SQL queries.",
+      "status": "completed", 
+      "start_date": "2023-01",
+      "end_date": "2023-05",
+      "url": null,
+      "github_url": null,
+      "technologies": ["Python", "PyQt", "SQL", "PostgreSQL", "Data Analysis", "Business Intelligence"],
+      "key_features": [
+        "Built standalone desktop application for business performance analysis",
+        "Designed optimized PostgreSQL schema for Yelp academic dataset",
+        "Wrote efficient SQL queries for business trend calculation and visualization",
+        "Created interactive dashboard for business performance indicators"
+      ],
+      "achievements": [
+        "Successfully processed and analyzed large-scale Yelp dataset",
+        "Optimized database queries for sub-second response times on complex analytics",
+        "Delivered actionable business insights through intuitive data visualization",
+        "Applied database design principles for scalable data analysis solution"
+      ],
+      "team_size": 1,
+      "role": "Solo Developer"
+    }
+  ],
+  "certifications": [],
+  "languages": [
+    {"language": "English", "proficiency": "native"},
+    {"language": "Vietnamese", "proficiency": "conversational"}
+  ],
+  "volunteer_experience": [],
+  "publications": [],
+  "awards_honors": [
+    {
+      "title": "2nd Place - Recipe Generator Application",
+      "organization": "WSU Everett CougHacks 24",
+      "date": "2024-03",
+      "description": "Awarded second place in competitive 24-hour hackathon for innovative recipe generation application using graph algorithms and MVVM architecture."
+    },
+    {
+      "title": "Dean's List", 
+      "organization": "Washington State University",
+      "date": "2023-12",
+      "description": "Recognized for academic excellence with 4.0 GPA in Software Engineering program."
+    },
+    {
+      "title": "Dean's List",
+      "organization": "Everett Community College", 
+      "date": "2023-08",
+      "description": "Graduated with honors, achieving 3.93 GPA in Computer Science program."
+    }
+  ],
+  "interests": [
+    "Artificial Intelligence and Machine Learning",
+    "Virtual Reality and Immersive Technologies", 
+    "Cloud Computing and IoT",
+    "Open Source Software Development",
+    "Cybersecurity and Data Privacy",
+    "Educational Technology and Mentoring"
+  ],
+  "availability": {
+    "full_time": true,
+    "part_time": true,
+    "internship": true,
+    "contract": false,
+    "remote": true,
+    "relocation_willing": true
+  },
+  "desired_positions": [
+    "Software Engineer Intern",
+    "Full Stack Developer Intern", 
+    "AI/ML Engineer Intern",
+    "Cloud Developer Intern",
+    "Backend Developer Intern"
+  ],
+  "desired_industries": [
+    "Technology",
+    "Software", 
+    "Artificial Intelligence",
+    "Cloud Computing",
+    "Gaming",
+    "Financial Technology"
+  ],
+  "salary_expectations": {
+    "currency": "USD",
+    "range_min": 70000,
+    "range_max": 90000,
+    "negotiable": true,
+    "type": "annual"
+  },
+  "portfolio_items": [
+    {
+      "title": "Azure Cloud IoT Project Demo",
+      "type": "video_demo",
+      "url": null,
+      "description": "Demonstration of real-time sensor data collection and ML-powered energy analysis"
+    },
+    {
+      "title": "Recipe Generator Application Screenshots",
+      "type": "images", 
+      "url": null,
+      "description": "Screenshots showcasing MVVM architecture and graph algorithm implementation"
+    }
+  ],
+  "references": [
+    {
+      "name": "Dr. Jane Smith",
+      "title": "Associate Professor, Software Engineering",
+      "company": "Washington State University", 
+      "email": "jane.smith@wsu.edu",
+      "phone": "(425) 555-0123",
+      "relationship": "Research Supervisor"
+    },
+    {
+      "name": "Prof. Michael Johnson",
+      "title": "Lecturer, Computer Science",
+      "company": "Washington State University",
+      "email": "m.johnson@wsu.edu", 
+      "phone": "(425) 555-0124",
+      "relationship": "Course Instructor"
+    }
+  ],
+  "created_at": "2024-11-09T10:30:00Z",
+  "updated_at": "2024-11-09T10:30:00Z",
+  "version": "1.0",
+  "source": "manual_entry",
+  "completeness_score": 0.95,
+  "verification_status": "pending",
+  "metadata": {
+    "total_years_experience": 3,
+    "total_projects": 8,
+    "primary_languages": ["C++", "C#", "Python"],
+    "primary_domains": ["Software Engineering", "AI/ML", "Cloud Computing", "Full Stack Development"],
+    "education_level": "bachelors_in_progress",
+    "has_leadership_experience": true,
+    "has_research_experience": true,
+    "has_teaching_experience": true
+  }
+}

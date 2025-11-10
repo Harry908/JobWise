@@ -1,6 +1,6 @@
 """Database connection and utilities."""
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 
@@ -25,7 +25,7 @@ def create_engine():
 
 def create_session_factory(engine):
     """Create session factory."""
-    return sessionmaker(
+    return async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
 
@@ -35,11 +35,13 @@ async def get_db_session():
     engine = create_engine()
     session_factory = create_session_factory(engine)
 
-    session = session_factory()
-    try:
-        yield session
-    finally:
-        await session.close() if hasattr(session, 'close') and hasattr(session.close, '__call__') else None
+    async with session_factory() as session:
+        try:
+            yield session
+        finally:
+            pass  # Session automatically closed by async context manager
+    
+    await engine.dispose()
 
 
 async def check_database_health() -> bool:

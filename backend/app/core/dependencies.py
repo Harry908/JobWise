@@ -7,9 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.services.auth_service import AuthService
 from app.application.services.job_service import JobService
 from app.core.security import get_user_id_from_token
+from app.core.config import get_settings
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.job_repository import JobRepository
+from app.domain.ports.llm_service import ILLMService
+from app.infrastructure.adapters.mock_llm_adapter import MockLLMAdapter
+# from app.infrastructure.adapters.groq_llm_adapter import GroqLLMAdapter
+
+
+settings = get_settings()
 
 
 # Security scheme
@@ -67,3 +74,17 @@ async def get_job_service(
 ) -> JobService:
     """Get job service instance."""
     return JobService(job_repo)
+
+
+def get_llm_service() -> ILLMService:
+    """
+    Get LLM service instance (Context7 dependency injection pattern).
+    
+    Returns:
+        ILLMService: Mock adapter for development, Groq adapter for production
+    """
+    # Use mock adapter for development (no API key needed)
+    # Uncomment to use Groq in production:
+    # if settings.groq_api_key:
+    #     return GroqLLMAdapter()
+    return MockLLMAdapter()

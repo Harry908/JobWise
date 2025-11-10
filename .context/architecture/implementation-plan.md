@@ -33,28 +33,28 @@ This implementation plan provides a comprehensive roadmap for developing JobWise
 - Foundation for AI generation pipeline
 
 #### Phase 2: Core AI Generation (Weeks 10-11)
-**Goal**: Implement 5-stage AI generation pipeline
+**Goal**: Implement 2-stage AI generation pipeline
 **Priority**: Primary business differentiator
 
 **Sprint 2.1 (Week 10)**
 - Implement AI Orchestrator service architecture
-- Build Job Analyzer stage (LLM integration)
-- Create Profile Compiler stage (relevance scoring)
-- Establish token budget management system
+- Build Analysis & Matching stage (LLM integration)
+- Create job analysis and profile content matching
+- Establish token budget management system (5000 total)
 - Implement generation status tracking
 
 **Sprint 2.2 (Week 11)**
-- Complete Document Generator stage (content creation)
-- Build Quality Validator stage (ATS compliance)
-- Implement PDF Exporter stage (template system)
-- Create generation UI with progress tracking
+- Complete Generation & Validation stage (combined content creation + quality validation)
+- Build resume generation with ATS compliance checking
+- Implement PDF export capability
+- Create generation UI with progress tracking (2-stage)
 - Add error handling and retry mechanisms
 
 **Deliverables:**
-- End-to-end resume generation pipeline
-- Progress tracking UI
+- End-to-end 2-stage resume generation pipeline
+- Progress tracking UI (40% → 100%)
 - PDF export capability
-- Quality validation system
+- Combined generation & validation system
 
 #### Phase 3: Enhancement & Polish (Weeks 12-13)
 **Goal**: Improve user experience and system reliability
