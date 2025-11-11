@@ -32,7 +32,6 @@ class AuthResponse {
   }
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    print('AuthResponse.fromJson: Parsing response: $json');
     try {
       final result = AuthResponse(
         accessToken: json['access_token'] as String,
@@ -41,10 +40,8 @@ class AuthResponse {
         expiresIn: json['expires_in'] as int?,
         user: User.fromJson(json['user'] as Map<String, dynamic>),
       );
-      print('AuthResponse.fromJson: Successfully parsed: ${result.user}');
       return result;
     } catch (e) {
-      print('AuthResponse.fromJson: Failed to parse: $e');
       rethrow;
     }
   }

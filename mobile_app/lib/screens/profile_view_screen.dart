@@ -460,7 +460,7 @@ class ProfileViewScreen extends ConsumerWidget {
                     children: skills.technical.map((skill) {
                       return Chip(
                         label: Text(skill),
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                         labelStyle: TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w500,
@@ -485,7 +485,7 @@ class ProfileViewScreen extends ConsumerWidget {
                     children: skills.soft.map((skill) {
                       return Chip(
                         label: Text(skill),
-                        backgroundColor: Colors.green.withOpacity(0.1),
+                        backgroundColor: Colors.green.withValues(alpha: 0.1),
                         labelStyle: const TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.w500,
@@ -606,7 +606,7 @@ class ProfileViewScreen extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

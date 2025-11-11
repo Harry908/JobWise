@@ -229,7 +229,7 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
                   Text(
                     '${state.browseJobsTotal} jobs found',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -264,7 +264,7 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
               Icon(
                 Icons.work_off_outlined,
                 size: 64,
-                color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
@@ -275,7 +275,7 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
               Text(
                 'Try adjusting your search or filters',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),

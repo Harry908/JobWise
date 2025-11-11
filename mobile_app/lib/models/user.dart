@@ -38,11 +38,9 @@ class User {
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
-    print('User.fromJson: Parsing user: $json');
     // Convert id to string if it's an integer
     if (json['id'] is int) {
       json = Map<String, dynamic>.from(json)..['id'] = json['id'].toString();
-      print('User.fromJson: Converted id to string: ${json['id']}');
     }
 
     // Parse DateTime fields manually
@@ -52,18 +50,16 @@ class User {
     if (json['created_at'] is String) {
       try {
         createdAt = DateTime.parse(json['created_at']);
-        print('User.fromJson: Parsed created_at: $createdAt');
       } catch (e) {
-        print('User.fromJson: Failed to parse created_at: $e');
+        // Silent fail for date parsing
       }
     }
 
     if (json['updated_at'] is String) {
       try {
         updatedAt = DateTime.parse(json['updated_at']);
-        print('User.fromJson: Parsed updated_at: $updatedAt');
       } catch (e) {
-        print('User.fromJson: Failed to parse updated_at: $e');
+        // Silent fail for date parsing
       }
     }
 
@@ -77,10 +73,8 @@ class User {
         createdAt: createdAt,
         updatedAt: updatedAt,
       );
-      print('User.fromJson: Successfully created user: $user');
       return user;
     } catch (e) {
-      print('User.fromJson: Failed to create user: $e');
       rethrow;
     }
   }

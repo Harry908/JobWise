@@ -153,7 +153,7 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
                   Text(
                     '${_textController.text.length} / 15000 characters',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -167,7 +167,7 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
                 color: theme.colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, -2),
                   ),

@@ -102,7 +102,7 @@ class JobCard extends StatelessWidget {
                     child: Text(
                       location ?? (remote ? 'Remote' : 'Location not specified'),
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -138,7 +138,7 @@ class JobCard extends StatelessWidget {
                     Text(
                       _formatSalaryRange(salaryRange),
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

@@ -125,7 +125,7 @@ class JobDetailView extends StatelessWidget {
                 child: Text(
                   'Added ${_formatDate(job.createdAt)}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -296,13 +296,13 @@ class JobDetailView extends StatelessWidget {
                   Icon(
                     Icons.info_outline,
                     size: 16,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Source: ${_formatSource(job.source)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -345,10 +345,10 @@ class JobDetailView extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.1),
+              color: _getApplicationStatusColor(job.applicationStatus).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.3),
+                color: _getApplicationStatusColor(job.applicationStatus).withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
@@ -373,7 +373,7 @@ class JobDetailView extends StatelessWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: _getApplicationStatusColor(job.applicationStatus).withOpacity(0.5),
+                    color: _getApplicationStatusColor(job.applicationStatus).withValues(alpha: 0.5),
                   ),
               ],
             ),

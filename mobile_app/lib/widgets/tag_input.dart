@@ -99,7 +99,7 @@ class _TagInputState extends State<TagInput> {
                 onDeleted: widget.enabled ? () => _removeTag(tag) : null,
                 backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 side: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.3),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

@@ -461,7 +461,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
 
     try {
-      print('Saving profile with ${_experiences.length} experiences...');
       if (isCreating) {
         await ref.read(profileProvider.notifier).createProfile(profile);
       } else {
@@ -478,7 +477,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Profile save error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
