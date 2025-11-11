@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.exceptions import LLMServiceError, LLMTimeoutError, LLMValidationError, RateLimitError
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 class GroqAdapter:
@@ -33,20 +34,20 @@ class GroqAdapter:
         self.model = model
         self.client = Groq(api_key=self.api_key)
         
-        # Rate limiting
-        self.requests_per_minute = 30  # Groq free tier limit
+        # Rate limiting - now from settings
+        self.requests_per_minute = settings.rate_limit_requests_per_minute  
         self.request_times: List[float] = []
         
-        # Retry configuration
-        self.max_retries = 3
-        self.base_delay = 1.0
+        # Retry configuration - now from settings
+        self.max_retries = settings.rate_limit_max_retries
+        self.base_delay = float(settings.rate_limit_retry_delay)
         
         logger.info(f"GroqAdapter initialized with model: {self.model}")
 
     async def generate(
         self,
         prompt: str,
-        temperature: float = 0.7,
+        temperature: float = 0.3,  # Updated to match settings default
         max_tokens: int = 1024,
         timeout: float = 30.0,
         **kwargs

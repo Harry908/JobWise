@@ -32,8 +32,8 @@ class FileUploadService:
     
     ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "doc"}
     
-    # File size limits (in bytes)
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    # File size limits (in bytes) - now from settings
+    MAX_FILE_SIZE = settings.upload_max_file_size  
     MIN_FILE_SIZE = 100  # 100 bytes minimum
     
     def __init__(self, db: AsyncSession, upload_directory: Optional[str] = None):
@@ -48,7 +48,7 @@ class FileUploadService:
         self.repository = ExampleResumeRepository(db)
         
         # Set upload directory
-        self.upload_directory = Path(upload_directory or settings.upload_directory or "./uploads")
+        self.upload_directory = Path(upload_directory or settings.upload_storage_path or "./uploads")
         self.upload_directory.mkdir(parents=True, exist_ok=True)
         
         # Create subdirectories

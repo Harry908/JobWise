@@ -25,19 +25,21 @@ from app.application.services.preference_extraction_service import PreferenceExt
 from app.application.services.file_upload.text_extraction_service import TextExtractionService
 from app.domain.ports.llm_service import ILLMService, LLMMessage
 from app.core.exceptions import NotFoundError, ForbiddenException, ValidationException, LLMServiceError
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
-# Stage information (2-stage pipeline)
+# Stage information (2-stage pipeline) - now uses environment configuration
 STAGE_INFO = {
     0: (None, "Queued for processing"),
     1: ("Analysis & Matching", "Analyzing job and matching with your profile content"),
     2: ("Generation & Validation", "Generating tailored resume and validating quality")
 }
 
-# Stage weights for progress calculation (2-stage pipeline)
-STAGE_WEIGHTS = [40, 60]
+# Stage weights for progress calculation - now from environment
+STAGE_WEIGHTS = [settings.generation_pipeline_stage1_weight, settings.generation_pipeline_stage2_weight]
 
 
 class GenerationService:
@@ -332,8 +334,8 @@ Respond in JSON format with these exact keys.
                     "company_culture": ["string"],
                     "job_type_classification": "string"
                 },
-                temperature=0.2,
-                max_tokens=2000
+                temperature=settings.llm_temperature_analysis,
+                max_tokens=settings.llm_max_tokens_analysis
             )
             
             logger.info(f"Job analysis complete for {generation_id}: {len(analysis_response.get('technical_skills', []))} technical skills identified")
@@ -438,8 +440,8 @@ Provide recommendations for which content to emphasize, minimize, or omit.
                     "missing_requirements": ["string"],
                     "overall_match_percentage": "number"
                 },
-                temperature=0.3,
-                max_tokens=2500
+                temperature=settings.llm_temperature_analysis,
+                max_tokens=settings.llm_max_tokens_analysis
             )
             
             logger.info(f"Content matching complete for {generation_id}: {matching_response.get('overall_match_percentage', 0)}% overall match")
@@ -492,8 +494,8 @@ Please provide a structured analysis in JSON format.
                     "soft_skills": ["string"],
                     "industry_keywords": ["string"]
                 },
-                temperature=0.2,
-                max_tokens=1500
+                temperature=settings.llm_temperature_analysis,
+                max_tokens=settings.llm_max_tokens_analysis
             )
             
             logger.info(f"Stage 1 complete for {generation_id}: {len(analysis_response.get('technical_skills', []))} skills identified")
@@ -780,8 +782,8 @@ Please provide a structured analysis in JSON format.
                         }
                     ]
                 },
-                temperature=0.4,
-                max_tokens=3000
+                temperature=settings.llm_temperature_generation,
+                max_tokens=settings.llm_max_tokens_generation
             )
             
             # Format the resume as readable text

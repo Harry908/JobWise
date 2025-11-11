@@ -83,13 +83,10 @@ async def test_llm_service():
     
     # Test 4: Service type validation
     from app.infrastructure.adapters.groq_llm_service import GroqLLMService
-    from app.infrastructure.adapters.mock_llm_adapter import MockLLMAdapter
     
     if isinstance(service, GroqLLMService):
         print(f"   Using: ✅ Real Groq API")
         print(f"   Model: {service.default_model}")
-    elif isinstance(service, MockLLMAdapter):
-        print(f"   Using: ⚠️  Mock LLM (set GROQ_API_KEY for real API)")
     else:
         print(f"   Using: ❓ Unknown service type: {type(service)}")
     

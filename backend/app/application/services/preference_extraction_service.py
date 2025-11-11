@@ -15,9 +15,10 @@ from app.domain.prompts.structural_analysis_prompts import StructuralAnalysisPro
 from app.infrastructure.adapters.groq_adapter import GroqAdapter
 from app.core.exceptions import PreferenceExtractionException
 from app.application.services.file_upload.text_extraction_service import TextExtractionService
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
-
+settings = get_settings()
 
 class PreferenceExtractionService:
     """Service for extracting user preferences from cover letters and example resumes."""
@@ -88,8 +89,8 @@ class PreferenceExtractionService:
             logger.debug("Sending cover letter to LLM for writing style analysis")
             analysis_response = await self.groq.generate(
                 prompt=analysis_prompt,
-                temperature=0.1,  # Low temperature for consistent analysis
-                max_tokens=1000
+                temperature=settings.llm_temperature_preference,  # Low temperature for consistent analysis
+                max_tokens=settings.llm_max_tokens_preference
             )
             
             # Parse LLM response into structured preferences
@@ -165,8 +166,8 @@ class PreferenceExtractionService:
             logger.debug("Sending resume to LLM for layout analysis")
             analysis_response = await self.groq.generate(
                 prompt=analysis_prompt,
-                temperature=0.1,  # Low temperature for consistent analysis
-                max_tokens=1200
+                temperature=settings.llm_temperature_preference,  # Low temperature for consistent analysis
+                max_tokens=settings.llm_max_tokens_preference
             )
             
             # Parse LLM response into structured layout preferences

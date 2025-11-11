@@ -8,9 +8,8 @@ if %errorlevel% neq 0 (
 )
 
 echo Loading environment variables from .env
-if exist .env (
-    for /f "tokens=*" %%i in (.env) do set %%i
-) else (
+REM Note: Python's dotenv will load .env automatically, no need to set here
+if not exist .env (
     echo Warning: .env file not found
 )
 

@@ -10,8 +10,10 @@ from groq import Groq
 
 from app.domain.ports.llm_service import ILLMService, LLMMessage, LLMResponse
 from app.core.exceptions import LLMServiceError, LLMTimeoutError, LLMValidationError, RateLimitError
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 class GroqLLMService(ILLMService):
@@ -54,13 +56,13 @@ class GroqLLMService(ILLMService):
             logger.error(f"Groq client initialization failed: {e}")
             raise ValueError(f"Failed to initialize Groq client: {e}. Please check your API key.")
         
-        # Rate limiting
-        self.requests_per_minute = 30  # Groq free tier limit
+        # Rate limiting - now from settings
+        self.requests_per_minute = settings.rate_limit_requests_per_minute  
         self.request_times: List[float] = []
         
-        # Retry configuration
-        self.max_retries = 3
-        self.base_delay = 1.0
+        # Retry configuration - now from settings
+        self.max_retries = settings.rate_limit_max_retries
+        self.base_delay = float(settings.rate_limit_retry_delay)
         
         logger.info(f"GroqLLMService initialized with default model: {self.default_model}")
 
@@ -69,7 +71,7 @@ class GroqLLMService(ILLMService):
         messages: List[LLMMessage],
         model: str,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.7
+        temperature: float = 0.3  # Updated to match settings default
     ) -> LLMResponse:
         """
         Generate completion from LLM using the domain interface.
@@ -310,8 +312,8 @@ Generate a complete {content_type} in plain text format with clear sections.
             response = await self.generate(
                 messages=messages,
                 model="llama-3.3-70b-versatile",  # Use best model for content generation
-                max_tokens=3000,
-                temperature=0.4  # Balanced creativity and consistency
+                max_tokens=settings.llm_max_tokens_generation,
+                temperature=settings.llm_temperature_generation  # Balanced creativity and consistency
             )
             
             return response.content

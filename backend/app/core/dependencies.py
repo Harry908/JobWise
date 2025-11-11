@@ -12,7 +12,6 @@ from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.job_repository import JobRepository
 from app.domain.ports.llm_service import ILLMService
-from app.infrastructure.adapters.mock_llm_adapter import MockLLMAdapter
 from app.infrastructure.adapters.groq_llm_service import GroqLLMService
 
 
@@ -82,17 +81,22 @@ def get_llm_service() -> ILLMService:
     
     Returns:
         ILLMService: GroqLLMService with API key from settings
+        
+    Raises:
+        ValueError: If no API key is configured
     """
+    if not settings.groq_api_key:
+        raise ValueError(
+            "GROQ_API_KEY is required but not configured. "
+            "Please set GROQ_API_KEY in your .env file to use the generation features."
+        )
+    
     try:
         # Use Groq service with API key from settings
-        if settings.groq_api_key:
-            return GroqLLMService(api_key=settings.groq_api_key)
-        else:
-            # Fall back to mock if no API key configured
-            return MockLLMAdapter()
+        return GroqLLMService(api_key=settings.groq_api_key)
     except Exception as e:
-        # Log error and fall back to mock
+        # Log error and re-raise with helpful message
         import logging
         logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to initialize Groq service: {e}. Falling back to mock.")
-        return MockLLMAdapter()
+        logger.error(f"Failed to initialize Groq service: {e}")
+        raise ValueError(f"Failed to initialize Groq LLM service: {e}. Please check your GROQ_API_KEY.")
