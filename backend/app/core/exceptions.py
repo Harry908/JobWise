@@ -82,6 +82,13 @@ class StorageException(HTTPException):
         super().__init__(status_code=500, detail=detail)
 
 
+class TextExtractionError(HTTPException):
+    """Exception raised for text extraction errors."""
+
+    def __init__(self, detail: str = "Text extraction failed"):
+        super().__init__(status_code=422, detail=detail)
+
+
 class PreferenceExtractionException(HTTPException):
     """Exception raised for preference extraction errors."""
 

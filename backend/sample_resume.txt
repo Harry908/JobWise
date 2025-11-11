@@ -1,63 +1,21 @@
-Alex Johnson
-Software Engineer
-Phone: (555) 123-4567 | Email: alex.johnson@email.com
-LinkedIn: linkedin.com/in/alexjohnson | GitHub: github.com/alexj
+{FULL_NAME}
+{EMAIL} | {PHONE} | {LOCATION}
+{LINKEDIN} | {GITHUB}
 
 PROFESSIONAL SUMMARY
-
-Experienced Full-Stack Software Engineer with 5+ years developing scalable web applications and microservices. Expertise in Python, JavaScript, and cloud technologies. Proven track record of leading technical projects and mentoring junior developers. Passionate about clean code, performance optimization, and user experience.
+{PROFESSIONAL_SUMMARY}
 
 TECHNICAL SKILLS
-
-Programming Languages: Python, JavaScript, TypeScript, Java, SQL
-Web Frameworks: FastAPI, Django, React, Vue.js, Node.js
-Databases: PostgreSQL, MongoDB, Redis, MySQL
-Cloud & DevOps: AWS (EC2, S3, RDS, Lambda), Docker, Kubernetes, CI/CD
-Tools & Technologies: Git, REST APIs, GraphQL, Microservices, Agile/Scrum
+{TECHNICAL_SKILLS}
 
 PROFESSIONAL EXPERIENCE
-
-Senior Software Engineer | TechCorp Solutions | 2021 - Present
-• Led development of enterprise web applications serving 50,000+ users
-• Architected microservices-based system improving performance by 40%
-• Mentored team of 4 junior developers, reducing onboarding time by 30%
-• Implemented automated testing strategies achieving 95% code coverage
-• Collaborated with product managers to define technical requirements
-
-Software Engineer | StartupXYZ | 2019 - 2021
-• Developed full-stack applications using Python/Django and React
-• Designed and implemented RESTful APIs handling 1M+ requests daily
-• Optimized database queries reducing response times by 50%
-• Built CI/CD pipelines deploying to AWS infrastructure
-• Participated in code reviews and maintained high code quality standards
-
-Junior Developer | CodeCraft | 2018 - 2019
-• Contributed to web application development using JavaScript and PHP
-• Assisted in database design and optimization projects
-• Collaborated with senior developers on feature implementations
-• Gained experience with version control and agile methodologies
+{WORK_EXPERIENCE}
 
 EDUCATION
-
-Bachelor of Science in Computer Science | State University | 2018
-• Relevant Coursework: Data Structures, Algorithms, Database Systems, Software Engineering
-• Senior Project: Developed a task management application with real-time collaboration features
-
-CERTIFICATIONS
-
-• AWS Certified Solutions Architect - Associate (2022)
-• AWS Certified Developer - Associate (2021)
-• Certified Scrum Master (CSM) (2020)
+{EDUCATION}
 
 PROJECTS
+{PROJECTS}
 
-Task Management Platform | Personal Project | 2023
-• Built full-stack application with React frontend and FastAPI backend
-• Implemented real-time notifications using WebSockets
-• Deployed on AWS with containerized architecture
-• Technologies: Python, React, PostgreSQL, Docker, AWS
-
-Open Source Contributions
-• Contributor to several open-source Python libraries
-• Maintained personal projects with 500+ GitHub stars
-• Active participant in developer community forums and meetups
+CERTIFICATIONS
+{CERTIFICATIONS}

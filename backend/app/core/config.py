@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     llm_stage1_model: str = "llama-3.1-8b-instant"
     llm_stage2_model: str = "llama-3.3-70b-versatile"
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
 
 
 settings = Settings()

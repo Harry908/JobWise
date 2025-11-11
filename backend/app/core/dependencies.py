@@ -13,7 +13,7 @@ from app.infrastructure.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.job_repository import JobRepository
 from app.domain.ports.llm_service import ILLMService
 from app.infrastructure.adapters.mock_llm_adapter import MockLLMAdapter
-# from app.infrastructure.adapters.groq_llm_adapter import GroqLLMAdapter
+from app.infrastructure.adapters.groq_llm_service import GroqLLMService
 
 
 settings = get_settings()
@@ -78,13 +78,21 @@ async def get_job_service(
 
 def get_llm_service() -> ILLMService:
     """
-    Get LLM service instance (Context7 dependency injection pattern).
+    Get LLM service instance using Groq with API key from environment.
     
     Returns:
-        ILLMService: Mock adapter for development, Groq adapter for production
+        ILLMService: GroqLLMService with API key from settings
     """
-    # Use mock adapter for development (no API key needed)
-    # Uncomment to use Groq in production:
-    # if settings.groq_api_key:
-    #     return GroqLLMAdapter()
-    return MockLLMAdapter()
+    try:
+        # Use Groq service with API key from settings
+        if settings.groq_api_key:
+            return GroqLLMService(api_key=settings.groq_api_key)
+        else:
+            # Fall back to mock if no API key configured
+            return MockLLMAdapter()
+    except Exception as e:
+        # Log error and fall back to mock
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to initialize Groq service: {e}. Falling back to mock.")
+        return MockLLMAdapter()

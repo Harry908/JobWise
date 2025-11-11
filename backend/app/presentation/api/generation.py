@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.generation_service import GenerationService
+from app.infrastructure.repositories.profile_repository import ProfileRepository
+from app.infrastructure.repositories.job_repository import JobRepository
 from app.application.dtos.generation import (
     GenerateResumeRequest,
     GenerateCoverLetterRequest,
@@ -95,7 +97,24 @@ async def start_resume_generation(
         service = GenerationService(db)
 
         # Validate profile and job ownership
-        # TODO: Add validation service to check profile_id and job_id belong to user
+        profile_repo = ProfileRepository(db)
+        job_repo = JobRepository(db)
+        
+        # Check if profile belongs to user
+        profile = await profile_repo.get_by_id(request.profile_id)
+        if not profile or profile.user_id != user_id:
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found or does not belong to user"
+            )
+        
+        # Check if job exists
+        job = await job_repo.get_by_id(request.job_id)
+        if not job:
+            raise HTTPException(
+                status_code=404,
+                detail="Job not found"
+            )
 
         # Convert DTO options to entity options
         options = None
@@ -400,16 +419,21 @@ async def list_generations(
         # Get statistics
         statistics = await service.get_statistics(user_id)
 
-        # Convert to list items (simplified view)
+        # Convert to DTOs
+        job_repo = JobRepository(db)
         items = []
         for gen in generations:
-            # TODO: Fetch job title and company from job
+            # Fetch job information
+            job = await job_repo.get_by_id(gen.job_id) if gen.job_id else None
+            job_title = job.title if job else "Unknown Job"
+            company = job.company if job else "Unknown Company"
+            
             items.append(GenerationListItemDTO(
                 id=gen.id,
                 status=gen.status,
                 document_type=gen.document_type,
-                job_title="Sample Job Title",  # TODO: Get from job
-                company="Sample Company",  # TODO: Get from job
+                job_title=job_title,
+                company=company,
                 ats_score=gen.result.ats_score if gen.result else None,
                 created_at=gen.created_at.isoformat() + "Z",
                 completed_at=gen.completed_at.isoformat() + "Z" if gen.completed_at else None
@@ -434,4 +458,4 @@ async def list_generations(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
