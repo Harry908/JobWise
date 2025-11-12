@@ -465,17 +465,19 @@ class _GenerationProgressScreenState
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              navigator.pop();
               try {
                 await ref
                     .read(generationProvider.notifier)
                     .cancelGeneration(widget.generationId);
                 if (mounted) {
-                  context.pop();
+                  navigator.pop();
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to cancel: ${e.toString()}'),
                       backgroundColor: Colors.red,

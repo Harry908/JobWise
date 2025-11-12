@@ -481,7 +481,7 @@ class _GenerationResultScreenState
               constraints: const BoxConstraints(maxHeight: 400),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest
-                    .withOpacity(0.3),
+                    .withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SingleChildScrollView(

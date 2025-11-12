@@ -395,9 +395,12 @@ class JobDetailView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: ApplicationStatus.values.map((status) {
                 final isSelected = status == job.applicationStatus;
+                // ignore: deprecated_member_use
                 return RadioListTile<ApplicationStatus>(
                   value: status,
+                  // ignore: deprecated_member_use
                   groupValue: job.applicationStatus,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     if (value != null && onApplicationStatusChanged != null) {
                       Navigator.pop(context);

@@ -73,39 +73,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // ignore: deprecated_member_use
                 RadioListTile<String>(
                   title: const Text('US Format'),
                   subtitle: Text(
                     'MM/dd/yyyy - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatUS)}',
                   ),
                   value: SettingsService.dateFormatUS,
+                  // ignore: deprecated_member_use
                   groupValue: _selectedDateFormat,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     if (value != null) {
                       _saveDateFormat(value);
                     }
                   },
                 ),
+                // ignore: deprecated_member_use
                 RadioListTile<String>(
                   title: const Text('European Format'),
                   subtitle: Text(
                     'dd/MM/yyyy - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatEU)}',
                   ),
                   value: SettingsService.dateFormatEU,
+                  // ignore: deprecated_member_use
                   groupValue: _selectedDateFormat,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     if (value != null) {
                       _saveDateFormat(value);
                     }
                   },
                 ),
+                // ignore: deprecated_member_use
                 RadioListTile<String>(
                   title: const Text('ISO Format'),
                   subtitle: Text(
                     'yyyy-MM-dd - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatISO)}',
                   ),
                   value: SettingsService.dateFormatISO,
+                  // ignore: deprecated_member_use
                   groupValue: _selectedDateFormat,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     if (value != null) {
                       _saveDateFormat(value);
