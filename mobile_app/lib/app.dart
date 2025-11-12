@@ -145,6 +145,21 @@ class HomeScreen extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
+                    context.push('/generations');
+                  },
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Generation History'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
                     context.push('/profile/view');
                   },
                   icon: const Icon(Icons.person),
