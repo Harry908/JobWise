@@ -3,20 +3,43 @@
 ## Core Principle
 Generation is grounded in the user's **stored preferences profile** and master resume content. The system extracts reusable characteristics once, then applies them efficiently to each job application. Content must come from the user's master resume/profile and target job posting—never fabricate experiences or skills.
 
+## Terminology Clarification
+
+**IMPORTANT**: See `docs/TERMINOLOGY_CLARIFICATION.md` for complete definitions. Key terms:
+
+1. **Master Profile** (✅ Implemented): User's manually entered career data (experiences, education, skills, projects) - serves as source of truth for factual content
+2. **Sample/Example Resume** (⚠️ Backend Only): User-uploaded resume file (PDF/DOCX) - LLM extracts **layout/structure preferences only**
+3. **Sample Cover Letter** (⚠️ Backend Only): User-uploaded cover letter file (PDF/DOCX) - LLM extracts **writing style/tone preferences only**  
+4. **Selected Job** (✅ Implemented): Target job posting the user wants to apply to - provides requirements for tailoring
+
+**Data Flow**: Master Profile (factual content) + Sample Resume (structure) + Sample Cover Letter (style) + Selected Job (requirements) → Tailored Resume/Cover Letter
+
 ---
 
 ## Phase 1: Initial Profile Setup (One-Time)
 
 ### Step 1.1: Collect Initial Inputs
-**Required**:
-- **Master Resume**: Source-of-truth for all experiences, projects, skills, education
 
-**Recommended for Quality**:
-- **User Cover Letter**: Sample to auto-extract writing style and voice preferences
-- **Example Resume(s)**: Well-structured exemplars to auto-extract layout/formatting preferences
+**Required (Already Implemented ✅)**:
+- **Master Profile**: Manually entered structured career data (experiences, education, skills, projects)
+  - API: `/api/v1/profiles` (CRUD operations)
+  - Database: `master_profiles`, `experiences`, `education`, `projects` tables
+  - Mobile UI: Profile creation/edit screens
+  - **Purpose**: Source of truth for ALL factual content (prevents LLM hallucination)
+
+**Recommended for Quality (Sprint 4 - Not Yet Implemented ⚠️)**:
+- **Sample Cover Letter**: Uploaded file (PDF/DOCX) to auto-extract **writing style** preferences
+  - LLM analyzes: tone, vocabulary, sentence structure, formality level
+  - Database: `writing_style_configs` table (exists, no API yet)
+  - **Purpose**: Teach LLM how to write like the user
+
+- **Sample/Example Resume(s)**: Uploaded file (PDF/DOCX) to auto-extract **layout/structure** preferences
+  - LLM analyzes: section order, bullet style, formatting, density
+  - Database: `layout_configs`, `example_resumes` tables (exist, no API yet)
+  - **Purpose**: Teach LLM how to format the resume
 
 **Optional**:
-- **Manual Preferences**: User can override auto-generated settings
+- **Manual Preferences**: User can override auto-generated settings via UI sliders/toggles
 
 ### Step 1.2: Auto-Generate Writing Style Profile
 **Source**: LLM analysis of user-provided cover letter  

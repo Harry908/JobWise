@@ -13,6 +13,12 @@ import 'screens/job_paste_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/profile_view_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/generation_options_screen.dart';
+import 'screens/generation_progress_screen.dart';
+import 'screens/generation_result_screen.dart';
+import 'screens/generation_history_screen.dart';
+import 'models/job.dart';
+import 'models/generation.dart';
 
 // Placeholder screens for now
 class HomeScreen extends ConsumerWidget {
@@ -258,6 +264,39 @@ class _AppState extends ConsumerState<App> {
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
             return JobDetailScreen(jobId: jobId);
+          },
+        ),
+        // Generation routes
+        GoRoute(
+          path: '/generations',
+          builder: (context, state) => const GenerationHistoryScreen(),
+        ),
+        GoRoute(
+          path: '/generations/options',
+          builder: (context, state) {
+            final job = state.extra as Job;
+            final documentTypeStr = state.uri.queryParameters['type'];
+            final documentType = documentTypeStr == 'cover_letter'
+                ? DocumentType.coverLetter
+                : DocumentType.resume;
+            return GenerationOptionsScreen(
+              job: job,
+              documentType: documentType,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/generations/:id/progress',
+          builder: (context, state) {
+            final generationId = state.pathParameters['id']!;
+            return GenerationProgressScreen(generationId: generationId);
+          },
+        ),
+        GoRoute(
+          path: '/generations/:id/result',
+          builder: (context, state) {
+            final generationId = state.pathParameters['id']!;
+            return GenerationResultScreen(generationId: generationId);
           },
         ),
       ],

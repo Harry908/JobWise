@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/job.dart';
 import '../providers/job_provider.dart';
 import '../widgets/job_detail_view.dart';
@@ -106,20 +107,21 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   }
 
   void _generateResume() {
-    // Navigate to resume generation (to be implemented)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Resume generation feature coming soon'),
-      ),
-    );
+    final job = ref.read(jobProvider).selectedJob;
+    if (job == null) return;
+
+    // Navigate to generation options screen
+    context.push('/generations/options', extra: job);
   }
 
   void _generateCoverLetter() {
-    // Navigate to cover letter generation (to be implemented)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cover letter generation feature coming soon'),
-      ),
+    final job = ref.read(jobProvider).selectedJob;
+    if (job == null) return;
+
+    // Navigate to generation options screen with cover letter type
+    context.push(
+      '/generations/options?type=cover_letter',
+      extra: job,
     );
   }
 

@@ -8,6 +8,12 @@
 
 This document outlines the architecture for integrating Groq's ultra-fast LLM inference service into JobWise's resume generation pipeline. Groq provides 10x-100x faster inference speeds compared to traditional LLM providers while maintaining competitive pricing, making it ideal for the 2-stage generation pipeline targeting <8s total generation time.
 
+**Terminology Note**: See `docs/TERMINOLOGY_CLARIFICATION.md` for definitions of:
+- **Master Profile** (✅ Implemented): User's manually entered career data  
+- **Sample Resume** (⚠️ Backend Only): Uploaded file for layout extraction
+- **Sample Cover Letter** (⚠️ Backend Only): Uploaded file for writing style extraction
+- **Selected Job** (✅ Implemented): Target job posting for tailoring
+
 **Key Benefits**:
 - **Speed**: 280-1000 tokens/second (vs 20-50 TPS for OpenAI)
 - **Cost**: $0.59/$0.79 per 1M tokens (input/output) for Llama 3.3 70B

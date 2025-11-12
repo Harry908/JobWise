@@ -36,16 +36,19 @@ class FileUploadService:
     MAX_FILE_SIZE = settings.upload_max_file_size  
     MIN_FILE_SIZE = 100  # 100 bytes minimum
     
-    def __init__(self, db: AsyncSession, upload_directory: Optional[str] = None):
+    def __init__(self, db: Optional[AsyncSession] = None, upload_directory: Optional[str] = None):
         """
         Initialize file upload service.
         
         Args:
-            db: Database session
+            db: Database session (optional for simple file operations)
             upload_directory: Directory for storing uploaded files
         """
         self.db = db
-        self.repository = ExampleResumeRepository(db)
+        if db:
+            self.repository = ExampleResumeRepository(db)
+        else:
+            self.repository = None
         
         # Set upload directory
         self.upload_directory = Path(upload_directory or settings.upload_storage_path or "./uploads")
@@ -59,6 +62,102 @@ class FileUploadService:
         for directory in [self.cover_letters_dir, self.example_resumes_dir, self.temp_dir]:
             directory.mkdir(parents=True, exist_ok=True)
 
+    async def save_upload(
+        self,
+        file: UploadFile,
+        user_id: int,
+        category: str = "general"
+    ) -> Dict[str, Any]:
+        """
+        Save uploaded file with security validation.
+        
+        Args:
+            file: Uploaded file
+            user_id: User ID (embedded in filename for security)
+            category: File category (cover_letters, example_resumes, etc.)
+            
+        Returns:
+            Dict with success status, file_path, and file_hash
+            
+        Raises:
+            ValidationException: Invalid file
+            StorageException: Storage error
+        """
+        try:
+            # Validate file
+            await self._validate_file(file)
+            
+            # Determine storage directory based on category
+            if category == "cover_letters":
+                storage_dir = self.cover_letters_dir
+            elif category == "example_resumes":
+                storage_dir = self.example_resumes_dir
+            else:
+                storage_dir = self.upload_directory / category
+                storage_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Read file content
+            file_content = await file.read()
+            await file.seek(0)
+            
+            # Generate secure filename with user_id prefix
+            file_id = str(uuid.uuid4())
+            file_extension = self._get_file_extension(file.filename, file.content_type)
+            secure_filename = f"{user_id}_{file_id}.{file_extension}"
+            storage_path = storage_dir / secure_filename
+            
+            # Save file
+            with open(storage_path, "wb") as f:
+                f.write(file_content)
+            
+            # Calculate hash
+            file_hash = hashlib.sha256(file_content).hexdigest()
+            
+            logger.info(f"File uploaded: user_id={user_id}, category={category}, size={len(file_content)}")
+            
+            return {
+                "success": True,
+                "file_path": str(storage_path),
+                "file_hash": file_hash,
+                "file_size": len(file_content),
+                "original_filename": file.filename
+            }
+            
+        except ValidationException:
+            raise
+        except Exception as e:
+            logger.error(f"File upload failed: user_id={user_id}, error={e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def verify_file_ownership(self, file_path: str, user_id: int) -> bool:
+        """
+        Verify that a file belongs to the specified user.
+        
+        Args:
+            file_path: Path to file
+            user_id: User ID to verify
+            
+        Returns:
+            True if file belongs to user, False otherwise
+        """
+        try:
+            file_path_obj = Path(file_path)
+            filename = file_path_obj.name
+            
+            # Check if filename starts with user_id
+            if filename.startswith(f"{user_id}_"):
+                return True
+            
+            logger.warning(f"File ownership verification failed: user_id={user_id}, file={filename}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Ownership verification error: {e}")
+            return False
+    
     async def upload_cover_letter(
         self,
         user_id: int,
