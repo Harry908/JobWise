@@ -96,6 +96,9 @@ class PreferenceExtractionService:
             # Parse LLM response into structured preferences
             style_config = self._parse_writing_style_response(analysis_response, user_id)
             
+            # Store the full verbatim cover letter text
+            style_config.source_text = text_content
+            
             # Add metadata
             style_config.source_document = Path(file_path).name
             style_config.extraction_metadata = {

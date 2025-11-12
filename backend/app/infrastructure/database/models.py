@@ -190,6 +190,7 @@ class WritingStyleConfigModel(Base):
     # Metadata
     source_document_type = Column(String, default="cover_letter")
     source_document_hash = Column(String)
+    source_text = Column(Text)  # Full verbatim text of the cover letter
     extraction_confidence = Column(Float, default=0.0)
     
     # Timestamps

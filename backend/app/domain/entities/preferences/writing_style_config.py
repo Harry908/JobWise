@@ -52,6 +52,7 @@ class WritingStyleConfig(BaseModel):
     # Metadata
     source_document_type: Literal["cover_letter", "email", "personal_statement"] = "cover_letter"
     source_document_hash: Optional[str] = None  # For tracking source
+    source_text: Optional[str] = None  # Full verbatim text of the cover letter
     extraction_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     
     # Timestamps
