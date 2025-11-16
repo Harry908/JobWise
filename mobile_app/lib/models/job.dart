@@ -82,6 +82,7 @@ enum ApplicationStatus {
 @freezed
 class BrowseJob with _$BrowseJob {
   const factory BrowseJob({
+    required String id,
     required JobSource source,
     required String title,
     required String company,

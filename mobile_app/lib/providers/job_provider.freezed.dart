@@ -16,240 +16,94 @@ final _privateConstructorUsedError = UnsupportedError(
 );
 
 /// @nodoc
-mixin _$JobState {
-  List<Job> get userJobs => throw _privateConstructorUsedError;
-  List<BrowseJob> get browseJobs => throw _privateConstructorUsedError;
-  Job? get selectedJob => throw _privateConstructorUsedError;
-  bool get isLoading => throw _privateConstructorUsedError;
-  bool get isLoadingMore => throw _privateConstructorUsedError;
-  bool get isBrowseLoading => throw _privateConstructorUsedError;
-  String? get error => throw _privateConstructorUsedError;
-  int get userJobsTotal => throw _privateConstructorUsedError;
-  int get browseJobsTotal => throw _privateConstructorUsedError;
-  bool get hasMoreUserJobs => throw _privateConstructorUsedError;
-  bool get hasMoreBrowseJobs => throw _privateConstructorUsedError;
+mixin _$JobFilterState {
+  JobStatus? get status => throw _privateConstructorUsedError;
+  JobSource? get source => throw _privateConstructorUsedError;
 
-  /// Create a copy of JobState
+  /// Create a copy of JobFilterState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $JobStateCopyWith<JobState> get copyWith =>
+  $JobFilterStateCopyWith<JobFilterState> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $JobStateCopyWith<$Res> {
-  factory $JobStateCopyWith(JobState value, $Res Function(JobState) then) =
-      _$JobStateCopyWithImpl<$Res, JobState>;
+abstract class $JobFilterStateCopyWith<$Res> {
+  factory $JobFilterStateCopyWith(
+    JobFilterState value,
+    $Res Function(JobFilterState) then,
+  ) = _$JobFilterStateCopyWithImpl<$Res, JobFilterState>;
   @useResult
-  $Res call({
-    List<Job> userJobs,
-    List<BrowseJob> browseJobs,
-    Job? selectedJob,
-    bool isLoading,
-    bool isLoadingMore,
-    bool isBrowseLoading,
-    String? error,
-    int userJobsTotal,
-    int browseJobsTotal,
-    bool hasMoreUserJobs,
-    bool hasMoreBrowseJobs,
-  });
-
-  $JobCopyWith<$Res>? get selectedJob;
+  $Res call({JobStatus? status, JobSource? source});
 }
 
 /// @nodoc
-class _$JobStateCopyWithImpl<$Res, $Val extends JobState>
-    implements $JobStateCopyWith<$Res> {
-  _$JobStateCopyWithImpl(this._value, this._then);
+class _$JobFilterStateCopyWithImpl<$Res, $Val extends JobFilterState>
+    implements $JobFilterStateCopyWith<$Res> {
+  _$JobFilterStateCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of JobState
+  /// Create a copy of JobFilterState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? userJobs = null,
-    Object? browseJobs = null,
-    Object? selectedJob = freezed,
-    Object? isLoading = null,
-    Object? isLoadingMore = null,
-    Object? isBrowseLoading = null,
-    Object? error = freezed,
-    Object? userJobsTotal = null,
-    Object? browseJobsTotal = null,
-    Object? hasMoreUserJobs = null,
-    Object? hasMoreBrowseJobs = null,
-  }) {
+  $Res call({Object? status = freezed, Object? source = freezed}) {
     return _then(
       _value.copyWith(
-            userJobs: null == userJobs
-                ? _value.userJobs
-                : userJobs // ignore: cast_nullable_to_non_nullable
-                      as List<Job>,
-            browseJobs: null == browseJobs
-                ? _value.browseJobs
-                : browseJobs // ignore: cast_nullable_to_non_nullable
-                      as List<BrowseJob>,
-            selectedJob: freezed == selectedJob
-                ? _value.selectedJob
-                : selectedJob // ignore: cast_nullable_to_non_nullable
-                      as Job?,
-            isLoading: null == isLoading
-                ? _value.isLoading
-                : isLoading // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            isLoadingMore: null == isLoadingMore
-                ? _value.isLoadingMore
-                : isLoadingMore // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            isBrowseLoading: null == isBrowseLoading
-                ? _value.isBrowseLoading
-                : isBrowseLoading // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            error: freezed == error
-                ? _value.error
-                : error // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            userJobsTotal: null == userJobsTotal
-                ? _value.userJobsTotal
-                : userJobsTotal // ignore: cast_nullable_to_non_nullable
-                      as int,
-            browseJobsTotal: null == browseJobsTotal
-                ? _value.browseJobsTotal
-                : browseJobsTotal // ignore: cast_nullable_to_non_nullable
-                      as int,
-            hasMoreUserJobs: null == hasMoreUserJobs
-                ? _value.hasMoreUserJobs
-                : hasMoreUserJobs // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            hasMoreBrowseJobs: null == hasMoreBrowseJobs
-                ? _value.hasMoreBrowseJobs
-                : hasMoreBrowseJobs // ignore: cast_nullable_to_non_nullable
-                      as bool,
+            status: freezed == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as JobStatus?,
+            source: freezed == source
+                ? _value.source
+                : source // ignore: cast_nullable_to_non_nullable
+                      as JobSource?,
           )
           as $Val,
     );
   }
-
-  /// Create a copy of JobState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $JobCopyWith<$Res>? get selectedJob {
-    if (_value.selectedJob == null) {
-      return null;
-    }
-
-    return $JobCopyWith<$Res>(_value.selectedJob!, (value) {
-      return _then(_value.copyWith(selectedJob: value) as $Val);
-    });
-  }
 }
 
 /// @nodoc
-abstract class _$$JobStateImplCopyWith<$Res>
-    implements $JobStateCopyWith<$Res> {
-  factory _$$JobStateImplCopyWith(
-    _$JobStateImpl value,
-    $Res Function(_$JobStateImpl) then,
-  ) = __$$JobStateImplCopyWithImpl<$Res>;
+abstract class _$$JobFilterStateImplCopyWith<$Res>
+    implements $JobFilterStateCopyWith<$Res> {
+  factory _$$JobFilterStateImplCopyWith(
+    _$JobFilterStateImpl value,
+    $Res Function(_$JobFilterStateImpl) then,
+  ) = __$$JobFilterStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    List<Job> userJobs,
-    List<BrowseJob> browseJobs,
-    Job? selectedJob,
-    bool isLoading,
-    bool isLoadingMore,
-    bool isBrowseLoading,
-    String? error,
-    int userJobsTotal,
-    int browseJobsTotal,
-    bool hasMoreUserJobs,
-    bool hasMoreBrowseJobs,
-  });
-
-  @override
-  $JobCopyWith<$Res>? get selectedJob;
+  $Res call({JobStatus? status, JobSource? source});
 }
 
 /// @nodoc
-class __$$JobStateImplCopyWithImpl<$Res>
-    extends _$JobStateCopyWithImpl<$Res, _$JobStateImpl>
-    implements _$$JobStateImplCopyWith<$Res> {
-  __$$JobStateImplCopyWithImpl(
-    _$JobStateImpl _value,
-    $Res Function(_$JobStateImpl) _then,
+class __$$JobFilterStateImplCopyWithImpl<$Res>
+    extends _$JobFilterStateCopyWithImpl<$Res, _$JobFilterStateImpl>
+    implements _$$JobFilterStateImplCopyWith<$Res> {
+  __$$JobFilterStateImplCopyWithImpl(
+    _$JobFilterStateImpl _value,
+    $Res Function(_$JobFilterStateImpl) _then,
   ) : super(_value, _then);
 
-  /// Create a copy of JobState
+  /// Create a copy of JobFilterState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? userJobs = null,
-    Object? browseJobs = null,
-    Object? selectedJob = freezed,
-    Object? isLoading = null,
-    Object? isLoadingMore = null,
-    Object? isBrowseLoading = null,
-    Object? error = freezed,
-    Object? userJobsTotal = null,
-    Object? browseJobsTotal = null,
-    Object? hasMoreUserJobs = null,
-    Object? hasMoreBrowseJobs = null,
-  }) {
+  $Res call({Object? status = freezed, Object? source = freezed}) {
     return _then(
-      _$JobStateImpl(
-        userJobs: null == userJobs
-            ? _value._userJobs
-            : userJobs // ignore: cast_nullable_to_non_nullable
-                  as List<Job>,
-        browseJobs: null == browseJobs
-            ? _value._browseJobs
-            : browseJobs // ignore: cast_nullable_to_non_nullable
-                  as List<BrowseJob>,
-        selectedJob: freezed == selectedJob
-            ? _value.selectedJob
-            : selectedJob // ignore: cast_nullable_to_non_nullable
-                  as Job?,
-        isLoading: null == isLoading
-            ? _value.isLoading
-            : isLoading // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        isLoadingMore: null == isLoadingMore
-            ? _value.isLoadingMore
-            : isLoadingMore // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        isBrowseLoading: null == isBrowseLoading
-            ? _value.isBrowseLoading
-            : isBrowseLoading // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        error: freezed == error
-            ? _value.error
-            : error // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        userJobsTotal: null == userJobsTotal
-            ? _value.userJobsTotal
-            : userJobsTotal // ignore: cast_nullable_to_non_nullable
-                  as int,
-        browseJobsTotal: null == browseJobsTotal
-            ? _value.browseJobsTotal
-            : browseJobsTotal // ignore: cast_nullable_to_non_nullable
-                  as int,
-        hasMoreUserJobs: null == hasMoreUserJobs
-            ? _value.hasMoreUserJobs
-            : hasMoreUserJobs // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        hasMoreBrowseJobs: null == hasMoreBrowseJobs
-            ? _value.hasMoreBrowseJobs
-            : hasMoreBrowseJobs // ignore: cast_nullable_to_non_nullable
-                  as bool,
+      _$JobFilterStateImpl(
+        status: freezed == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as JobStatus?,
+        source: freezed == source
+            ? _value.source
+            : source // ignore: cast_nullable_to_non_nullable
+                  as JobSource?,
       ),
     );
   }
@@ -257,167 +111,58 @@ class __$$JobStateImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$JobStateImpl implements _JobState {
-  const _$JobStateImpl({
-    final List<Job> userJobs = const [],
-    final List<BrowseJob> browseJobs = const [],
-    this.selectedJob,
-    this.isLoading = false,
-    this.isLoadingMore = false,
-    this.isBrowseLoading = false,
-    this.error,
-    this.userJobsTotal = 0,
-    this.browseJobsTotal = 0,
-    this.hasMoreUserJobs = true,
-    this.hasMoreBrowseJobs = true,
-  }) : _userJobs = userJobs,
-       _browseJobs = browseJobs;
-
-  final List<Job> _userJobs;
-  @override
-  @JsonKey()
-  List<Job> get userJobs {
-    if (_userJobs is EqualUnmodifiableListView) return _userJobs;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_userJobs);
-  }
-
-  final List<BrowseJob> _browseJobs;
-  @override
-  @JsonKey()
-  List<BrowseJob> get browseJobs {
-    if (_browseJobs is EqualUnmodifiableListView) return _browseJobs;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_browseJobs);
-  }
+class _$JobFilterStateImpl implements _JobFilterState {
+  const _$JobFilterStateImpl({this.status, this.source});
 
   @override
-  final Job? selectedJob;
+  final JobStatus? status;
   @override
-  @JsonKey()
-  final bool isLoading;
-  @override
-  @JsonKey()
-  final bool isLoadingMore;
-  @override
-  @JsonKey()
-  final bool isBrowseLoading;
-  @override
-  final String? error;
-  @override
-  @JsonKey()
-  final int userJobsTotal;
-  @override
-  @JsonKey()
-  final int browseJobsTotal;
-  @override
-  @JsonKey()
-  final bool hasMoreUserJobs;
-  @override
-  @JsonKey()
-  final bool hasMoreBrowseJobs;
+  final JobSource? source;
 
   @override
   String toString() {
-    return 'JobState(userJobs: $userJobs, browseJobs: $browseJobs, selectedJob: $selectedJob, isLoading: $isLoading, isLoadingMore: $isLoadingMore, isBrowseLoading: $isBrowseLoading, error: $error, userJobsTotal: $userJobsTotal, browseJobsTotal: $browseJobsTotal, hasMoreUserJobs: $hasMoreUserJobs, hasMoreBrowseJobs: $hasMoreBrowseJobs)';
+    return 'JobFilterState(status: $status, source: $source)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JobStateImpl &&
-            const DeepCollectionEquality().equals(other._userJobs, _userJobs) &&
-            const DeepCollectionEquality().equals(
-              other._browseJobs,
-              _browseJobs,
-            ) &&
-            (identical(other.selectedJob, selectedJob) ||
-                other.selectedJob == selectedJob) &&
-            (identical(other.isLoading, isLoading) ||
-                other.isLoading == isLoading) &&
-            (identical(other.isLoadingMore, isLoadingMore) ||
-                other.isLoadingMore == isLoadingMore) &&
-            (identical(other.isBrowseLoading, isBrowseLoading) ||
-                other.isBrowseLoading == isBrowseLoading) &&
-            (identical(other.error, error) || other.error == error) &&
-            (identical(other.userJobsTotal, userJobsTotal) ||
-                other.userJobsTotal == userJobsTotal) &&
-            (identical(other.browseJobsTotal, browseJobsTotal) ||
-                other.browseJobsTotal == browseJobsTotal) &&
-            (identical(other.hasMoreUserJobs, hasMoreUserJobs) ||
-                other.hasMoreUserJobs == hasMoreUserJobs) &&
-            (identical(other.hasMoreBrowseJobs, hasMoreBrowseJobs) ||
-                other.hasMoreBrowseJobs == hasMoreBrowseJobs));
+            other is _$JobFilterStateImpl &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.source, source) || other.source == source));
   }
 
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    const DeepCollectionEquality().hash(_userJobs),
-    const DeepCollectionEquality().hash(_browseJobs),
-    selectedJob,
-    isLoading,
-    isLoadingMore,
-    isBrowseLoading,
-    error,
-    userJobsTotal,
-    browseJobsTotal,
-    hasMoreUserJobs,
-    hasMoreBrowseJobs,
-  );
+  int get hashCode => Object.hash(runtimeType, status, source);
 
-  /// Create a copy of JobState
+  /// Create a copy of JobFilterState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$JobStateImplCopyWith<_$JobStateImpl> get copyWith =>
-      __$$JobStateImplCopyWithImpl<_$JobStateImpl>(this, _$identity);
+  _$$JobFilterStateImplCopyWith<_$JobFilterStateImpl> get copyWith =>
+      __$$JobFilterStateImplCopyWithImpl<_$JobFilterStateImpl>(
+        this,
+        _$identity,
+      );
 }
 
-abstract class _JobState implements JobState {
-  const factory _JobState({
-    final List<Job> userJobs,
-    final List<BrowseJob> browseJobs,
-    final Job? selectedJob,
-    final bool isLoading,
-    final bool isLoadingMore,
-    final bool isBrowseLoading,
-    final String? error,
-    final int userJobsTotal,
-    final int browseJobsTotal,
-    final bool hasMoreUserJobs,
-    final bool hasMoreBrowseJobs,
-  }) = _$JobStateImpl;
+abstract class _JobFilterState implements JobFilterState {
+  const factory _JobFilterState({
+    final JobStatus? status,
+    final JobSource? source,
+  }) = _$JobFilterStateImpl;
 
   @override
-  List<Job> get userJobs;
+  JobStatus? get status;
   @override
-  List<BrowseJob> get browseJobs;
-  @override
-  Job? get selectedJob;
-  @override
-  bool get isLoading;
-  @override
-  bool get isLoadingMore;
-  @override
-  bool get isBrowseLoading;
-  @override
-  String? get error;
-  @override
-  int get userJobsTotal;
-  @override
-  int get browseJobsTotal;
-  @override
-  bool get hasMoreUserJobs;
-  @override
-  bool get hasMoreBrowseJobs;
+  JobSource? get source;
 
-  /// Create a copy of JobState
+  /// Create a copy of JobFilterState
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$JobStateImplCopyWith<_$JobStateImpl> get copyWith =>
+  _$$JobFilterStateImplCopyWith<_$JobFilterStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -92,6 +92,7 @@ const _$ApplicationStatusEnumMap = {
 
 _$BrowseJobImpl _$$BrowseJobImplFromJson(Map<String, dynamic> json) =>
     _$BrowseJobImpl(
+      id: json['id'] as String,
       source: $enumDecode(_$JobSourceEnumMap, json['source']),
       title: json['title'] as String,
       company: json['company'] as String,
@@ -118,6 +119,7 @@ _$BrowseJobImpl _$$BrowseJobImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$BrowseJobImplToJson(_$BrowseJobImpl instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'source': _$JobSourceEnumMap[instance.source]!,
       'title': instance.title,
       'company': instance.company,

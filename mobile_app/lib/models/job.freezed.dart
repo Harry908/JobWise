@@ -550,6 +550,7 @@ BrowseJob _$BrowseJobFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$BrowseJob {
+  String get id => throw _privateConstructorUsedError;
   JobSource get source => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get company => throw _privateConstructorUsedError;
@@ -577,6 +578,7 @@ abstract class $BrowseJobCopyWith<$Res> {
       _$BrowseJobCopyWithImpl<$Res, BrowseJob>;
   @useResult
   $Res call({
+    String id,
     JobSource source,
     String title,
     String company,
@@ -605,6 +607,7 @@ class _$BrowseJobCopyWithImpl<$Res, $Val extends BrowseJob>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? source = null,
     Object? title = null,
     Object? company = null,
@@ -618,6 +621,10 @@ class _$BrowseJobCopyWithImpl<$Res, $Val extends BrowseJob>
   }) {
     return _then(
       _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
             source: null == source
                 ? _value.source
                 : source // ignore: cast_nullable_to_non_nullable
@@ -674,6 +681,7 @@ abstract class _$$BrowseJobImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
+    String id,
     JobSource source,
     String title,
     String company,
@@ -701,6 +709,7 @@ class __$$BrowseJobImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? source = null,
     Object? title = null,
     Object? company = null,
@@ -714,6 +723,10 @@ class __$$BrowseJobImplCopyWithImpl<$Res>
   }) {
     return _then(
       _$BrowseJobImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
         source: null == source
             ? _value.source
             : source // ignore: cast_nullable_to_non_nullable
@@ -763,6 +776,7 @@ class __$$BrowseJobImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$BrowseJobImpl implements _BrowseJob {
   const _$BrowseJobImpl({
+    required this.id,
     required this.source,
     required this.title,
     required this.company,
@@ -780,6 +794,8 @@ class _$BrowseJobImpl implements _BrowseJob {
   factory _$BrowseJobImpl.fromJson(Map<String, dynamic> json) =>
       _$$BrowseJobImplFromJson(json);
 
+  @override
+  final String id;
   @override
   final JobSource source;
   @override
@@ -825,7 +841,7 @@ class _$BrowseJobImpl implements _BrowseJob {
 
   @override
   String toString() {
-    return 'BrowseJob(source: $source, title: $title, company: $company, location: $location, description: $description, parsedKeywords: $parsedKeywords, requirements: $requirements, benefits: $benefits, salaryRange: $salaryRange, remote: $remote)';
+    return 'BrowseJob(id: $id, source: $source, title: $title, company: $company, location: $location, description: $description, parsedKeywords: $parsedKeywords, requirements: $requirements, benefits: $benefits, salaryRange: $salaryRange, remote: $remote)';
   }
 
   @override
@@ -833,6 +849,7 @@ class _$BrowseJobImpl implements _BrowseJob {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$BrowseJobImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.source, source) || other.source == source) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.company, company) || other.company == company) &&
@@ -858,6 +875,7 @@ class _$BrowseJobImpl implements _BrowseJob {
   @override
   int get hashCode => Object.hash(
     runtimeType,
+    id,
     source,
     title,
     company,
@@ -886,6 +904,7 @@ class _$BrowseJobImpl implements _BrowseJob {
 
 abstract class _BrowseJob implements BrowseJob {
   const factory _BrowseJob({
+    required final String id,
     required final JobSource source,
     required final String title,
     required final String company,
@@ -901,6 +920,8 @@ abstract class _BrowseJob implements BrowseJob {
   factory _BrowseJob.fromJson(Map<String, dynamic> json) =
       _$BrowseJobImpl.fromJson;
 
+  @override
+  String get id;
   @override
   JobSource get source;
   @override

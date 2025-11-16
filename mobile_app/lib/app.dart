@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'constants/colors.dart';
+import 'models/user.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
 import 'screens/auth_screens.dart';
@@ -28,6 +29,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final profileState = ref.watch(profileProvider);
+    final profile = profileState.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.person),
             tooltip: 'My Profile',
             onPressed: () {
-              if (profileState.profile != null) {
+              if (profile != null) {
                 context.push('/profile/view');
               } else {
                 context.push('/profile/edit');
@@ -87,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.work,
               size: 80,
               color: AppColors.primary,
@@ -110,7 +112,7 @@ class HomeScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            if (profileState.profile != null) ...[
+            if (profile != null) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -202,9 +204,9 @@ class HomeScreen extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 16),
-            if (authState.user != null)
+            if (authState.value != null)
               Text(
-                'Logged in as: ${authState.user!.email}',
+                'Logged in as: ${authState.value!.email}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                 ),
@@ -318,7 +320,7 @@ class _AppState extends ConsumerState<App> {
       redirect: (context, state) {
         final authState = ref.read(authProvider);
 
-        final isLoggedIn = authState.isAuthenticated;
+        final isLoggedIn = authState.value != null;
         final isLoggingIn = state.matchedLocation == '/login';
         final isRegistering = state.matchedLocation == '/register';
 
@@ -341,11 +343,14 @@ class _AppState extends ConsumerState<App> {
   @override
   Widget build(BuildContext context) {
     // Listen to auth state changes for navigation
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next.isAuthenticated && previous?.isAuthenticated != true) {
+    ref.listen<AsyncValue<User?>>(authProvider, (previous, next) {
+      final isLoggedIn = next.value != null;
+      final wasLoggedIn = previous?.value != null;
+
+      if (isLoggedIn && !wasLoggedIn) {
         // User just logged in, navigate to home
         _router.go('/home');
-      } else if (!next.isAuthenticated && previous?.isAuthenticated == true) {
+      } else if (!isLoggedIn && wasLoggedIn) {
         // User just logged out, navigate to login
         _router.go('/login');
       }

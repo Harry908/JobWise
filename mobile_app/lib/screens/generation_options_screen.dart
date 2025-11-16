@@ -34,16 +34,7 @@ class _GenerationOptionsScreenState
   final _focusAreaController = TextEditingController();
   final _customInstructionsController = TextEditingController();
 
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Load templates on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(generationProvider.notifier).loadTemplates();
-    });
-  }
+  bool _isGenerating = false;
 
   @override
   void dispose() {
@@ -55,7 +46,7 @@ class _GenerationOptionsScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final generationState = ref.watch(generationProvider);
+    final templatesAsync = ref.watch(generationTemplatesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -75,7 +66,7 @@ class _GenerationOptionsScreenState
                 const SizedBox(height: 24),
 
                 // Template Selection
-                _buildTemplateSelection(theme, generationState),
+                _buildTemplateSection(theme, templatesAsync),
                 const SizedBox(height: 24),
 
                 // Length Selection
@@ -96,7 +87,7 @@ class _GenerationOptionsScreenState
               ],
             ),
           ),
-          if (_isLoading) const LoadingOverlay(),
+          if (_isGenerating) const LoadingOverlay(),
         ],
       ),
     );
@@ -142,7 +133,8 @@ class _GenerationOptionsScreenState
     );
   }
 
-  Widget _buildTemplateSelection(ThemeData theme, GenerationState state) {
+  Widget _buildTemplateSection(
+      ThemeData theme, AsyncValue<List<Template>> templatesAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -153,21 +145,30 @@ class _GenerationOptionsScreenState
           ),
         ),
         const SizedBox(height: 8),
-        if (state.isLoading && state.templates.isEmpty)
-          const Center(child: CircularProgressIndicator())
-        else if (state.templates.isEmpty)
-          _buildDefaultTemplates(theme)
-        else
-          _buildTemplatesGrid(theme, state.templates),
+        templatesAsync.when(
+          data: (templates) {
+            if (templates.isEmpty) {
+              return _buildDefaultTemplates(theme);
+            }
+            return _buildTemplatesGrid(theme, templates);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Column(
+            children: [
+              const Text('Could not load templates. Using default options.'),
+              _buildDefaultTemplates(theme),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildDefaultTemplates(ThemeData theme) {
     final defaultTemplates = [
-      {'id': 'modern', 'name': 'Modern', 'description': 'Clean and professional'},
-      {'id': 'classic', 'name': 'Classic', 'description': 'Traditional format'},
-      {'id': 'creative', 'name': 'Creative', 'description': 'Stand out design'},
+      {'id': 'modern', 'name': 'Modern'},
+      {'id': 'classic', 'name': 'Classic'},
+      {'id': 'creative', 'name': 'Creative'},
     ];
 
     return Wrap(
@@ -440,10 +441,10 @@ class _GenerationOptionsScreenState
 
   Widget _buildGenerateButton(ThemeData theme) {
     return FilledButton.icon(
-      onPressed: _handleGenerate,
+      onPressed: _isGenerating ? null : _handleGenerate,
       icon: const Icon(Icons.auto_awesome),
       label: Text(
-        'Generate ${widget.documentType == DocumentType.resume ? 'Resume' : 'Cover Letter'}',
+        _isGenerating ? 'Generating...' : 'Generate ${widget.documentType == DocumentType.resume ? 'Resume' : 'Cover Letter'}',
       ),
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.all(16),
@@ -457,9 +458,8 @@ class _GenerationOptionsScreenState
       return;
     }
 
-    // Get profile
-    final profileState = ref.read(profileProvider);
-    if (profileState.profile == null) {
+    final profile = ref.read(profileProvider).value;
+    if (profile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please create a profile first'),
@@ -470,7 +470,7 @@ class _GenerationOptionsScreenState
     }
 
     setState(() {
-      _isLoading = true;
+      _isGenerating = true;
     });
 
     try {
@@ -484,19 +484,19 @@ class _GenerationOptionsScreenState
             : _customInstructionsController.text.trim(),
       );
 
+      final generationNotifier = ref.read(generationActionsProvider.notifier);
+      
       Generation generation;
       if (widget.documentType == DocumentType.resume) {
         generation =
-            await ref.read(generationProvider.notifier).startResumeGeneration(
-                  profileId: profileState.profile!.id,
+            await generationNotifier.startResumeGeneration(
+                  profileId: profile.id,
                   jobId: widget.job.id,
                   options: options,
                 );
       } else {
-        generation = await ref
-            .read(generationProvider.notifier)
-            .startCoverLetterGeneration(
-              profileId: profileState.profile!.id,
+        generation = await generationNotifier.startCoverLetterGeneration(
+              profileId: profile.id,
               jobId: widget.job.id,
               options: options,
             );
@@ -504,7 +504,6 @@ class _GenerationOptionsScreenState
 
       if (!mounted) return;
 
-      // Navigate to progress screen
       context.push('/generations/${generation.id}/progress');
     } catch (e) {
       if (!mounted) return;
@@ -518,7 +517,7 @@ class _GenerationOptionsScreenState
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isGenerating = false;
         });
       }
     }

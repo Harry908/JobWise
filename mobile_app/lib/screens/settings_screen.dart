@@ -1,147 +1,140 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/settings_provider.dart';
 import '../services/settings_service.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dateFormatState = ref.watch(dateFormatSettingProvider);
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _settingsService = SettingsService();
-  String _selectedDateFormat = SettingsService.dateFormatUS;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final format = await _settingsService.getDateFormat();
-    setState(() {
-      _selectedDateFormat = format;
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _saveDateFormat(String format) async {
-    await _settingsService.setDateFormat(format);
-    setState(() {
-      _selectedDateFormat = format;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Date format preference saved'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    'Date Format',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+      body: dateFormatState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+        data: (selectedDateFormat) {
+          return ListView(
+            children: const [
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Date Format',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Choose how dates are displayed throughout the app',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Choose how dates are displayed throughout the app',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
                 ),
-                const SizedBox(height: 8),
-                // ignore: deprecated_member_use
-                RadioListTile<String>(
-                  title: const Text('US Format'),
-                  subtitle: Text(
-                    'MM/dd/yyyy - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatUS)}',
-                  ),
-                  value: SettingsService.dateFormatUS,
-                  // ignore: deprecated_member_use
-                  groupValue: _selectedDateFormat,
-                  // ignore: deprecated_member_use
-                  onChanged: (value) {
-                    if (value != null) {
-                      _saveDateFormat(value);
-                    }
-                  },
-                ),
-                // ignore: deprecated_member_use
-                RadioListTile<String>(
-                  title: const Text('European Format'),
-                  subtitle: Text(
-                    'dd/MM/yyyy - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatEU)}',
-                  ),
-                  value: SettingsService.dateFormatEU,
-                  // ignore: deprecated_member_use
-                  groupValue: _selectedDateFormat,
-                  // ignore: deprecated_member_use
-                  onChanged: (value) {
-                    if (value != null) {
-                      _saveDateFormat(value);
-                    }
-                  },
-                ),
-                // ignore: deprecated_member_use
-                RadioListTile<String>(
-                  title: const Text('ISO Format'),
-                  subtitle: Text(
-                    'yyyy-MM-dd - Example: ${_settingsService.getDateFormatHint(SettingsService.dateFormatISO)}',
-                  ),
-                  value: SettingsService.dateFormatISO,
-                  // ignore: deprecated_member_use
-                  groupValue: _selectedDateFormat,
-                  // ignore: deprecated_member_use
-                  onChanged: (value) {
-                    if (value != null) {
-                      _saveDateFormat(value);
-                    }
-                  },
-                ),
-                const Divider(height: 32),
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    'About',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              ),
+              SizedBox(height: 8),
+              _DateFormatRadioList(),
+              Divider(height: 32),
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'About',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const ListTile(
-                  title: Text('App Version'),
-                  trailing: Text('1.0.0'),
-                ),
-                const ListTile(
-                  title: Text('JobWise'),
-                  subtitle: Text('AI-powered job application assistant'),
-                ),
-              ],
-            ),
+              ),
+              ListTile(
+                title: Text('App Version'),
+                trailing: Text('1.0.0'),
+              ),
+              ListTile(
+                title: Text('JobWise'),
+                subtitle: Text('AI-powered job application assistant'),
+              ),
+            ],
+          );
+        },
+      ),
     );
+  }
+}
+
+class _DateFormatRadioList extends ConsumerWidget {
+  const _DateFormatRadioList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedDateFormat = ref.watch(dateFormatSettingProvider).value;
+    final settingsService = ref.watch(settingsServiceProvider);
+
+    if (selectedDateFormat == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        ListTile(
+          title: const Text('US Format'),
+          subtitle: Text(
+            'MM/dd/yyyy - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatUS)}',
+          ),
+          leading: Radio<String>(
+            value: SettingsService.dateFormatUS,
+            groupValue: selectedDateFormat,
+            onChanged: (value) => _updateDateFormat(ref, context, value),
+          ),
+          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatUS),
+        ),
+        ListTile(
+          title: const Text('European Format'),
+          subtitle: Text(
+            'dd/MM/yyyy - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatEU)}',
+          ),
+          leading: Radio<String>(
+            value: SettingsService.dateFormatEU,
+            groupValue: selectedDateFormat,
+            onChanged: (value) => _updateDateFormat(ref, context, value),
+          ),
+          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatEU),
+        ),
+        ListTile(
+          title: const Text('ISO Format'),
+          subtitle: Text(
+            'yyyy-MM-dd - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatISO)}',
+          ),
+          leading: Radio<String>(
+            value: SettingsService.dateFormatISO,
+            groupValue: selectedDateFormat,
+            onChanged: (value) => _updateDateFormat(ref, context, value),
+          ),
+          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatISO),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updateDateFormat(
+      WidgetRef ref, BuildContext context, String? value) async {
+    if (value != null) {
+      await ref.read(dateFormatSettingProvider.notifier).setDateFormat(value);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Date format preference saved'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }

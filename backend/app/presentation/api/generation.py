@@ -304,7 +304,31 @@ async def get_generation_result(
         )
 
     except ValidationException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e.detail))
+        # Handle specific error codes with appropriate HTTP status codes
+        if e.error_code == "generation_failed":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error": {
+                        "code": e.error_code,
+                        "message": e.message,
+                        "details": e.details
+                    }
+                }
+            )
+        elif e.error_code == "generation_not_completed":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,  # 409 Conflict for "not ready yet"
+                detail={
+                    "error": {
+                        "code": e.error_code,
+                        "message": e.message,
+                        "details": e.details
+                    }
+                }
+            )
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e.detail))
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e.detail))
     except ForbiddenException as e:

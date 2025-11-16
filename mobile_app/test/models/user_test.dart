@@ -13,7 +13,7 @@ void main() {
       'updated_at': '2025-10-22T10:00:00Z',
     };
 
-    final testUser = User(
+    const testUser = User(
       id: '123',
       email: 'test@example.com',
       fullName: 'John Doe',
@@ -66,19 +66,19 @@ void main() {
     });
 
     test('equality works correctly', () {
-      final user1 = User(
+      const user1 = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',
       );
 
-      final user2 = User(
+      const user2 = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',
       );
 
-      final user3 = User(
+      const user3 = User(
         id: '456',
         email: 'test@example.com',
         fullName: 'John Doe',
@@ -89,13 +89,13 @@ void main() {
     });
 
     test('hashCode is consistent', () {
-      final user1 = User(
+      const user1 = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',
       );
 
-      final user2 = User(
+      const user2 = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',
@@ -105,7 +105,7 @@ void main() {
     });
 
     test('default values are applied', () {
-      final user = User(
+      const user = User(
         id: '123',
         email: 'test@example.com',
         fullName: 'John Doe',

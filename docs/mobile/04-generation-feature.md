@@ -10,7 +10,7 @@
 
 ## Implementation Status
 
-### ❌ Not Implemented
+### ❌ Not Implemented - Generation Core Features
 - Generation initiation screen (select job + options)
 - Real-time progress tracking screen with stage updates
 - Generation result screen (ATS score, recommendations)
@@ -23,7 +23,23 @@
 - Polling mechanism for progress updates
 - Error handling and retry logic
 
-### ✅ API Ready (Backend Specified)
+### ❌ Not Implemented - Preference Management Features (NEW)
+- Sample resume upload screen
+- Sample cover letter upload screen
+- Preference setup wizard/onboarding flow
+- Example resume management screen (list, view, delete, set primary)
+- Layout preference configuration screen
+- Writing style preference configuration screen
+- User generation profile settings screen
+- File picker integration for PDF/DOCX uploads
+- File upload progress tracking
+- Text extraction and validation UI
+- LLM preference extraction progress feedback
+- Preference API client (all preference endpoints)
+
+### ✅ API Ready (Backend Fully Implemented)
+
+**Generation API:**
 - POST /generations/resume - Start resume generation
 - POST /generations/cover-letter - Start cover letter generation
 - GET /generations/{id} - Get generation status and progress
@@ -31,6 +47,15 @@
 - GET /generations - List user's generations
 - DELETE /generations/{id} - Cancel generation
 - GET /generations/templates - List available templates
+
+**Preference API:**
+- POST /preferences/upload-sample-resume - Upload and extract layout preferences
+- POST /preferences/upload-cover-letter - Upload and extract writing style
+- GET /preferences/generation-profile - Get user's generation profile
+- PUT /preferences/generation-profile - Update generation profile settings
+- GET /preferences/example-resumes - List user's example resumes
+- DELETE /preferences/example-resumes/{resume_id} - Delete example resume
+- POST /preferences/example-resumes/{resume_id}/set-primary - Set primary example
 
 ---
 
@@ -40,47 +65,175 @@
 Enable users to generate AI-tailored resumes and cover letters by combining their master profile with specific job descriptions. Real-time progress tracking shows the 5-stage AI pipeline in action.
 
 ### Key Features
+
+**Generation Core:**
 1. **Job Selection** - Choose saved job for tailored generation
 2. **Template Selection** - Pick resume template (Modern, Classic, Creative)
 3. **Generation Options** - Configure length, focus areas, custom instructions
-4. **Real-Time Progress** - Watch 5-stage pipeline with live updates
+4. **Real-Time Progress** - Watch 2-stage pipeline with live updates (Analysis & Matching → Generation & Validation)
 5. **ATS Scoring** - View keyword coverage and match percentage
 6. **Recommendations** - Get actionable suggestions to improve resume
 7. **Generation History** - Access previous generations
 8. **Rate Limiting** - Handle 10 generations/hour limit gracefully
 
+**Preference Management (NEW - Required for AI Generation):**
+9. **Sample Resume Upload** - Upload PDF/DOCX resume for layout extraction
+10. **Sample Cover Letter Upload** - Upload PDF/DOCX cover letter for writing style extraction
+11. **Preference Setup Wizard** - First-time onboarding to configure generation preferences
+12. **Example Resume Management** - View, delete, and set primary example resumes
+13. **Layout Configuration** - Review and adjust extracted layout preferences (section order, bullet style)
+14. **Writing Style Configuration** - Review and adjust extracted writing style (tone, formality, vocabulary)
+15. **Generation Profile Settings** - Manage quality targets and generation behavior
+
 ### Core User Flows
 
-#### Flow 1: Generate Resume from Job
+#### Flow 1: First-Time Setup - Upload Sample Documents (NEW)
+```
+Prerequisites:
+- User has created master profile (experiences, skills, education)
+- User has NOT uploaded sample documents yet
+
+User Journey:
+1. User completes profile creation
+2. App shows "Setup Preferences" prompt
+3. User taps "Get Started"
+4. Preference Setup Wizard appears with steps:
+   
+   STEP 1: Upload Sample Resume
+   5. User taps "Upload Sample Resume"
+   6. File picker opens (filter: PDF, DOCX, TXT)
+   7. User selects well-formatted resume file
+   8. Upload progress shown (0-100%)
+   9. Backend extracts text from file
+   10. LLM analyzes layout structure (3-5 seconds)
+   11. Progress shown: "Analyzing layout preferences..."
+   12. Success! Extracted preferences shown:
+       - Section Order: [Summary, Experience, Education, Skills]
+       - Bullet Style: "action_verb" (starts with strong verbs)
+       - Content Density: "balanced" (3-5 bullets per role)
+       - Contact Info Format: "header_left"
+   13. User reviews preferences
+   14. Optional: User can adjust preferences with toggles/dropdowns
+   15. User taps "Continue"
+   
+   STEP 2: Upload Sample Cover Letter
+   16. User taps "Upload Sample Cover Letter"
+   17. File picker opens (filter: PDF, DOCX, TXT)
+   18. User selects cover letter file
+   19. Upload progress shown (0-100%)
+   20. Backend extracts text from file
+   21. LLM analyzes writing style (3-5 seconds)
+   22. Progress shown: "Analyzing writing style..."
+   23. Success! Extracted preferences shown:
+       - Tone: "professional_enthusiastic" (7/10)
+       - Formality Level: "business_professional" (8/10)
+       - Sentence Complexity: "varied" (mix of short and complex)
+       - Vocabulary Level: "advanced_professional"
+       - Paragraph Length: 3-4 sentences average
+   24. User reviews preferences
+   25. Optional: User adjusts tone slider, formality level
+   26. User taps "Complete Setup"
+   
+   27. Success screen: "Preferences Saved! Ready to Generate"
+   28. User returned to main app
+
+Data Flow:
+Mobile → File picker → Select file → Upload via multipart/form-data → 
+POST /preferences/upload-sample-resume {file, is_primary: true} → 
+Backend: Save file → Extract text → LLM analyzes structure → 
+Create LayoutConfig entity → Save to DB → Return extraction result → 
+Mobile: Display extracted preferences for review → 
+User adjusts → PUT /preferences/generation-profile → 
+Profile updated → Ready for generation
+
+Backend Endpoints Used:
+- POST /preferences/upload-sample-resume
+- POST /preferences/upload-cover-letter
+- PUT /preferences/generation-profile (to save adjustments)
+```
+
+#### Flow 2: Generate Resume from Job (Updated with Preferences)
 ```
 User Journey:
 1. User navigates to job detail screen
 2. User taps "Generate Resume" button
 3. Generation options screen appears
 4. User selects template (Modern, Classic, Creative)
+   Note: Templates now apply user's layout preferences from sample resume
 5. User sets resume length (1 page, 2 pages)
 6. Optional: User adds focus areas (e.g., "Leadership", "Cloud Architecture")
 7. Optional: User adds custom instructions
 8. User taps "Generate"
-9. Progress screen shows with stage indicators (0/5 stages)
+9. Progress screen shows with stage indicators (0/2 stages)
 10. Real-time polling updates progress every 2 seconds
-11. Stage 1: "Analyzing job description..." (20% complete)
-12. Stage 2: "Compiling your profile..." (40% complete)
-13. Stage 3: "Generating tailored content..." (60% complete)
-14. Stage 4: "Validating quality and ATS compliance..." (80% complete)
-15. Stage 5: "Preparing PDF export..." (100% complete)
-16. Success! Result screen shows:
+11. Stage 1: "Analyzing job description and matching content..." (40% complete)
+    - Uses user's master profile as content source
+    - Applies job requirements for ranking
+12. Stage 2: "Generating tailored resume and validating quality..." (100% complete)
+    - Applies user's layout preferences from sample resume
+    - Applies user's writing style from sample cover letter
+    - Validates ATS compliance
+13. Success! Result screen shows:
     - ATS Score: 87%
     - Match Percentage: 82%
     - Keyword Coverage: 15/18 keywords matched
     - Recommendations list
-17. User can: View PDF, Download, Share, Regenerate with changes
+    - Consistency Score: 92% (how well generation matched sample preferences)
+14. User can: View PDF, Download, Share, Regenerate with changes
 
 Data Flow:
-Mobile → POST /generations/resume {profile_id, job_id, options} → Backend creates generation (status: pending) → Background pipeline runs → Mobile polls GET /generations/{id} every 2s → Progress updates received → Final status: completed → Mobile fetches result → Display ATS score and PDF
+Mobile → POST /generations/resume {profile_id, job_id, options} → 
+Backend: Load master profile + sample preferences + job requirements → 
+Stage 1: LLM analyzes and ranks content (3s) → 
+Stage 2: LLM generates using layout/style preferences (5s) → 
+Generation complete (status: completed) → 
+Mobile polls GET /generations/{id} every 2s → 
+Progress updates received → Final status: completed → 
+Mobile fetches result → Display ATS score and PDF
+
+Key Difference from Original Flow:
+- Generation now uses uploaded sample preferences
+- 2-stage pipeline (not 5-stage)
+- Layout/style consistency tracked and reported
 ```
 
-#### Flow 2: View Generation History
+#### Flow 3: Manage Example Resumes (NEW)
+```
+User Journey:
+1. User opens "Settings" or "Profile" screen
+2. User taps "Generation Preferences"
+3. Screen shows two sections:
+   - Example Resumes (count badge: 2)
+   - Writing Style (1 cover letter uploaded)
+4. User taps "Example Resumes"
+5. List displays uploaded resumes:
+   - "Software Engineer Resume.pdf" (Primary) ⭐
+     Uploaded: Oct 15, 2025
+     Layout: Modern, Left-aligned
+   - "Senior Developer Resume.docx"
+     Uploaded: Nov 2, 2025
+     Layout: Classic, Two-column
+6. User can:
+   - Tap card to preview extracted preferences
+   - Swipe to delete (confirmation dialog)
+   - Tap star icon to set as primary
+   - Tap "Upload New" to add another example
+7. User taps star on "Senior Developer Resume.docx"
+8. Confirmation: "Set as Primary Example Resume?"
+9. User confirms
+10. Backend updates: is_primary flag + updates generation profile
+11. Star moves to new primary resume
+12. Toast: "Primary example updated. Future generations will use this layout."
+
+Data Flow:
+Mobile → GET /preferences/example-resumes → 
+Backend returns list with metadata → Display cards → 
+User sets primary → POST /preferences/example-resumes/{id}/set-primary → 
+Backend updates is_primary flags + updates generation profile → 
+Success response → Refresh list
+```
+
+#### Flow 4: View Generation History
 ```
 User Journey:
 1. User opens "Generations" screen from main navigation
@@ -90,6 +243,7 @@ User Journey:
    - ATS score badge
    - Date generated
    - Status (Completed, In Progress, Failed)
+   - NEW: Consistency Score badge (how well it matched preferences)
 3. User can filter by:
    - Document type (Resume, Cover Letter)
    - Status (Completed, In Progress, Failed)
@@ -102,7 +256,7 @@ Data Flow:
 Mobile → GET /generations?limit=20&offset=0 → Backend returns list → Display cards → User taps card → Navigate to result screen
 ```
 
-#### Flow 3: Handle Rate Limit
+#### Flow 5: Handle Rate Limit
 ```
 User Journey:
 1. User attempts 11th generation in same hour
@@ -132,9 +286,12 @@ catch DioError with status 429 → Extract retry_after from response → Calcula
 Base URL: http://10.0.2.2:8000/api/v1
 Authentication: JWT Bearer token in Authorization header
 Polling Interval: 2 seconds for progress updates
+File Upload: multipart/form-data for sample documents
 ```
 
 ### Endpoints
+
+**Generation Endpoints:**
 
 | Endpoint | Method | Purpose | Request | Response |
 |----------|--------|---------|---------|----------|
@@ -146,6 +303,18 @@ Polling Interval: 2 seconds for progress updates
 | `/generations/{id}` | DELETE | Cancel generation | - | No content (204) |
 | `/generations/templates` | GET | List templates | - | Templates array (200) |
 
+**Preference Endpoints (NEW):**
+
+| Endpoint | Method | Purpose | Request | Response |
+|----------|--------|---------|---------|----------|
+| `/preferences/upload-sample-resume` | POST | Upload sample resume for layout extraction | `multipart/form-data: {file, is_primary}` | Extraction result (200) |
+| `/preferences/upload-cover-letter` | POST | Upload cover letter for style extraction | `multipart/form-data: {file}` | Extraction result (200) |
+| `/preferences/generation-profile` | GET | Get user's generation profile | - | Profile with preferences (200) |
+| `/preferences/generation-profile` | PUT | Update generation profile settings | `{layout_config_id, writing_style_config_id, targets}` | Updated profile (200) |
+| `/preferences/example-resumes` | GET | List user's example resumes | - | Example resumes array (200) |
+| `/preferences/example-resumes/{resume_id}` | DELETE | Delete example resume | - | No content (204) |
+| `/preferences/example-resumes/{resume_id}/set-primary` | POST | Set primary example resume | - | Success response (200) |
+
 ### Error Codes
 
 | Code | Meaning | User Action |
@@ -153,7 +322,9 @@ Polling Interval: 2 seconds for progress updates
 | 400 | Invalid profile_id or job_id | Show validation error |
 | 403 | Not authorized (not owner of profile/job) | Show error message |
 | 404 | Generation, profile, or job not found | Show "Not found" message |
-| 422 | Pipeline stage failed | Show error with retry option |
+| 413 | File too large (>5MB) | Show "File size limit exceeded" message |
+| 415 | Unsupported file type (not PDF/DOCX/TXT) | Show "Please upload PDF, DOCX, or TXT" message |
+| 422 | Pipeline stage failed OR text extraction failed | Show error with retry option |
 | 429 | Rate limit exceeded (>10/hour) | Show rate limit dialog with countdown |
 | 500 | Server error | Show generic error with retry |
 
@@ -161,7 +332,265 @@ Polling Interval: 2 seconds for progress updates
 
 ## Data Models
 
-### Generation Model
+### Preference Models (NEW)
+
+#### ExampleResume Model
+
+Navigation: From settings/preferences screen to example resume management
+
+**Purpose**: Tracks uploaded sample resumes for layout extraction
+
+**Required Dependencies:**
+- `file_picker: ^6.0.0` - For file selection UI
+- `dio: ^5.0.0` - For multipart file upload
+- `path: ^1.8.0` - For file path manipulation
+
+**File Upload Constraints:**
+- Allowed formats: PDF, DOCX, TXT
+- Max file size: 5 MB
+- Upload method: multipart/form-data
+- Backend endpoint: POST /preferences/upload-sample-resume
+
+**Dart Model:**
+```dart
+class ExampleResume {
+  final String id;
+  final int userId;
+  final String filePath;
+  final String originalFilename;
+  final String layoutConfigId;
+  final bool isPrimary;
+  final String? fileHash;
+  final DateTime uploadedAt;
+  final int fileSize;
+  final String fileType;
+
+  const ExampleResume({
+    required this.id,
+    required this.userId,
+    required this.filePath,
+    required this.originalFilename,
+    required this.layoutConfigId,
+    required this.isPrimary,
+    this.fileHash,
+    required this.uploadedAt,
+    required this.fileSize,
+    required this.fileType,
+  });
+
+  factory ExampleResume.fromJson(Map<String, dynamic> json) {
+    return ExampleResume(
+      id: json['id'],
+      userId: json['user_id'],
+      filePath: json['file_path'],
+      originalFilename: json['original_filename'],
+      layoutConfigId: json['layout_config_id'],
+      isPrimary: json['is_primary'],
+      fileHash: json['file_hash'],
+      uploadedAt: DateTime.parse(json['uploaded_at']),
+      fileSize: json['file_size'],
+      fileType: json['file_type'],
+    );
+  }
+}
+```
+
+#### LayoutConfig Model
+
+**Purpose**: Stores extracted layout preferences from sample resume
+
+**Dart Model:**
+```dart
+class LayoutConfig {
+  final String id;
+  final int userId;
+  final List<String> sectionOrder;
+  final String bulletStyle;
+  final String contentDensity;
+  final String contactInfoFormat;
+  final Map<String, dynamic> extractionMetadata;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const LayoutConfig({
+    required this.id,
+    required this.userId,
+    required this.sectionOrder,
+    required this.bulletStyle,
+    required this.contentDensity,
+    required this.contactInfoFormat,
+    required this.extractionMetadata,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory LayoutConfig.fromJson(Map<String, dynamic> json) {
+    return LayoutConfig(
+      id: json['id'],
+      userId: json['user_id'],
+      sectionOrder: List<String>.from(json['section_order']),
+      bulletStyle: json['bullet_style'],
+      contentDensity: json['content_density'],
+      contactInfoFormat: json['contact_info_format'],
+      extractionMetadata: json['extraction_metadata'],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  String get bulletStyleDisplay {
+    switch (bulletStyle) {
+      case 'action_verb':
+        return 'Action Verb Focus';
+      case 'results_focused':
+        return 'Results-Focused';
+      case 'hybrid':
+        return 'Hybrid Style';
+      default:
+        return bulletStyle;
+    }
+  }
+
+  String get densityDisplay {
+    switch (contentDensity) {
+      case 'concise':
+        return 'Concise (2-3 bullets)';
+      case 'balanced':
+        return 'Balanced (4-5 bullets)';
+      case 'detailed':
+        return 'Detailed (6+ bullets)';
+      default:
+        return contentDensity;
+    }
+  }
+}
+```
+
+#### WritingStyleConfig Model
+
+**Purpose**: Stores extracted writing style from sample cover letter
+
+**Dart Model:**
+```dart
+class WritingStyleConfig {
+  final String id;
+  final int userId;
+  final String tone;
+  final int toneLevel;
+  final int formalityLevel;
+  final String sentenceComplexity;
+  final String vocabularyLevel;
+  final int avgParagraphLength;
+  final String sourceText;
+  final Map<String, dynamic> extractionMetadata;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const WritingStyleConfig({
+    required this.id,
+    required this.userId,
+    required this.tone,
+    required this.toneLevel,
+    required this.formalityLevel,
+    required this.sentenceComplexity,
+    required this.vocabularyLevel,
+    required this.avgParagraphLength,
+    required this.sourceText,
+    required this.extractionMetadata,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory WritingStyleConfig.fromJson(Map<String, dynamic> json) {
+    return WritingStyleConfig(
+      id: json['id'],
+      userId: json['user_id'],
+      tone: json['tone'],
+      toneLevel: json['tone_level'],
+      formalityLevel: json['formality_level'],
+      sentenceComplexity: json['sentence_complexity'],
+      vocabularyLevel: json['vocabulary_level'],
+      avgParagraphLength: json['avg_paragraph_length'],
+      sourceText: json['source_text'] ?? '',
+      extractionMetadata: json['extraction_metadata'] ?? {},
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  String get toneDisplay {
+    switch (tone) {
+      case 'professional':
+        return 'Professional';
+      case 'professional_enthusiastic':
+        return 'Professional & Enthusiastic';
+      case 'authoritative':
+        return 'Authoritative';
+      case 'conversational':
+        return 'Conversational';
+      default:
+        return tone;
+    }
+  }
+
+  String get formalityDisplay {
+    if (formalityLevel >= 8) return 'Very Formal';
+    if (formalityLevel >= 6) return 'Business Professional';
+    if (formalityLevel >= 4) return 'Moderate';
+    return 'Casual';
+  }
+}
+```
+
+#### UserGenerationProfile Model
+
+**Purpose**: Aggregates user's generation preferences and settings
+
+**Dart Model:**
+```dart
+class UserGenerationProfile {
+  final String id;
+  final int userId;
+  final String? layoutConfigId;
+  final String? writingStyleConfigId;
+  final double targetAtsScore;
+  final int maxBulletsPerRole;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const UserGenerationProfile({
+    required this.id,
+    required this.userId,
+    this.layoutConfigId,
+    this.writingStyleConfigId,
+    required this.targetAtsScore,
+    required this.maxBulletsPerRole,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory UserGenerationProfile.fromJson(Map<String, dynamic> json) {
+    return UserGenerationProfile(
+      id: json['id'],
+      userId: json['user_id'],
+      layoutConfigId: json['layout_config_id'],
+      writingStyleConfigId: json['writing_style_config_id'],
+      targetAtsScore: (json['target_ats_score'] as num).toDouble(),
+      maxBulletsPerRole: json['max_bullets_per_role'],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  bool get hasLayoutPreferences => layoutConfigId != null;
+  bool get hasStylePreferences => writingStyleConfigId != null;
+  bool get isFullyConfigured => hasLayoutPreferences && hasStylePreferences;
+}
+```
+
+---
+
+### Generation Model (Existing - No Changes)
 
 ```dart
 // lib/models/generation.dart

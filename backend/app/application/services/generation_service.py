@@ -633,13 +633,25 @@ Please provide a structured analysis in JSON format.
         """Get final generation result (must be completed)."""
         generation = await self.get_generation_status(generation_id, user_id)
 
-        if generation.status != "completed":
+        if generation.status == "failed":
             raise ValidationException(
-                error_code="generation_not_completed",
-                message="Generation is not yet completed",
+                error_code="generation_failed", 
+                message=f"Generation failed: {generation.error_message or 'Unknown error occurred during processing'}",
                 details={
                     "generation_id": generation_id,
-                    "status": generation.status
+                    "status": generation.status,
+                    "error_message": generation.error_message
+                }
+            )
+        elif generation.status != "completed":
+            raise ValidationException(
+                error_code="generation_not_completed",
+                message=f"Generation is not yet completed (current status: {generation.status})",
+                details={
+                    "generation_id": generation_id,
+                    "status": generation.status,
+                    "current_stage": generation.current_stage,
+                    "total_stages": generation.total_stages
                 }
             )
 

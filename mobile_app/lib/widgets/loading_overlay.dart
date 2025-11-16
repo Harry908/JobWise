@@ -24,14 +24,14 @@ class LoadingOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(
+                const CircularProgressIndicator(
                   color: AppColors.primary,
                 ),
                 if (message != null) ...[
                   const SizedBox(height: 16),
                   Text(
                     message!,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 16,
                     ),

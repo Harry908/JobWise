@@ -62,4 +62,22 @@ class Validators {
 
     return null;
   }
+
+  static String? validateUrl(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // URL is optional
+    }
+    final urlRegex = RegExp(
+        r'^(https?:\/\/)?' // protocol
+        r'((([a-z\d]([a-z\d-]*[a-z\d])*)\.)+[a-z]{2,}|' // domain name
+        r'((\d{1,3}\.){3}\d{1,3}))' // OR ip (v4) address
+        r'(\:\d+)?(\/[-a-z\d%_.~+]*)*' // port and path
+        r'(\?[;&a-z\d%_.~+=-]*)?' // query string
+        r'(\#[-a-z\d_]*)?$', // fragment locator
+        caseSensitive: false);
+    if (!urlRegex.hasMatch(value.trim())) {
+      return 'Please enter a valid URL';
+    }
+    return null;
+  }
 }

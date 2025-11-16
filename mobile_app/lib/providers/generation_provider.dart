@@ -1,347 +1,91 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/generation.dart';
-import '../services/api/generation_api_client.dart';
+import '../services/generation_service.dart';
 
-part 'generation_provider.freezed.dart';
+part 'generation_provider.g.dart';
 
-/// Generation state using Freezed for immutability
-@freezed
-class GenerationState with _$GenerationState {
-  const factory GenerationState({
-    @Default([]) List<GenerationListItem> generations,
-    Generation? activeGeneration, // Currently creating or viewing
-    GenerationStatistics? statistics,
-    Pagination? pagination,
-    @Default([]) List<Template> templates,
-    @Default(false) bool isLoading,
-    @Default(false) bool isLoadingMore,
-    @Default(false) bool isPolling,
-    String? error,
-    @Default(0) int total,
-    @Default(true) bool hasMore,
-  }) = _GenerationState;
+@riverpod
+Future<List<Template>> generationTemplates(Ref ref) async {
+  final generationService = ref.watch(generationServiceProvider);
+  return await generationService.getTemplates();
 }
 
-/// Generation Notifier for managing generation-related state
-class GenerationNotifier extends StateNotifier<GenerationState> {
-  final GenerationApiClient _generationApi;
+@riverpod
+Future<(List<GenerationListItem>, Pagination, GenerationStatistics)> generationHistory(
+  Ref ref, {
+  String? jobId,
+  GenerationStatus? status,
+  DocumentType? documentType,
+  int limit = 20,
+  int offset = 0,
+}) async {
+  final generationService = ref.watch(generationServiceProvider);
+  return await generationService.getGenerations(
+    jobId: jobId,
+    status: status,
+    documentType: documentType,
+    limit: limit,
+    offset: offset,
+  );
+}
 
-  GenerationNotifier(this._generationApi) : super(const GenerationState());
-
-  /// Load templates (cached in state)
-  Future<void> loadTemplates() async {
-    if (state.templates.isNotEmpty) {
-      return; // Already loaded
-    }
-
-    try {
-      state = state.copyWith(isLoading: true, error: null);
-
-      final templates = await _generationApi.getTemplates();
-
-      state = state.copyWith(
-        templates: templates,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
+@riverpod
+class GenerationActions extends _$GenerationActions {
+  @override
+  void build() {
+    // This provider is for actions, not state.
   }
 
-  /// Start resume generation
   Future<Generation> startResumeGeneration({
     required String profileId,
     required String jobId,
-    GenerationOptions? options,
-  }) async {
-    try {
-      state = state.copyWith(isLoading: true, error: null);
-
-      final generation = await _generationApi.startResumeGeneration(
-        profileId: profileId,
-        jobId: jobId,
-        options: options,
-      );
-
-      state = state.copyWith(
-        activeGeneration: generation,
-        isLoading: false,
-      );
-
-      return generation;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
+    required GenerationOptions options,
+  }) {
+    final service = ref.read(generationServiceProvider);
+    return service.startResumeGeneration(
+        profileId: profileId, jobId: jobId, options: options);
   }
 
-  /// Start cover letter generation
   Future<Generation> startCoverLetterGeneration({
     required String profileId,
     required String jobId,
-    GenerationOptions? options,
-  }) async {
-    try {
-      state = state.copyWith(isLoading: true, error: null);
-
-      final generation = await _generationApi.startCoverLetterGeneration(
-        profileId: profileId,
-        jobId: jobId,
-        options: options,
-      );
-
-      state = state.copyWith(
-        activeGeneration: generation,
-        isLoading: false,
-      );
-
-      return generation;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
-  /// Load user's generations with optional filters
-  Future<void> loadGenerations({
-    String? jobId,
-    GenerationStatus? status,
-    DocumentType? documentType,
-    bool refresh = false,
-  }) async {
-    if (refresh) {
-      state = state.copyWith(
-        isLoading: true,
-        error: null,
-        generations: [],
-      );
-    } else if (state.isLoading) {
-      return; // Already loading
-    }
-
-    try {
-      state = state.copyWith(isLoading: true, error: null);
-
-      final (generations, pagination, statistics) =
-          await _generationApi.getGenerations(
-        jobId: jobId,
-        status: status,
-        documentType: documentType,
-        limit: 20,
-        offset: 0,
-      );
-
-      state = state.copyWith(
-        generations: generations,
-        pagination: pagination,
-        statistics: statistics,
-        total: pagination.total,
-        hasMore: pagination.hasNext,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  /// Load more generations (pagination)
-  Future<void> loadMoreGenerations({
-    String? jobId,
-    GenerationStatus? status,
-    DocumentType? documentType,
-  }) async {
-    if (state.isLoadingMore || !state.hasMore) {
-      return;
-    }
-
-    try {
-      state = state.copyWith(isLoadingMore: true);
-
-      final (generations, pagination, statistics) =
-          await _generationApi.getGenerations(
-        jobId: jobId,
-        status: status,
-        documentType: documentType,
-        limit: 20,
-        offset: state.generations.length,
-      );
-
-      state = state.copyWith(
-        generations: [...state.generations, ...generations],
-        pagination: pagination,
-        statistics: statistics,
-        total: pagination.total,
-        hasMore: pagination.hasNext,
-        isLoadingMore: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoadingMore: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  /// Cancel ongoing generation
-  Future<void> cancelGeneration(String id) async {
-    try {
-      await _generationApi.cancelGeneration(id);
-
-      // Clear active generation if it matches
-      if (state.activeGeneration?.id == id) {
-        state = state.copyWith(activeGeneration: null);
-      }
-
-      // Refresh list
-      await loadGenerations(refresh: true);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
-    }
-  }
-
-  /// Regenerate with new options
-  Future<Generation> regenerate({
-    required String id,
-    GenerationOptions? options,
-  }) async {
-    try {
-      state = state.copyWith(isLoading: true, error: null);
-
-      final generation = await _generationApi.regenerateGeneration(
-        id: id,
-        options: options,
-      );
-
-      state = state.copyWith(
-        activeGeneration: generation,
-        isLoading: false,
-      );
-
-      return generation;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
-  /// Update active generation (used during polling)
-  void updateActiveGeneration(Generation generation) {
-    state = state.copyWith(activeGeneration: generation);
-  }
-
-  /// Clear active generation
-  void clearActiveGeneration() {
-    state = state.copyWith(activeGeneration: null);
-  }
-
-  /// Set polling state
-  void setPolling(bool polling) {
-    state = state.copyWith(isPolling: polling);
+    required GenerationOptions options,
+  }) {
+    final service = ref.read(generationServiceProvider);
+    return service.startCoverLetterGeneration(
+        profileId: profileId, jobId: jobId, options: options);
   }
 }
 
-// ============================================================================
-// PROVIDERS
-// ============================================================================
-
-/// Provider for GenerationNotifier
-final generationProvider =
-    StateNotifierProvider<GenerationNotifier, GenerationState>((ref) {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return GenerationNotifier(apiClient);
-});
-
-/// Provider for templates (auto-load on first access)
-final templatesProvider = FutureProvider<List<Template>>((ref) async {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return apiClient.getTemplates();
-});
-
-/// Provider for polling a specific generation
-/// Usage: ref.watch(generationStreamProvider(generationId))
-final generationStreamProvider = StreamProvider.autoDispose
-    .family<Generation, String>((ref, generationId) {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return apiClient.pollGeneration(generationId);
-});
-
-/// Provider for a single generation status
-/// Useful for one-time checks without polling
-final generationStatusProvider =
-    FutureProvider.autoDispose.family<Generation, String>((ref, generationId) async {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return apiClient.getGenerationStatus(generationId);
-});
-
-/// Provider for generation result
-final generationResultProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>((ref, generationId) async {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return apiClient.getGenerationResult(generationId);
-});
-
-/// Provider for generation list with filters
-class GenerationFilters {
-  final String? jobId;
-  final GenerationStatus? status;
-  final DocumentType? documentType;
-  final int limit;
-  final int offset;
-
-  const GenerationFilters({
-    this.jobId,
-    this.status,
-    this.documentType,
-    this.limit = 20,
-    this.offset = 0,
-  });
-
+@riverpod
+class ActiveGeneration extends _$ActiveGeneration {
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GenerationFilters &&
-          runtimeType == other.runtimeType &&
-          jobId == other.jobId &&
-          status == other.status &&
-          documentType == other.documentType &&
-          limit == other.limit &&
-          offset == other.offset;
+  Future<Generation> build(String generationId) async {
+    final service = ref.read(generationServiceProvider);
+    return service.getGenerationResult(generationId);
+  }
 
-  @override
-  int get hashCode =>
-      jobId.hashCode ^
-      status.hashCode ^
-      documentType.hashCode ^
-      limit.hashCode ^
-      offset.hashCode;
+  Future<void> getResult() async {
+    final service = ref.read(generationServiceProvider);
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => service.getGenerationResult(state.value!.id));
+  }
+
+  Future<Map<String, dynamic>> getRawResult() async {
+    final service = ref.read(generationServiceProvider);
+    return service.getRawGenerationResult(state.value!.id);
+  }
+
+  Stream<Generation> getGenerationStream() {
+    final service = ref.read(generationServiceProvider);
+    return service.getGenerationStream(state.value!.id);
+  }
+
+  Future<void> cancel() async {
+    final service = ref.read(generationServiceProvider);
+    await service.cancelGeneration(state.value!.id);
+    ref.invalidateSelf();
+  }
 }
-
-final generationsListProvider = FutureProvider.autoDispose
-    .family<(List<GenerationListItem>, Pagination, GenerationStatistics),
-        GenerationFilters>((ref, filters) async {
-  final apiClient = ref.watch(generationApiClientProvider);
-  return apiClient.getGenerations(
-    jobId: filters.jobId,
-    status: filters.status,
-    documentType: filters.documentType,
-    limit: filters.limit,
-    offset: filters.offset,
-  );
-});

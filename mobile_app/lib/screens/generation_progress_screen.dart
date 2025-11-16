@@ -25,8 +25,7 @@ class _GenerationProgressScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final generationStream =
-        ref.watch(generationStreamProvider(widget.generationId));
+    final generationStream = ref.watch(activeGenerationProvider(widget.generationId));
 
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +35,7 @@ class _GenerationProgressScreenState
       body: generationStream.when(
         data: (generation) {
           // Auto-navigate to result on completion (only once)
-          if (generation.isComplete && !_navigatedToResult) {
+          if (generation.status == GenerationStatus.completed && !_navigatedToResult) {
             _navigatedToResult = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -46,7 +45,7 @@ class _GenerationProgressScreenState
           }
 
           // Show error state
-          if (generation.isFailed) {
+          if (generation.status == GenerationStatus.failed) {
             return _buildErrorState(theme, generation);
           }
 
@@ -90,7 +89,8 @@ class _GenerationProgressScreenState
             const SizedBox(height: 32),
 
             // Cancel button (only if still processing)
-            if (generation.isProcessing) _buildCancelButton(theme),
+            if (generation.status == GenerationStatus.generating || generation.status == GenerationStatus.pending)
+              _buildCancelButton(theme),
           ],
         ),
       ),
@@ -98,7 +98,7 @@ class _GenerationProgressScreenState
   }
 
   Widget _buildProgressIndicator(ThemeData theme, Generation generation) {
-    final percentage = generation.progress.percentage / 100;
+    final percentage = (generation.progress.percentage) / 100;
 
     return SizedBox(
       width: 200,
@@ -122,7 +122,7 @@ class _GenerationProgressScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '${generation.progress.percentage}%',
+                '${(percentage * 100).toInt()}%',
                 style: theme.textTheme.displaySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -143,13 +143,16 @@ class _GenerationProgressScreenState
   }
 
   Widget _buildStageIndicators(ThemeData theme, Generation generation) {
+    final totalStages = generation.progress.totalStages;
+    final currentStage = generation.progress.currentStage;
+
     return Column(
       children: List.generate(
-        generation.progress.totalStages,
+        totalStages,
         (index) {
           final stageNumber = index + 1;
-          final isComplete = generation.progress.currentStage > stageNumber;
-          final isCurrent = generation.progress.currentStage == stageNumber;
+          final isComplete = currentStage > stageNumber;
+          final isCurrent = currentStage == stageNumber;
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -470,20 +473,18 @@ class _GenerationProgressScreenState
               navigator.pop();
               try {
                 await ref
-                    .read(generationProvider.notifier)
-                    .cancelGeneration(widget.generationId);
-                if (mounted) {
-                  navigator.pop();
-                }
+                    .read(activeGenerationProvider(widget.generationId).notifier)
+                    .cancel();
+                if (!mounted) return;
+                navigator.pop();
               } catch (e) {
-                if (mounted) {
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to cancel: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to cancel: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             style: FilledButton.styleFrom(

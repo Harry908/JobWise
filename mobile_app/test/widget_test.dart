@@ -15,7 +15,7 @@ void main() {
 
   testWidgets('App starts without crashing', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(ProviderScope(child: App()));
+    await tester.pumpWidget(const ProviderScope(child: App()));
 
     // Verify that the login screen is shown
     expect(find.text('JobWise'), findsOneWidget);

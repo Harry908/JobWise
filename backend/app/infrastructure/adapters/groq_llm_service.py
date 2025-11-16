@@ -34,8 +34,6 @@ class GroqLLMService(ILLMService):
         # If still no key, try loading from settings (in case dotenv wasn't loaded)
         if not self.api_key:
             try:
-                from app.core.config import get_settings
-                settings = get_settings()
                 self.api_key = settings.groq_api_key
             except Exception as e:
                 logger.warning(f"Could not load settings: {e}")

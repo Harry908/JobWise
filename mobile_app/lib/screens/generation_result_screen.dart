@@ -9,7 +9,7 @@ import '../providers/generation_provider.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 /// Screen for displaying generation results with ATS score and recommendations
-class GenerationResultScreen extends ConsumerStatefulWidget {
+class GenerationResultScreen extends ConsumerWidget {
   final String generationId;
 
   const GenerationResultScreen({
@@ -18,19 +18,9 @@ class GenerationResultScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<GenerationResultScreen> createState() =>
-      _GenerationResultScreenState();
-}
-
-class _GenerationResultScreenState
-    extends ConsumerState<GenerationResultScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final generationAsync =
-        ref.watch(generationStatusProvider(widget.generationId));
-    final fullResultAsync =
-        ref.watch(generationResultProvider(widget.generationId));
+    final generationAsync = ref.watch(activeGenerationProvider(generationId));
 
     return Scaffold(
       appBar: AppBar(
@@ -45,7 +35,7 @@ class _GenerationResultScreenState
       ),
       body: generationAsync.when(
         data: (generation) {
-          if (!generation.isComplete) {
+          if (generation.status != GenerationStatus.completed) {
             return _buildNotCompleteView(theme, generation);
           }
 
@@ -57,7 +47,7 @@ class _GenerationResultScreenState
             context,
             theme,
             generation,
-            fullResultAsync,
+            ref.watch(activeGenerationProvider(generationId).notifier).getRawResult(),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -70,7 +60,7 @@ class _GenerationResultScreenState
     BuildContext context,
     ThemeData theme,
     Generation generation,
-    AsyncValue<Map<String, dynamic>> fullResultAsync,
+    Future<Map<String, dynamic>> fullResultFuture,
   ) {
     final result = generation.result!;
 
@@ -124,26 +114,34 @@ class _GenerationResultScreenState
           const SizedBox(height: 24),
 
           // Resume Content
-          fullResultAsync.when(
-            data: (fullResult) =>
-                _buildResumeContent(context, theme, fullResult),
-            loading: () => const Card(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-            ),
-            error: (error, _) => Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Error loading content: $error',
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ),
-            ),
+          FutureBuilder<Map<String, dynamic>>(
+            future: fullResultFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
+              } else if (snapshot.hasError) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Error loading content: ${snapshot.error}',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                );
+              } else if (snapshot.hasData) {
+                return _buildResumeContent(context, theme, snapshot.data!);
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
           ),
           const SizedBox(height: 24),
 
@@ -481,7 +479,7 @@ class _GenerationResultScreenState
               constraints: const BoxConstraints(maxHeight: 400),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.3),
+                    .withAlpha(100),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SingleChildScrollView(
@@ -634,7 +632,7 @@ class _GenerationResultScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Status: ${generation.statusDisplayText}',
+              'Status: ${generation.status.name}',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),

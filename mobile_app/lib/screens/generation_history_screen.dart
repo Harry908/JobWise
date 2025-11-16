@@ -13,24 +13,23 @@ class GenerationHistoryScreen extends ConsumerStatefulWidget {
       _GenerationHistoryScreenState();
 }
 
-class _GenerationHistoryScreenState
-    extends ConsumerState<GenerationHistoryScreen> {
+class _GenerationHistoryScreenState extends ConsumerState<GenerationHistoryScreen> {
   GenerationStatus? _selectedStatus;
   DocumentType? _selectedDocumentType;
 
   @override
-  void initState() {
-    super.initState();
-    // Load generations on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(generationProvider.notifier).loadGenerations(refresh: true);
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = ref.watch(generationProvider);
+    final generationHistoryAsync = ref.watch(generationHistoryProvider(
+      status: _selectedStatus,
+      documentType: _selectedDocumentType,
+    ));
+
+    void applyFilters() {
+      setState(() {
+        // The build method will be re-run with the new filter values
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -38,57 +37,51 @@ class _GenerationHistoryScreenState
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            onPressed: () =>
+                _showFilterDialog(context, applyFilters),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await ref.read(generationProvider.notifier).loadGenerations(
-                status: _selectedStatus,
-                documentType: _selectedDocumentType,
-                refresh: true,
-              );
+          ref.invalidate(generationHistoryProvider(
+            status: _selectedStatus,
+            documentType: _selectedDocumentType,
+          ));
         },
-        child: state.isLoading && state.generations.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : state.error != null && state.generations.isEmpty
-                ? _buildErrorView(theme, state.error!)
-                : state.generations.isEmpty
-                    ? _buildEmptyView(theme)
-                    : _buildGenerationsList(theme, state),
+        child: generationHistoryAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) =>
+              _buildErrorView(theme, error.toString(), ref),
+          data: (data) {
+            final (generations, pagination, statistics) = data;
+            if (generations.isEmpty) {
+              return _buildEmptyView(theme);
+            }
+            return _buildGenerationsList(
+                theme, generations, applyFilters);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildGenerationsList(ThemeData theme, GenerationState state) {
+  Widget _buildGenerationsList(
+      ThemeData theme, List<GenerationListItem> generations, VoidCallback applyFilters) {
     return Column(
       children: [
-        // Statistics Card
-        if (state.statistics != null) _buildStatisticsCard(theme, state.statistics!),
-
         // Active Filters
         if (_selectedStatus != null || _selectedDocumentType != null)
-          _buildActiveFilters(theme),
+          _buildActiveFilters(theme, applyFilters),
 
         // Generation List
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16.0),
-            itemCount:
-                state.generations.length + (state.isLoadingMore ? 1 : 0),
+            itemCount: generations.length,
             itemBuilder: (context, index) {
-              if (index >= state.generations.length) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-
-              final generation = state.generations[index];
-              return _buildGenerationCard(theme, generation);
+              final generation = generations[index];
+              return _buildGenerationCard(context, theme, generation);
             },
           ),
         ),
@@ -96,75 +89,7 @@ class _GenerationHistoryScreenState
     );
   }
 
-  Widget _buildStatisticsCard(ThemeData theme, GenerationStatistics stats) {
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Statistics',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(theme, 'Total', '${stats.totalGenerations}', Icons.description),
-                _buildStatItem(theme, 'Completed', '${stats.completed}', Icons.check_circle, Colors.green),
-                _buildStatItem(theme, 'Failed', '${stats.failed}', Icons.error, Colors.red),
-                _buildStatItem(theme, 'In Progress', '${stats.inProgress}', Icons.hourglass_empty, Colors.blue),
-              ],
-            ),
-            if (stats.averageAtsScore > 0) ...[
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.analytics, color: theme.colorScheme.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Average ATS Score: ${stats.averageAtsScore.toStringAsFixed(1)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(ThemeData theme, String label, String value, IconData icon, [Color? color]) {
-    return Column(
-      children: [
-        Icon(icon, color: color ?? theme.colorScheme.onSurfaceVariant, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActiveFilters(ThemeData theme) {
+  Widget _buildActiveFilters(ThemeData theme, VoidCallback applyFilters) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Wrap(
@@ -178,17 +103,16 @@ class _GenerationHistoryScreenState
                 setState(() {
                   _selectedStatus = null;
                 });
-                _applyFilters();
               },
             ),
           if (_selectedDocumentType != null)
             Chip(
-              label: Text('Type: ${_documentTypeToString(_selectedDocumentType!)}'),
+              label:
+                  Text('Type: ${_documentTypeToString(_selectedDocumentType!)}'),
               onDeleted: () {
                 setState(() {
                   _selectedDocumentType = null;
                 });
-                _applyFilters();
               },
             ),
         ],
@@ -196,11 +120,11 @@ class _GenerationHistoryScreenState
     );
   }
 
-  Widget _buildGenerationCard(ThemeData theme, GenerationListItem generation) {
+  Widget _buildGenerationCard(BuildContext context, ThemeData theme, GenerationListItem generation) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       child: InkWell(
-        onTap: () => _handleGenerationTap(generation),
+        onTap: () => _handleGenerationTap(context, generation),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -327,7 +251,7 @@ class _GenerationHistoryScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color),
       ),
@@ -401,7 +325,7 @@ class _GenerationHistoryScreenState
     );
   }
 
-  Widget _buildErrorView(ThemeData theme, String error) {
+  Widget _buildErrorView(ThemeData theme, String error, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -429,11 +353,10 @@ class _GenerationHistoryScreenState
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () {
-                ref.read(generationProvider.notifier).loadGenerations(
-                      status: _selectedStatus,
-                      documentType: _selectedDocumentType,
-                      refresh: true,
-                    );
+                ref.invalidate(generationHistoryProvider(
+                  status: _selectedStatus,
+                  documentType: _selectedDocumentType,
+                ));
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
@@ -444,99 +367,98 @@ class _GenerationHistoryScreenState
     );
   }
 
-  void _showFilterDialog() {
+  void _showFilterDialog(BuildContext context, VoidCallback applyFilters) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Generations'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Status'),
-            const SizedBox(height: 8),
-            DropdownButton<GenerationStatus?>(
-              value: _selectedStatus,
-              isExpanded: true,
-              hint: const Text('All Statuses'),
-              items: [
-                const DropdownMenuItem<GenerationStatus?>(
-                  value: null,
-                  child: Text('All Statuses'),
-                ),
-                ...GenerationStatus.values.map(
-                  (status) => DropdownMenuItem<GenerationStatus?>(
-                    value: status,
-                    child: Text(_statusToString(status)),
+      builder: (context) {
+        // Use a StatefulWidget for the dialog's content to manage temporary state
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Filter Generations'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Status'),
+                  const SizedBox(height: 8),
+                  DropdownButton<GenerationStatus?>(
+                    value: _selectedStatus,
+                    isExpanded: true,
+                    hint: const Text('All Statuses'),
+                    items: [
+                      const DropdownMenuItem<GenerationStatus?>(
+                        value: null,
+                        child: Text('All Statuses'),
+                      ),
+                      ...GenerationStatus.values.map(
+                        (status) => DropdownMenuItem<GenerationStatus?>(
+                          value: status,
+                          child: Text(_statusToString(status)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (newValue) {
+                      setDialogState(() {
+                        _selectedStatus = newValue;
+                      });
+                    },
                   ),
+                  const SizedBox(height: 16),
+                  const Text('Document Type'),
+                  const SizedBox(height: 8),
+                  DropdownButton<DocumentType?>(
+                    value: _selectedDocumentType,
+                    isExpanded: true,
+                    hint: const Text('All Types'),
+                    items: [
+                      const DropdownMenuItem<DocumentType?>(
+                        value: null,
+                        child: Text('All Types'),
+                      ),
+                      ...DocumentType.values.map(
+                        (type) => DropdownMenuItem<DocumentType?>(
+                          value: type,
+                          child: Text(_documentTypeToString(type)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (newValue) {
+                      setDialogState(() {
+                        _selectedDocumentType = newValue;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedStatus = null;
+                      _selectedDocumentType = null;
+                    });
+                    Navigator.of(context).pop();
+                    applyFilters();
+                  },
+                  child: const Text('Clear'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    applyFilters();
+                  },
+                  child: const Text('Apply'),
                 ),
               ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedStatus = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text('Document Type'),
-            const SizedBox(height: 8),
-            DropdownButton<DocumentType?>(
-              value: _selectedDocumentType,
-              isExpanded: true,
-              hint: const Text('All Types'),
-              items: [
-                const DropdownMenuItem<DocumentType?>(
-                  value: null,
-                  child: Text('All Types'),
-                ),
-                ...DocumentType.values.map(
-                  (type) => DropdownMenuItem<DocumentType?>(
-                    value: type,
-                    child: Text(_documentTypeToString(type)),
-                  ),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedDocumentType = value;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedStatus = null;
-                _selectedDocumentType = null;
-              });
-              Navigator.of(context).pop();
-              _applyFilters();
-            },
-            child: const Text('Clear'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _applyFilters();
-            },
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  void _applyFilters() {
-    ref.read(generationProvider.notifier).loadGenerations(
-          status: _selectedStatus,
-          documentType: _selectedDocumentType,
-          refresh: true,
-        );
-  }
-
-  void _handleGenerationTap(GenerationListItem generation) {
+  void _handleGenerationTap(BuildContext context, GenerationListItem generation) {
     if (generation.status == GenerationStatus.completed) {
       context.push('/generations/${generation.id}/result');
     } else if (generation.status == GenerationStatus.generating ||

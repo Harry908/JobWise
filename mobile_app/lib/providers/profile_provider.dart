@@ -1,619 +1,436 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/profile.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../models/profile.dart' as model;
 import '../services/api/profiles_api_client.dart';
 import 'auth_provider.dart';
 
-class ProfileState {
-  final Profile? profile;
-  final bool isLoading;
-  final bool isSaving;
-  final String? errorMessage;
+part 'profile_provider.g.dart';
 
-  const ProfileState({
-    this.profile,
-    this.isLoading = false,
-    this.isSaving = false,
-    this.errorMessage,
-  });
-
-  factory ProfileState.initial() => const ProfileState();
-
-  ProfileState copyWith({
-    Profile? profile,
-    bool? isLoading,
-    bool? isSaving,
-    String? errorMessage,
-  }) {
-    return ProfileState(
-      profile: profile ?? this.profile,
-      isLoading: isLoading ?? this.isLoading,
-      isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
+@riverpod
+ProfilesApiClient profilesApiClient(Ref ref) {
+  return ProfilesApiClient(ref.watch(baseHttpClientProvider));
 }
 
-class ProfileNotifier extends StateNotifier<ProfileState> {
-  final ProfilesApiClient _profileApi;
+@Riverpod(keepAlive: true)
+class Profile extends _$Profile {
+  ProfilesApiClient get _api => ref.read(profilesApiClientProvider);
 
-  ProfileNotifier(this._profileApi) : super(ProfileState.initial()) {
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    state = state.copyWith(isLoading: true);
-    try {
-      final profile = await _profileApi.getCurrentUserProfile();
-      state = state.copyWith(profile: profile, isLoading: false);
-    } catch (e) {
-      // No profile exists yet (404 is expected for new users)
-      state = state.copyWith(isLoading: false);
+  @override
+  Future<model.Profile?> build() async {
+    // Depend on authentication status
+    final authState = ref.watch(authProvider);
+    if (authState.valueOrNull == null) {
+      return null;
     }
-  }
 
-  Future<void> refreshProfile() async {
-    await _loadProfile();
-  }
-
-  Future<void> createProfile(Profile profile) async {
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    // User is authenticated, try to fetch profile
     try {
-      final createdProfile = await _profileApi.createProfile(profile);
-      state = state.copyWith(profile: createdProfile, isSaving: false);
+      return await _api.getCurrentUserProfile();
     } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to create profile');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while creating profile',
-      );
+      // A 404 is common for new users, so we just return null.
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      // Other errors will be rethrown by AsyncValue.guard
       rethrow;
     }
   }
 
-  Future<void> updateProfile(Profile profile) async {
-    if (state.profile == null) return;
+  Future<void> createProfile(model.Profile profile) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return _api.createProfile(profile);
+    });
+  }
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
-    try {
-      final updatedProfile = await _profileApi.updateProfile(
-        state.profile!.id,
-        profile,
-      );
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to update profile');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while updating profile',
-      );
-      rethrow;
-    }
+  Future<void> updateProfile(model.Profile profile) async {
+    final currentValue = state.value;
+    if (currentValue == null) return;
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final profileId = currentValue.id;
+      return _api.updateProfile(profileId, profile);
+    });
   }
 
   Future<void> deleteProfile() async {
-    if (state.profile == null) return;
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-    try {
-      await _profileApi.deleteProfile(state.profile!.id);
-      state = ProfileState.initial();
-    } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to delete profile');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while deleting profile',
-      );
-      rethrow;
-    }
-  }
-
-  // Helper method to extract user-friendly error messages from DioException
-  String _extractErrorMessage(DioException error, String defaultMessage) {
-    if (error.response?.data is Map) {
-      final data = error.response!.data as Map<String, dynamic>;
-      if (data.containsKey('detail')) {
-        return data['detail'] as String;
-      }
-      if (data.containsKey('message')) {
-        return data['message'] as String;
-      }
-    }
-    if (error.response?.statusMessage != null) {
-      return error.response!.statusMessage!;
-    }
-    return '$defaultMessage. Please try again.';
+    final currentValue = state.value;
+    if (currentValue == null) return;
+    final profileId = currentValue.id;
+    state = const AsyncValue.loading();
+    await AsyncValue.guard(() => _api.deleteProfile(profileId));
+    state = const AsyncValue.data(null);
   }
 
   // Bulk Experience Operations
-  Future<void> addExperiences(List<Experience> experiences) async {
-    if (state.profile == null) return;
+  Future<void> addExperiences(List<model.Experience> experiences) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    state = const AsyncValue.loading();
+
     try {
-      final createdExperiences = await _profileApi.addExperiences(
-        state.profile!.id,
-        experiences,
+      final createdExperiences =
+          await _api.addExperiences(originalProfile.id, experiences);
+      final updatedProfile = originalProfile.copyWith(
+        experiences: [...originalProfile.experiences, ...createdExperiences],
       );
-      final updatedProfile = state.profile!.copyWith(
-        experiences: [...state.profile!.experiences, ...createdExperiences],
-      );
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to add experiences');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while adding experiences',
-      );
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
-  Future<void> updateExperiences(List<Experience> experiences) async {
-    if (state.profile == null) return;
+  Future<void> updateExperiences(List<model.Experience> experiences) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateExperiences(state.profile!.id, experiences);
-      final updatedProfile = state.profile!.copyWith(experiences: experiences);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to update experiences');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while updating experiences',
-      );
+      await _api.updateExperiences(originalProfile.id, experiences);
+      final updatedProfile =
+          originalProfile.copyWith(experiences: experiences);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> deleteExperiences(List<String> experienceIds) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.deleteExperiences(state.profile!.id, experienceIds);
-      final updatedExperiences = state.profile!.experiences
+      await _api.deleteExperiences(originalProfile.id, experienceIds);
+      final updatedExperiences = originalProfile.experiences
           .where((exp) => !experienceIds.contains(exp.id))
           .toList();
-      final updatedProfile = state.profile!.copyWith(experiences: updatedExperiences);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } on DioException catch (e) {
-      final errorMessage = _extractErrorMessage(e, 'Failed to delete experiences');
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
-      rethrow;
-    } catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'An unexpected error occurred while deleting experiences',
-      );
+      final updatedProfile =
+          originalProfile.copyWith(experiences: updatedExperiences);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   // Bulk Education Operations
-  Future<void> addEducation(List<Education> education) async {
-    if (state.profile == null) return;
+  Future<void> addEducation(List<model.Education> education) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      final createdEducation = await _profileApi.addEducation(
-        state.profile!.id,
+      final createdEducation = await _api.addEducation(
+        originalProfile.id,
         education,
       );
-      final updatedProfile = state.profile!.copyWith(
-        education: [...state.profile!.education, ...createdEducation],
+      final updatedProfile = originalProfile.copyWith(
+        education: [...originalProfile.education, ...createdEducation],
       );
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add education. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
-  Future<void> updateEducation(List<Education> education) async {
-    if (state.profile == null) return;
+  Future<void> updateEducation(List<model.Education> education) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateEducation(state.profile!.id, education);
-      final updatedProfile = state.profile!.copyWith(education: education);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update education. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      await _api.updateEducation(originalProfile.id, education);
+      final updatedProfile = originalProfile.copyWith(education: education);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> deleteEducation(List<String> educationIds) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.deleteEducation(state.profile!.id, educationIds);
-      final updatedEducation = state.profile!.education
+      await _api.deleteEducation(originalProfile.id, educationIds);
+      final updatedEducation = originalProfile.education
           .where((edu) => !educationIds.contains(edu.id))
           .toList();
-      final updatedProfile = state.profile!.copyWith(education: updatedEducation);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to delete education. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile =
+          originalProfile.copyWith(education: updatedEducation);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   // Bulk Project Operations
-  Future<void> addProjects(List<Project> projects) async {
-    if (state.profile == null) return;
+  Future<void> addProjects(List<model.Project> projects) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      final createdProjects = await _profileApi.addProjects(
-        state.profile!.id,
+      final createdProjects = await _api.addProjects(
+        originalProfile.id,
         projects,
       );
-      final updatedProfile = state.profile!.copyWith(
-        projects: [...state.profile!.projects, ...createdProjects],
+      final updatedProfile = originalProfile.copyWith(
+        projects: [...originalProfile.projects, ...createdProjects],
       );
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add projects. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
-  Future<void> updateProjects(List<Project> projects) async {
-    if (state.profile == null) return;
+  Future<void> updateProjects(List<model.Project> projects) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateProjects(state.profile!.id, projects);
-      final updatedProfile = state.profile!.copyWith(projects: projects);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update projects. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      await _api.updateProjects(originalProfile.id, projects);
+      final updatedProfile = originalProfile.copyWith(projects: projects);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> deleteProjects(List<String> projectIds) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.deleteProjects(state.profile!.id, projectIds);
-      final updatedProjects = state.profile!.projects
+      await _api.deleteProjects(originalProfile.id, projectIds);
+      final updatedProjects = originalProfile.projects
           .where((proj) => !projectIds.contains(proj.id))
           .toList();
-      final updatedProfile = state.profile!.copyWith(projects: updatedProjects);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to delete projects. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile =
+          originalProfile.copyWith(projects: updatedProjects);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   // Skills Operations
-  Future<void> updateSkills(Skills skills) async {
-    if (state.profile == null) return;
+  Future<void> updateSkills(model.Skills skills) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateSkills(state.profile!.id, skills);
-      final updatedProfile = state.profile!.copyWith(skills: skills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update skills. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      await _api.updateSkills(originalProfile.id, skills);
+      final updatedProfile = originalProfile.copyWith(skills: skills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> addTechnicalSkills(List<String> skills) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.addTechnicalSkills(state.profile!.id, skills);
-      final updatedSkills = state.profile!.skills.copyWith(
-        technical: [...state.profile!.skills.technical, ...skills],
+      await _api.addTechnicalSkills(originalProfile.id, skills);
+      final updatedSkills = originalProfile.skills.copyWith(
+        technical: [...originalProfile.skills.technical, ...skills],
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add technical skills. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> removeTechnicalSkills(List<String> skills) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.removeTechnicalSkills(state.profile!.id, skills);
-      final updatedTechnicalSkills = state.profile!.skills.technical
+      await _api.removeTechnicalSkills(originalProfile.id, skills);
+      final updatedTechnicalSkills = originalProfile.skills.technical
           .where((skill) => !skills.contains(skill))
           .toList();
-      final updatedSkills = state.profile!.skills.copyWith(
+      final updatedSkills = originalProfile.skills.copyWith(
         technical: updatedTechnicalSkills,
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to remove technical skills. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> addSoftSkills(List<String> skills) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.addSoftSkills(state.profile!.id, skills);
-      final updatedSkills = state.profile!.skills.copyWith(
-        soft: [...state.profile!.skills.soft, ...skills],
+      await _api.addSoftSkills(originalProfile.id, skills);
+      final updatedSkills = originalProfile.skills.copyWith(
+        soft: [...originalProfile.skills.soft, ...skills],
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add soft skills. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> removeSoftSkills(List<String> skills) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.removeSoftSkills(state.profile!.id, skills);
-      final updatedSoftSkills = state.profile!.skills.soft
+      await _api.removeSoftSkills(originalProfile.id, skills);
+      final updatedSoftSkills = originalProfile.skills.soft
           .where((skill) => !skills.contains(skill))
           .toList();
-      final updatedSkills = state.profile!.skills.copyWith(
+      final updatedSkills = originalProfile.skills.copyWith(
         soft: updatedSoftSkills,
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to remove soft skills. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   // Certification Operations
-  Future<void> addCertifications(List<Certification> certifications) async {
-    if (state.profile == null) return;
+  Future<void> addCertifications(
+      List<model.Certification> certifications) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      final createdCertifications = await _profileApi.addCertifications(
-        state.profile!.id,
+      final createdCertifications = await _api.addCertifications(
+        originalProfile.id,
         certifications,
       );
-      final updatedSkills = state.profile!.skills.copyWith(
-        certifications: [...state.profile!.skills.certifications, ...createdCertifications],
+      final updatedSkills = originalProfile.skills.copyWith(
+        certifications: [
+          ...originalProfile.skills.certifications,
+          ...createdCertifications
+        ],
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to add certifications. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
-  Future<void> updateCertifications(List<Certification> certifications) async {
-    if (state.profile == null) return;
+  Future<void> updateCertifications(
+      List<model.Certification> certifications) async {
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateCertifications(state.profile!.id, certifications);
-      final updatedSkills = state.profile!.skills.copyWith(certifications: certifications);
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update certifications. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      await _api.updateCertifications(originalProfile.id, certifications);
+      final updatedSkills =
+          originalProfile.skills.copyWith(certifications: certifications);
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> deleteCertifications(List<String> certificationIds) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.deleteCertifications(state.profile!.id, certificationIds);
-      final updatedCertifications = state.profile!.skills.certifications
+      await _api.deleteCertifications(originalProfile.id, certificationIds);
+      final updatedCertifications = originalProfile.skills.certifications
           .where((cert) => !certificationIds.contains(cert.id))
           .toList();
-      final updatedSkills = state.profile!.skills.copyWith(
+      final updatedSkills = originalProfile.skills.copyWith(
         certifications: updatedCertifications,
       );
-      final updatedProfile = state.profile!.copyWith(skills: updatedSkills);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to delete certifications. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      final updatedProfile = originalProfile.copyWith(skills: updatedSkills);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   // Custom Fields Operations
   Future<void> updateCustomFields(Map<String, dynamic> fields) async {
-    if (state.profile == null) return;
+    final originalProfile = state.value;
+    if (originalProfile == null) return;
 
-    state = state.copyWith(isSaving: true);
+    state = const AsyncValue.loading();
+
     try {
-      await _profileApi.updateCustomFields(state.profile!.id, fields);
-      final updatedProfile = state.profile!.copyWith(customFields: fields);
-      state = state.copyWith(profile: updatedProfile, isSaving: false);
-    } catch (e) {
-      String errorMessage = 'Failed to update custom fields. Please try again.';
-      if (e is String) {
-        errorMessage = e;
-      }
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: errorMessage,
-      );
+      await _api.updateCustomFields(originalProfile.id, fields);
+      final updatedProfile = originalProfile.copyWith(customFields: fields);
+      state = AsyncValue.data(updatedProfile);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
-  Future<ProfileAnalytics> getProfileAnalytics() async {
-    if (state.profile == null) {
+  Future<model.ProfileAnalytics> getProfileAnalytics() async {
+    final currentValue = state.value;
+    if (currentValue == null) {
       throw Exception('No profile available');
     }
 
     try {
-      return await _profileApi.getProfileAnalytics(state.profile!.id);
-    } catch (e) {
-      String errorMessage = 'Failed to load profile analytics.';
-      if (e is DioException && e.error is String) {
-        errorMessage = e.error as String;
-      }
-      state = state.copyWith(errorMessage: errorMessage);
+      return await _api.getProfileAnalytics(currentValue.id);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 }
-
-// Providers
-final profilesApiClientProvider = Provider<ProfilesApiClient>((ref) {
-  return ProfilesApiClient(ref.watch(baseHttpClientProvider));
-});
-
-final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
-  return ProfileNotifier(ref.watch(profilesApiClientProvider));
-});

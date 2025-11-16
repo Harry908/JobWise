@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../models/job.dart';
 import '../providers/job_provider.dart';
 
 /// Screen for pasting job description text
@@ -13,7 +15,6 @@ class JobPasteScreen extends ConsumerStatefulWidget {
 class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
   final _textController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isProcessing = false;
 
   @override
   void dispose() {
@@ -24,34 +25,32 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
   Future<void> _parseAndSave() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isProcessing = true);
+    final jobToCreate = Job(
+      id: '', // Handled by backend
+      source: JobSource.userCreated,
+      title: 'Pasted Job', // Placeholder, will be parsed
+      company: 'Unknown', // Placeholder
+      rawText: _textController.text.trim(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
-    final job = await ref.read(jobProvider.notifier).createJobFromText(
-          _textController.text.trim(),
-        );
+    try {
+      await ref.read(userJobsProvider.notifier).addJob(jobToCreate);
 
-    setState(() => _isProcessing = false);
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    if (job != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Job saved: ${job.title}'),
-          action: SnackBarAction(
-            label: 'View',
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/jobs/${job.id}');
-            },
-          ),
+        const SnackBar(
+          content: Text('Job saved successfully!'),
         ),
       );
-      Navigator.pop(context);
-    } else {
-      final error = ref.read(jobProvider).error ?? 'Failed to parse job description';
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error),
+          content: Text('Failed to save job: ${e.toString()}'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -61,6 +60,9 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Listen to the provider state for loading/error feedback
+    final userJobsState = ref.watch(userJobsProvider);
+    final isProcessing = userJobsState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -87,9 +89,8 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
                         const SizedBox(width: 12),
                         Text(
                           'Instructions',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -97,11 +98,8 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
                     Text(
                       '1. Copy a job description from any job board\n'
                       '2. Paste it in the text area below\n'
-                      '3. Tap "Parse & Save" to extract details\n'
-                      '4. Review and edit if needed',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.5,
-                      ),
+                      '3. Tap "Save" to add it to your list',
+                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
                     ),
                   ],
                 ),
@@ -141,6 +139,7 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
                     }
                     return null;
                   },
+                  onChanged: (_) => setState(() {}), // To update character count
                 ),
               ),
             ),
@@ -149,11 +148,12 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    '${_textController.text.length} / 15000 characters',
+                    '${_textController.text.length} / 15000',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: theme.colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
                 ],
@@ -163,47 +163,20 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
             // Action Buttons
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isProcessing
-                          ? null
-                          : () {
-                              _textController.clear();
-                            },
-                      child: const Text('Clear'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton.icon(
-                      onPressed: _isProcessing ? null : _parseAndSave,
-                      icon: _isProcessing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.check),
-                      label: Text(_isProcessing ? 'Processing...' : 'Parse & Save'),
-                    ),
-                  ),
-                ],
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isProcessing ? null : _parseAndSave,
+                icon: isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(isProcessing ? 'Saving...' : 'Save Job'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
           ],

@@ -6,48 +6,36 @@ import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
 import '../widgets/loading_overlay.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final obscurePassword = ValueNotifier<bool>(true);
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+    void login() async {
+      if (!formKey.currentState!.validate()) return;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+      try {
+        await ref.read(authProvider.notifier).login(
+              emailController.text.trim(),
+              passwordController.text,
+            );
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      await ref.read(authProvider.notifier).login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-
-      // Navigation will be handled by the auth state listener
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
-        );
+        // Navigation will be handled by the auth state listener
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful!')),
+          );
+        }
+      } catch (e) {
+        // Error is handled by the provider
       }
-    } catch (e) {
-      // Error is handled by the provider
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
@@ -57,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -87,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Email field
                     TextFormField(
-                      controller: _emailController,
+                      controller: emailController,
                       decoration: InputDecoration(
                         labelText: 'Email',
                         hintText: 'Enter your email',
@@ -107,56 +95,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 16),
 
                     // Password field
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
-                        prefixIcon: const Icon(Icons.lock_outlined),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                    ValueListenableBuilder<bool>(
+                      valueListenable: obscurePassword,
+                      builder: (context, isObscure, child) {
+                        return TextFormField(
+                          controller: passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            hintText: 'Enter your password',
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isObscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                obscurePassword.value = !isObscure;
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
+                          obscureText: isObscure,
+                          textInputAction: TextInputAction.done,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required';
+                            }
+                            return null;
                           },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                      ),
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password is required';
-                        }
-                        return null;
+                          enabled: !authState.isLoading,
+                          onFieldSubmitted: (_) => login(),
+                        );
                       },
-                      enabled: !authState.isLoading,
-                      onFieldSubmitted: (_) => _login(),
                     ),
 
                     const SizedBox(height: 24),
 
                     // Error display
-                    if (authState.error != null)
+                    if (authState.hasError && !authState.isLoading)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
+                          color: AppColors.error.withAlpha(25),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          border: Border.all(color: AppColors.error.withAlpha(77)),
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.error_outline,
                               color: AppColors.error,
                               size: 20,
@@ -164,8 +155,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                authState.error!,
-                                style: TextStyle(color: AppColors.error),
+                                authState.error.toString(),
+                                style: const TextStyle(color: AppColors.error),
                               ),
                             ),
                           ],
@@ -176,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Login button
                     ElevatedButton(
-                      onPressed: authState.isLoading ? null : _login,
+                      onPressed: authState.isLoading ? null : login,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -197,7 +188,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           "Don't have an account? ",
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
@@ -212,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   );
                                 },
-                          child: Text(
+                          child: const Text(
                             'Sign Up',
                             style: TextStyle(
                               color: AppColors.primary,
@@ -238,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 );
                               },
-                        child: Text(
+                        child: const Text(
                           'Forgot Password?',
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
@@ -258,54 +249,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-class RegisterScreen extends ConsumerStatefulWidget {
+class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
 
   @override
-  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final fullNameController = TextEditingController();
+    final obscurePassword = ValueNotifier<bool>(true);
+    final obscureConfirmPassword = ValueNotifier<bool>(true);
 
-class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _fullNameController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+    Future<void> register() async {
+      if (!formKey.currentState!.validate()) return;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _fullNameController.dispose();
-    super.dispose();
-  }
+      try {
+        await ref.read(authProvider.notifier).register(
+              emailController.text.trim(),
+              passwordController.text,
+              fullNameController.text.trim(),
+            );
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      await ref.read(authProvider.notifier).register(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _fullNameController.text.trim(),
-      );
-
-      // Navigation will be handled by the auth state listener
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created successfully!')),
-        );
+        // Navigation will be handled by the auth state listener
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created successfully!')),
+          );
+        }
+      } catch (e) {
+        // Error is handled by the provider
       }
-    } catch (e) {
-      // Error is handled by the provider
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
@@ -313,7 +290,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: authState.isLoading ? null : () => Navigator.of(context).pop(),
         ),
       ),
@@ -323,7 +300,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -353,7 +330,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                     // Full name field
                     TextFormField(
-                      controller: _fullNameController,
+                      controller: fullNameController,
                       decoration: InputDecoration(
                         labelText: 'Full Name',
                         hintText: 'Enter your full name',
@@ -373,7 +350,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                     // Email field
                     TextFormField(
-                      controller: _emailController,
+                      controller: emailController,
                       decoration: InputDecoration(
                         labelText: 'Email',
                         hintText: 'Enter your email',
@@ -393,92 +370,94 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 16),
 
                     // Password field
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
-                        prefixIcon: const Icon(Icons.lock_outlined),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                    ValueListenableBuilder<bool>(
+                      valueListenable: obscurePassword,
+                      builder: (context, isObscure, child) {
+                        return TextFormField(
+                          controller: passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            hintText: 'Enter your password',
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isObscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                obscurePassword.value = !isObscure;
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                      ),
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password is required';
-                        }
-                        return null;
+                          obscureText: isObscure,
+                          textInputAction: TextInputAction.next,
+                          validator: Validators.validatePassword,
+                          enabled: !authState.isLoading,
+                        );
                       },
-                      enabled: !authState.isLoading,
                     ),
 
                     const SizedBox(height: 16),
 
                     // Confirm password field
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        hintText: 'Re-enter your password',
-                        prefixIcon: const Icon(Icons.lock_outlined),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                    ValueListenableBuilder<bool>(
+                      valueListenable: obscureConfirmPassword,
+                      builder: (context, isObscure, child) {
+                        return TextFormField(
+                          controller: confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            hintText: 'Re-enter your password',
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isObscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                obscureConfirmPassword.value = !isObscure;
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                      ),
-                      obscureText: _obscureConfirmPassword,
-                      textInputAction: TextInputAction.done,
-                      validator: (value) => Validators.validateConfirmPassword(
-                        value,
-                        _passwordController.text,
-                      ),
-                      enabled: !authState.isLoading,
-                      onFieldSubmitted: (_) => _register(),
+                          obscureText: isObscure,
+                          textInputAction: TextInputAction.done,
+                          validator: (value) =>
+                              Validators.validateConfirmPassword(
+                            value,
+                            passwordController.text,
+                          ),
+                          enabled: !authState.isLoading,
+                          onFieldSubmitted: (_) => register(),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 24),
 
                     // Error display
-                    if (authState.error != null)
+                    if (authState.hasError && !authState.isLoading)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
+                          color: AppColors.error.withAlpha(25),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          border: Border.all(color: AppColors.error.withAlpha(77)),
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.error_outline,
                               color: AppColors.error,
                               size: 20,
@@ -486,8 +465,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                authState.error!,
-                                style: TextStyle(color: AppColors.error),
+                                authState.error.toString(),
+                                style: const TextStyle(color: AppColors.error),
                               ),
                             ),
                           ],
@@ -498,7 +477,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                     // Register button
                     ElevatedButton(
-                      onPressed: authState.isLoading ? null : _register,
+                      onPressed: authState.isLoading ? null : register,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -519,7 +498,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           'Already have an account? ',
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
@@ -527,7 +506,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           onPressed: authState.isLoading
                               ? null
                               : () => Navigator.of(context).pop(),
-                          child: Text(
+                          child: const Text(
                             'Sign In',
                             style: TextStyle(
                               color: AppColors.primary,

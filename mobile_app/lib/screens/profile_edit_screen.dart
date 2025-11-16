@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/profile.dart';
-import '../../providers/profile_provider.dart';
-import '../../utils/validators.dart';
-import '../../widgets/loading_overlay.dart';
-import '../../widgets/profile_cards.dart';
-import '../../widgets/profile_dialogs.dart';
-import '../../widgets/tag_input.dart';
+import 'package:go_router/go_router.dart';
+import '../models/profile.dart' as model;
+import '../providers/profile_provider.dart';
+import '../utils/validators.dart';
+import '../widgets/loading_overlay.dart';
+import '../widgets/profile_cards.dart';
+import '../widgets/profile_dialogs.dart';
+import '../widgets/tag_input.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -16,10 +17,9 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
-  int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
 
-  // Personal Info Controllers
+  // Controllers
   late TextEditingController _fullNameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
@@ -29,12 +29,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController _websiteController;
   late TextEditingController _summaryController;
 
-  // Dynamic lists
-  final List<Experience> _experiences = [];
-  final List<Education> _education = [];
-  final List<String> _technicalSkills = [];
-  final List<String> _softSkills = [];
-  final List<Project> _projects = [];
+  // Local state for dynamic lists
+  List<model.Experience> _experiences = [];
+  List<model.Education> _education = [];
+  List<String> _technicalSkills = [];
+  List<String> _softSkills = [];
+  List<model.Project> _projects = [];
 
   @override
   void initState() {
@@ -55,530 +55,25 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   void _loadExistingProfile() {
-    final profile = ref.read(profileProvider).profile;
+    // Use `ref.read` to get the initial state without listening
+    final profile = ref.read(profileProvider).value;
     if (profile != null) {
-      _fullNameController.text = profile.personalInfo.fullName;
-      _emailController.text = profile.personalInfo.email;
-      _phoneController.text = profile.personalInfo.phone ?? '';
-      _locationController.text = profile.personalInfo.location ?? '';
-      _linkedinController.text = profile.personalInfo.linkedin ?? '';
-      _githubController.text = profile.personalInfo.github ?? '';
-      _websiteController.text = profile.personalInfo.website ?? '';
-      _summaryController.text = profile.professionalSummary ?? '';
-      _experiences.addAll(profile.experiences);
-      _education.addAll(profile.education);
-      _technicalSkills.addAll(profile.skills.technical);
-      _softSkills.addAll(profile.skills.soft);
-      _projects.addAll(profile.projects);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final profileState = ref.watch(profileProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(profileState.profile == null ? 'Create Profile' : 'Edit Profile'),
-        actions: [
-          IconButton(
-            onPressed: profileState.isSaving ? null : _saveProfile,
-            icon: profileState.isSaving 
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.save),
-            tooltip: 'Save Profile',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Stepper(
-              currentStep: _currentStep,
-              onStepContinue: _onStepContinue,
-              onStepCancel: _onStepCancel,
-              onStepTapped: (step) => setState(() => _currentStep = step),
-              controlsBuilder: (context, details) {
-                return Row(
-                  children: [
-                    if (_currentStep < 3)
-                      ElevatedButton(
-                        onPressed: details.onStepContinue,
-                        child: const Text('Continue'),
-                      ),
-                    if (_currentStep == 3)
-                      ElevatedButton(
-                        onPressed: profileState.isSaving ? null : _saveProfile,
-                        child: const Text('Save Profile'),
-                      ),
-                    const SizedBox(width: 8),
-                    if (_currentStep > 0)
-                      TextButton(
-                        onPressed: details.onStepCancel,
-                        child: const Text('Back'),
-                      ),
-                  ],
-                );
-              },
-              steps: [
-                Step(
-                  title: const Text('Personal Information'),
-                  subtitle: const Text('Basic contact details'),
-                  content: _buildPersonalInfoForm(),
-                  isActive: _currentStep >= 0,
-                  state: _getStepState(0),
-                ),
-                Step(
-                  title: const Text('Work Experience'),
-                  subtitle: const Text('Professional background'),
-                  content: _buildExperiencesForm(),
-                  isActive: _currentStep >= 1,
-                  state: _getStepState(1),
-                ),
-                Step(
-                  title: const Text('Education & Skills'),
-                  subtitle: const Text('Academic background and abilities'),
-                  content: _buildEducationSkillsForm(),
-                  isActive: _currentStep >= 2,
-                  state: _getStepState(2),
-                ),
-                Step(
-                  title: const Text('Projects'),
-                  subtitle: const Text('Portfolio and achievements'),
-                  content: _buildProjectsForm(),
-                  isActive: _currentStep >= 3,
-                  state: _getStepState(3),
-                ),
-              ],
-            ),
-          ),
-          if (profileState.isSaving) const LoadingOverlay(message: 'Saving profile...'),
-        ],
-      ),
-    );
-  }
-
-  StepState _getStepState(int stepIndex) {
-    if (_currentStep > stepIndex) return StepState.complete;
-    if (_currentStep == stepIndex) return StepState.editing;
-    return StepState.indexed;
-  }
-
-  Widget _buildPersonalInfoForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: _fullNameController,
-            decoration: const InputDecoration(
-              labelText: 'Full Name*',
-              prefixIcon: Icon(Icons.person),
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Full name is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email*',
-              prefixIcon: Icon(Icons.email),
-              border: OutlineInputBorder(),
-            ),
-            validator: Validators.validateEmail,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone',
-              prefixIcon: Icon(Icons.phone),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _locationController,
-            decoration: const InputDecoration(
-              labelText: 'Location',
-              prefixIcon: Icon(Icons.location_on),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _linkedinController,
-            decoration: const InputDecoration(
-              labelText: 'LinkedIn URL (Optional)',
-              prefixIcon: Icon(Icons.business),
-              border: OutlineInputBorder(),
-              hintText: 'https://linkedin.com/in/yourprofile',
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) return null;
-              if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                return 'URL must start with http:// or https://';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _githubController,
-            decoration: const InputDecoration(
-              labelText: 'GitHub URL (Optional)',
-              prefixIcon: Icon(Icons.code),
-              border: OutlineInputBorder(),
-              hintText: 'https://github.com/yourusername',
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) return null;
-              if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                return 'URL must start with http:// or https://';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _websiteController,
-            decoration: const InputDecoration(
-              labelText: 'Personal Website (Optional)',
-              prefixIcon: Icon(Icons.web),
-              border: OutlineInputBorder(),
-              hintText: 'https://yourwebsite.com',
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) return null;
-              if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                return 'URL must start with http:// or https://';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _summaryController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Professional Summary',
-              border: OutlineInputBorder(),
-              hintText: 'Brief overview of your professional background and goals...',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExperiencesForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ..._experiences.asMap().entries.map((entry) {
-          return ExperienceCard(
-            experience: entry.value,
-            onEdit: () => _editExperience(entry.key),
-            onDelete: () => _deleteExperience(entry.key),
-          );
-        }),
-        const SizedBox(height: 16),
-        Center(
-          child: ElevatedButton.icon(
-            onPressed: _addExperience,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Experience'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEducationSkillsForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Education',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ..._education.asMap().entries.map((entry) {
-          return EducationCard(
-            education: entry.value,
-            onEdit: () => _editEducation(entry.key),
-            onDelete: () => _deleteEducation(entry.key),
-          );
-        }),
-        const SizedBox(height: 16),
-        Center(
-          child: ElevatedButton.icon(
-            onPressed: _addEducation,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Education'),
-          ),
-        ),
-        const SizedBox(height: 24),
-        TagInput(
-          initialTags: _technicalSkills,
-          onTagsChanged: (tags) {
-            setState(() {
-              _technicalSkills.clear();
-              _technicalSkills.addAll(tags);
-            });
-          },
-          labelText: 'Technical Skills',
-          hintText: 'e.g., Python, JavaScript, SQL, AWS',
-          helperText: 'Add technical skills you possess',
-        ),
-        const SizedBox(height: 24),
-        TagInput(
-          initialTags: _softSkills,
-          onTagsChanged: (tags) {
-            setState(() {
-              _softSkills.clear();
-              _softSkills.addAll(tags);
-            });
-          },
-          labelText: 'Soft Skills',
-          hintText: 'e.g., Teamwork, Critical Thinking, Adaptability',
-          helperText: 'Add soft skills and personal qualities',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProjectsForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ..._projects.asMap().entries.map((entry) {
-          return ProjectCard(
-            project: entry.value,
-            onEdit: () => _editProject(entry.key),
-            onDelete: () => _deleteProject(entry.key),
-          );
-        }),
-        const SizedBox(height: 16),
-        Center(
-          child: ElevatedButton.icon(
-            onPressed: _addProject,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Project'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _onStepContinue() {
-    if (_currentStep < 3) {
-      // Only validate step 0 (Personal Info) which has a form
-      // Other steps are optional sections with dynamic lists
-      if (_currentStep == 0) {
-        if (_formKey.currentState?.validate() ?? false) {
-          setState(() {
-            _currentStep++;
-          });
-        }
-      } else {
-        // Steps 1-3 don't require validation, proceed directly
-        setState(() {
-          _currentStep++;
-        });
-      }
-    }
-  }
-
-  void _onStepCancel() {
-    if (_currentStep > 0) {
       setState(() {
-        _currentStep--;
+        _fullNameController.text = profile.personalInfo.fullName;
+        _emailController.text = profile.personalInfo.email;
+        _phoneController.text = profile.personalInfo.phone ?? '';
+        _locationController.text = profile.personalInfo.location ?? '';
+        _linkedinController.text = profile.personalInfo.linkedin ?? '';
+        _githubController.text = profile.personalInfo.github ?? '';
+        _websiteController.text = profile.personalInfo.website ?? '';
+        _summaryController.text = profile.professionalSummary ?? '';
+        _experiences = List.from(profile.experiences);
+        _education = List.from(profile.education);
+        _technicalSkills = List.from(profile.skills.technical);
+        _softSkills = List.from(profile.skills.soft);
+        _projects = List.from(profile.projects);
       });
     }
-  }
-
-  Future<void> _saveProfile() async {
-    // Validate the form if we're on step 0 or if called from top save button
-    if (_currentStep == 0 || _currentStep > 0) {
-      if (!_formKey.currentState!.validate()) {
-        setState(() => _currentStep = 0);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all required fields in Personal Information'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-    }
-
-    final existingProfile = ref.read(profileProvider).profile;
-    final isCreating = existingProfile == null;
-
-    // Create the complete profile with all nested components
-    // According to the backend API, this should work in a single request
-    final profile = Profile(
-      id: existingProfile?.id ?? '',
-      userId: existingProfile?.userId ?? 0,
-      personalInfo: PersonalInfo(
-        fullName: _fullNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.isEmpty ? null : _phoneController.text.trim(),
-        location: _locationController.text.isEmpty ? null : _locationController.text.trim(),
-        linkedin: _linkedinController.text.isEmpty ? null : _linkedinController.text.trim(),
-        github: _githubController.text.isEmpty ? null : _githubController.text.trim(),
-        website: _websiteController.text.isEmpty ? null : _websiteController.text.trim(),
-      ),
-      professionalSummary: _summaryController.text.isEmpty ? null : _summaryController.text.trim(),
-      experiences: _experiences,
-      education: _education,
-      skills: Skills(
-        technical: _technicalSkills,
-        soft: _softSkills,
-      ),
-      projects: _projects,
-      customFields: existingProfile?.customFields ?? {},
-      createdAt: existingProfile?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    try {
-      if (isCreating) {
-        await ref.read(profileProvider.notifier).createProfile(profile);
-      } else {
-        await ref.read(profileProvider.notifier).updateProfile(profile);
-      }
-
-      // Refresh the profile to get the latest data from server
-      await ref.read(profileProvider.notifier).refreshProfile();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile saved successfully')),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  void _addExperience() {
-    _showExperienceDialog();
-  }
-
-  void _editExperience(int index) {
-    _showExperienceDialog(experience: _experiences[index], index: index);
-  }
-
-  void _deleteExperience(int index) {
-    setState(() {
-      _experiences.removeAt(index);
-    });
-  }
-
-  void _addEducation() {
-    _showEducationDialog();
-  }
-
-  void _editEducation(int index) {
-    _showEducationDialog(education: _education[index], index: index);
-  }
-
-  void _deleteEducation(int index) {
-    setState(() {
-      _education.removeAt(index);
-    });
-  }
-
-  void _addProject() {
-    _showProjectDialog();
-  }
-
-  void _editProject(int index) {
-    _showProjectDialog(project: _projects[index], index: index);
-  }
-
-  void _deleteProject(int index) {
-    setState(() {
-      _projects.removeAt(index);
-    });
-  }
-
-  void _showExperienceDialog({Experience? experience, int? index}) {
-    showDialog(
-      context: context,
-      builder: (context) => ExperienceDialog(
-        experience: experience,
-        onSave: (exp) {
-          setState(() {
-            if (index != null) {
-              _experiences[index] = exp;
-            } else {
-              _experiences.add(exp);
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  void _showEducationDialog({Education? education, int? index}) {
-    showDialog(
-      context: context,
-      builder: (context) => EducationDialog(
-        education: education,
-        onSave: (edu) {
-          setState(() {
-            if (index != null) {
-              _education[index] = edu;
-            } else {
-              _education.add(edu);
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  void _showProjectDialog({Project? project, int? index}) {
-    showDialog(
-      context: context,
-      builder: (context) => ProjectDialog(
-        project: project,
-        onSave: (proj) {
-          setState(() {
-            if (index != null) {
-              _projects[index] = proj;
-            } else {
-              _projects.add(proj);
-            }
-          });
-        },
-      ),
-    );
   }
 
   @override
@@ -593,4 +88,355 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _summaryController.dispose();
     super.dispose();
   }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final existingProfile = ref.read(profileProvider).value;
+    final isCreating = existingProfile == null;
+
+    final profileData = model.Profile(
+      id: existingProfile?.id ?? '',
+      userId: existingProfile?.userId ?? 0,
+      personalInfo: model.PersonalInfo(
+        fullName: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim().nullIfEmpty(),
+        location: _locationController.text.trim().nullIfEmpty(),
+        linkedin: _linkedinController.text.trim().nullIfEmpty(),
+        github: _githubController.text.trim().nullIfEmpty(),
+        website: _websiteController.text.trim().nullIfEmpty(),
+      ),
+      professionalSummary: _summaryController.text.trim().nullIfEmpty(),
+      experiences: _experiences,
+      education: _education,
+      skills: model.Skills(
+        technical: _technicalSkills,
+        soft: _softSkills,
+        certifications: existingProfile?.skills.certifications ?? [],
+      ),
+      projects: _projects,
+      customFields: existingProfile?.customFields ?? {},
+      createdAt: existingProfile?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    try {
+      if (isCreating) {
+        await ref.read(profileProvider.notifier).createProfile(profileData);
+      } else {
+        await ref.read(profileProvider.notifier).updateProfile(profileData);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile saved successfully')),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving profile: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileState = ref.watch(profileProvider);
+    final isSaving = profileState.isLoading && profileState.value != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(ref.read(profileProvider).value == null
+            ? 'Create Profile'
+            : 'Edit Profile'),
+        actions: [
+          IconButton(
+            onPressed: isSaving ? null : _saveProfile,
+            icon: isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save),
+            tooltip: 'Save Profile',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildSectionHeader('Personal Information'),
+                _buildPersonalInfoForm(),
+                const SizedBox(height: 24),
+                _buildSectionHeader('Work Experience'),
+                _buildExperiencesForm(),
+                const SizedBox(height: 24),
+                _buildSectionHeader('Education'),
+                _buildEducationForm(),
+                const SizedBox(height: 24),
+                _buildSectionHeader('Skills'),
+                _buildSkillsForm(),
+                const SizedBox(height: 24),
+                _buildSectionHeader('Projects'),
+                _buildProjectsForm(),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: isSaving ? null : _saveProfile,
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save Profile'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isSaving) const LoadingOverlay(message: 'Saving profile...'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .titleLarge
+            ?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoForm() {
+    return Column(
+      children: [
+        TextFormField(
+          controller: _fullNameController,
+          decoration: const InputDecoration(labelText: 'Full Name*'),
+          validator: (value) =>
+              (value == null || value.isEmpty) ? 'Full name is required' : null,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(labelText: 'Email*'),
+          validator: Validators.validateEmail,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(labelText: 'Phone'),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _locationController,
+          decoration: const InputDecoration(labelText: 'Location'),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _linkedinController,
+          decoration: const InputDecoration(labelText: 'LinkedIn URL'),
+          validator: Validators.validateUrl,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _githubController,
+          decoration: const InputDecoration(labelText: 'GitHub URL'),
+          validator: Validators.validateUrl,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _websiteController,
+          decoration: const InputDecoration(labelText: 'Personal Website'),
+          validator: Validators.validateUrl,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _summaryController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Professional Summary',
+            alignLabelWithHint: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExperiencesForm() {
+    return Column(
+      children: [
+        ..._experiences.asMap().entries.map((entry) {
+          return ExperienceCard(
+            experience: entry.value,
+            onEdit: () => _editExperience(entry.key),
+            onDelete: () => setState(() => _experiences.removeAt(entry.key)),
+          );
+        }),
+        const SizedBox(height: 16),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: _addExperience,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Experience'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEducationForm() {
+    return Column(
+      children: [
+        ..._education.asMap().entries.map((entry) {
+          return EducationCard(
+            education: entry.value,
+            onEdit: () => _editEducation(entry.key),
+            onDelete: () => setState(() => _education.removeAt(entry.key)),
+          );
+        }),
+        const SizedBox(height: 16),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: _addEducation,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Education'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkillsForm() {
+    return Column(
+      children: [
+        TagInput(
+          initialTags: _technicalSkills,
+          onTagsChanged: (tags) => setState(() => _technicalSkills = tags),
+          labelText: 'Technical Skills',
+        ),
+        const SizedBox(height: 24),
+        TagInput(
+          initialTags: _softSkills,
+          onTagsChanged: (tags) => setState(() => _softSkills = tags),
+          labelText: 'Soft Skills',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProjectsForm() {
+    return Column(
+      children: [
+        ..._projects.asMap().entries.map((entry) {
+          return ProjectCard(
+            project: entry.value,
+            onEdit: () => _editProject(entry.key),
+            onDelete: () => setState(() => _projects.removeAt(entry.key)),
+          );
+        }),
+        const SizedBox(height: 16),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: _addProject,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Project'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _addExperience() => _showExperienceDialog();
+  void _editExperience(int index) =>
+      _showExperienceDialog(experience: _experiences[index], index: index);
+
+  void _addEducation() => _showEducationDialog();
+  void _editEducation(int index) =>
+      _showEducationDialog(education: _education[index], index: index);
+
+  void _addProject() => _showProjectDialog();
+  void _editProject(int index) =>
+      _showProjectDialog(project: _projects[index], index: index);
+
+  void _showExperienceDialog({model.Experience? experience, int? index}) {
+    showDialog(
+      context: context,
+      builder: (_) => ExperienceDialog(
+        experience: experience,
+        onSave: (exp) => setState(() {
+          if (index != null) {
+            _experiences[index] = exp;
+          } else {
+            _experiences.add(exp);
+          }
+        }),
+      ),
+    );
+  }
+
+  void _showEducationDialog({model.Education? education, int? index}) {
+    showDialog(
+      context: context,
+      builder: (_) => EducationDialog(
+        education: education,
+        onSave: (edu) => setState(() {
+          if (index != null) {
+            _education[index] = edu;
+          } else {
+            _education.add(edu);
+          }
+        }),
+      ),
+    );
+  }
+
+  void _showProjectDialog({model.Project? project, int? index}) {
+    showDialog(
+      context: context,
+      builder: (_) => ProjectDialog(
+        project: project,
+        onSave: (proj) => setState(() {
+          if (index != null) {
+            _projects[index] = proj;
+          } else {
+            _projects.add(proj);
+          }
+        }),
+      ),
+    );
+  }
+}
+
+extension on String {
+  String? nullIfEmpty() => isEmpty ? null : this;
 }

@@ -1,32 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/storage_service.dart';
+import '../providers/auth_provider.dart';
 
-class DebugScreen extends ConsumerStatefulWidget {
+class DebugScreen extends ConsumerWidget {
   const DebugScreen({super.key});
 
-  @override
-  ConsumerState<DebugScreen> createState() => _DebugScreenState();
-}
-
-class _DebugScreenState extends ConsumerState<DebugScreen> {
-  final _storage = StorageService();
-
-  Future<void> _clearTokens() async {
-    await _storage.clearTokens();
-    if (mounted) {
+  Future<void> _clearTokens(BuildContext context, WidgetRef ref) async {
+    await ref.read(storageServiceProvider).clearTokens();
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tokens cleared! Restart the app to see login screen.')),
+        const SnackBar(
+            content:
+                Text('Tokens cleared! Restart the app to see login screen.')),
       );
     }
   }
 
-  Future<void> _checkTokens() async {
-    final hasTokens = await _storage.hasTokens();
-    final token = await _storage.getToken();
-    final refreshToken = await _storage.getRefreshToken();
+  Future<void> _checkTokens(BuildContext context, WidgetRef ref) async {
+    final storage = ref.read(storageServiceProvider);
+    final hasTokens = await storage.hasTokens();
+    final token = await storage.getToken();
+    final refreshToken = await storage.getRefreshToken();
 
-    if (mounted) {
+    if (context.mounted) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -36,8 +32,10 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Has tokens: $hasTokens'),
-              Text('Access token: ${token != null ? "Present (${token.length} chars)" : "None"}'),
-              Text('Refresh token: ${refreshToken != null ? "Present (${refreshToken.length} chars)" : "None"}'),
+              Text(
+                  'Access token: ${token != null ? "Present (${token.length} chars)" : "None"}'),
+              Text(
+                  'Refresh token: ${refreshToken != null ? "Present (${refreshToken.length} chars)" : "None"}'),
             ],
           ),
           actions: [
@@ -52,7 +50,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Debug Tools'),
@@ -68,12 +66,12 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _checkTokens,
+              onPressed: () => _checkTokens(context, ref),
               child: const Text('Check Stored Tokens'),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _clearTokens,
+              onPressed: () => _clearTokens(context, ref),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Clear All Tokens'),
             ),

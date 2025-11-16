@@ -6,7 +6,7 @@ import '../providers/job_provider.dart';
 import '../widgets/job_detail_view.dart';
 
 /// Screen for displaying full job details
-class JobDetailScreen extends ConsumerStatefulWidget {
+class JobDetailScreen extends ConsumerWidget {
   final String jobId;
 
   const JobDetailScreen({
@@ -14,111 +14,78 @@ class JobDetailScreen extends ConsumerStatefulWidget {
     required this.jobId,
   });
 
-  @override
-  ConsumerState<JobDetailScreen> createState() => _JobDetailScreenState();
-}
-
-class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Load job details on screen load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(jobProvider.notifier).loadJobById(widget.jobId);
-    });
-  }
-
-  Future<void> _deleteJob() async {
-    // Show confirmation dialog
+  Future<void> _deleteJob(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete Job'),
-          content: const Text('Are you sure you want to delete this job? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Job'),
+        content: const Text(
+            'Are you sure you want to delete this job? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(userJobsProvider.notifier).deleteJob(jobId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Job deleted successfully')),
         );
-      },
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    // Delete the job
-    final success = await ref.read(jobProvider.notifier).deleteJob(widget.jobId);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Job deleted successfully')),
-      );
-      Navigator.pop(context);
-    } else {
-      final error = ref.read(jobProvider).error ?? 'Failed to delete job';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+        context.pop();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete job: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _updateApplicationStatus(ApplicationStatus newStatus) async {
-    final currentJob = ref.read(jobProvider).selectedJob;
-    if (currentJob == null) return;
-
-    final updatedJob = await ref.read(jobProvider.notifier).updateJob(
-      jobId: currentJob.id,
-      parsedKeywords: currentJob.parsedKeywords,
-      status: currentJob.status,
-      applicationStatus: newStatus,
-    );
-
-    if (!mounted) return;
-
-    if (updatedJob != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Application status updated')),
-      );
-      // Reload the job to get updated data
-      ref.read(jobProvider.notifier).loadJobById(widget.jobId);
-    } else {
-      final error = ref.read(jobProvider).error ?? 'Failed to update status';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+  Future<void> _updateApplicationStatus(
+      BuildContext context, WidgetRef ref, Job currentJob, ApplicationStatus newStatus) async {
+    try {
+      final updatedJob = currentJob.copyWith(applicationStatus: newStatus);
+      await ref.read(userJobsProvider.notifier).updateJob(updatedJob);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Application status updated')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
-  void _generateResume() {
-    final job = ref.read(jobProvider).selectedJob;
-    if (job == null) return;
-
-    // Navigate to generation options screen
+  void _generateResume(BuildContext context, Job job) {
     context.push('/generations/options', extra: job);
   }
 
-  void _generateCoverLetter() {
-    final job = ref.read(jobProvider).selectedJob;
-    if (job == null) return;
-
-    // Navigate to generation options screen with cover letter type
+  void _generateCoverLetter(BuildContext context, Job job) {
     context.push(
       '/generations/options?type=cover_letter',
       extra: job,
@@ -126,8 +93,8 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(jobProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final jobAsync = ref.watch(selectedJobProvider(jobId));
 
     return Scaffold(
       appBar: AppBar(
@@ -135,104 +102,98 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: state.selectedJob != null ? _deleteJob : null,
+            onPressed: jobAsync.hasValue ? () => _deleteJob(context, ref) : null,
             tooltip: 'Delete Job',
           ),
         ],
       ),
-      body: _buildBody(state),
+      body: jobAsync.when(
+        data: (job) {
+          if (job == null) {
+            return _buildNotFound(context);
+          }
+          return JobDetailView(
+            job: job,
+            onApplicationStatusChanged: (newStatus) =>
+                _updateApplicationStatus(context, ref, job, newStatus),
+            onDelete: () => _deleteJob(context, ref),
+            onGenerateResume: () => _generateResume(context, job),
+            onGenerateCoverLetter: () => _generateCoverLetter(context, job),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => _buildError(context, ref, err),
+      ),
     );
   }
 
-  Widget _buildBody(JobState state) {
-    // Loading State
-    if (state.isLoading && state.selectedJob == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    // Error State
-    if (state.error != null && state.selectedJob == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading job',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                state.error!,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () {
-                  ref.read(jobProvider.notifier).loadJobById(widget.jobId);
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
+  Widget _buildError(BuildContext context, WidgetRef ref, Object err) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading job',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              err.toString(),
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => ref.invalidate(selectedJobProvider(jobId)),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    // Job Not Found
-    if (state.selectedJob == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.work_off_outlined,
-                size: 64,
-                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Job not found',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This job may have been deleted',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Go Back'),
-              ),
-            ],
-          ),
+  Widget _buildNotFound(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.work_off_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary.withAlpha(128),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Job not found',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This job may have been deleted',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Go Back'),
+            ),
+          ],
         ),
-      );
-    }
-
-    // Job Details View
-    return JobDetailView(
-      job: state.selectedJob!,
-      onApplicationStatusChanged: _updateApplicationStatus,
-      onDelete: _deleteJob,
-      onGenerateResume: _generateResume,
-      onGenerateCoverLetter: _generateCoverLetter,
+      ),
     );
   }
 }
