@@ -27,6 +27,64 @@ class TextExtractionService:
         self.db = db
         self.repository = ExampleResumeRepository(db)
 
+    async def extract_text(self, file_path: str) -> Dict[str, Any]:
+        """
+        Extract text from any supported file type.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            Dictionary with extraction result:
+            {
+                "success": bool,
+                "text": str (if success),
+                "error": str (if not success),
+                "stats": dict (if success)
+            }
+        """
+        try:
+            # Determine file type from extension
+            path = Path(file_path)
+            file_extension = path.suffix.lower().lstrip('.')
+            
+            if file_extension == "txt":
+                extracted_text = await self._extract_from_txt(file_path)
+            elif file_extension == "pdf":
+                extracted_text = await self._extract_from_pdf(file_path)
+            elif file_extension in ["doc", "docx"]:
+                extracted_text = await self._extract_from_docx(file_path)
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unsupported file type: {file_extension}"
+                }
+            
+            # Clean and validate extracted text
+            cleaned_text = self._clean_text(extracted_text)
+            
+            if len(cleaned_text.strip()) < 50:
+                return {
+                    "success": False,
+                    "error": "Extracted text is too short (< 50 characters)"
+                }
+            
+            # Get text statistics
+            stats = self.get_extraction_stats(cleaned_text)
+            
+            return {
+                "success": True,
+                "text": cleaned_text,
+                "statistics": stats
+            }
+            
+        except Exception as e:
+            logger.error(f"Text extraction failed for {file_path}: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to extract text: {str(e)}"
+            }
+
     async def extract_text_from_resume(self, resume_id: str) -> str:
         """
         Extract text content from an example resume.

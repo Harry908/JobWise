@@ -22,6 +22,7 @@ from app.presentation.api.profile import router as profile_router
 from app.presentation.api.job import router as job_router
 from app.presentation.api.generation import router as generation_router
 from app.presentation.api.preferences import router as preferences_router
+from app.presentation.v3_api import router as v3_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -83,6 +84,7 @@ def create_application() -> FastAPI:
     app.include_router(job_router)
     app.include_router(generation_router)
     app.include_router(preferences_router)
+    app.include_router(v3_router)  # V3.0 API endpoints
 
     @app.get("/health")
     async def health_check():

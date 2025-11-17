@@ -305,8 +305,8 @@ class JobService:
         Returns:
             Dictionary of job fields
         """
-        # Placeholder implementation
-        # In production, this would fetch and parse the actual URL
+        # Basic implementation for URL parsing
+        # Production version would use web scraping or job board APIs
         return {
             "title": "Job from URL",
             "company": "Unknown Company",

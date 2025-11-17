@@ -108,3 +108,8 @@ Return validation result as JSON:
             "max_tokens": 2000,
             "temperature": 0.2,  # Low temperature for consistent analysis
         }
+
+    @classmethod
+    def create_style_analysis_prompt(cls, cover_letter_text: str, context: Dict[str, Any] = None) -> str:
+        """Create a style analysis prompt for the given cover letter context."""
+        return cls.USER_PROMPT_TEMPLATE.format(cover_letter_text=cover_letter_text)

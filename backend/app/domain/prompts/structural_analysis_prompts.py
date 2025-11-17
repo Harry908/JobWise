@@ -27,7 +27,7 @@ Extract and return ONLY a JSON object with this exact structure:
 {{
   "layout_preferences": {{
     "section_order": ["section1", "section2", "section3"],
-    "header_style": "centered|left-aligned|two-column|contact-block",
+    "header_style": "centered|left-aligned|two-column|contact-block|name-contact",
     "date_format": "MM/YYYY|MM/DD/YYYY|Month YYYY|YYYY",
     "location_display": "city-state|full-address|city-only|remote",
     "bullet_style": "standard|achievement|CAR|STAR|numeric"
@@ -113,6 +113,20 @@ Return validation result as JSON:
   "missing_elements": ["element1", "element2"],
   "confidence_level": 0.0-1.0
 }}"""
+
+    @classmethod
+    def create_layout_analysis_prompt(cls, resume_text: str, context: Dict[str, Any] = None) -> str:
+        """
+        Create a layout analysis prompt for extracting structural preferences.
+        
+        Args:
+            resume_text: The text content of the resume
+            context: Additional context for analysis (optional)
+            
+        Returns:
+            Formatted prompt for layout analysis
+        """
+        return cls.USER_PROMPT_TEMPLATE.format(resume_text=resume_text)
 
     @classmethod
     def get_extraction_messages(cls, resume_text: str) -> list:

@@ -49,13 +49,13 @@
 - GET /generations/templates - List available templates
 
 **Preference API:**
-- POST /preferences/upload-sample-resume - Upload and extract layout preferences
-- POST /preferences/upload-cover-letter - Upload and extract writing style
-- GET /preferences/generation-profile - Get user's generation profile
-- PUT /preferences/generation-profile - Update generation profile settings
-- GET /preferences/example-resumes - List user's example resumes
-- DELETE /preferences/example-resumes/{resume_id} - Delete example resume
-- POST /preferences/example-resumes/{resume_id}/set-primary - Set primary example
+- POST /api/v1/preferences/upload-sample-resume - Upload and extract layout preferences
+- POST /api/v1/preferences/upload-cover-letter - Upload and extract writing style
+- GET /api/v1/preferences/generation-profile - Get user's generation profile
+- PUT /api/v1/preferences/generation-profile - Update generation profile settings
+- GET /api/v1/preferences/example-resumes - List user's example resumes
+- DELETE /api/v1/preferences/example-resumes/{resume_id} - Delete example resume
+- POST /api/v1/preferences/example-resumes/{resume_id}/set-primary - Set primary example
 
 ---
 
@@ -139,7 +139,7 @@ User Journey:
 
 Data Flow:
 Mobile → File picker → Select file → Upload via multipart/form-data → 
-POST /preferences/upload-sample-resume {file, is_primary: true} → 
+POST /api/v1/preferences/upload-sample-resume {file, is_primary: true} → 
 Backend: Save file → Extract text → LLM analyzes structure → 
 Create LayoutConfig entity → Save to DB → Return extraction result → 
 Mobile: Display extracted preferences for review → 
@@ -226,7 +226,7 @@ User Journey:
 12. Toast: "Primary example updated. Future generations will use this layout."
 
 Data Flow:
-Mobile → GET /preferences/example-resumes → 
+Mobile → GET /api/v1/preferences/example-resumes → 
 Backend returns list with metadata → Display cards → 
 User sets primary → POST /preferences/example-resumes/{id}/set-primary → 
 Backend updates is_primary flags + updates generation profile → 
@@ -349,7 +349,7 @@ Navigation: From settings/preferences screen to example resume management
 - Allowed formats: PDF, DOCX, TXT
 - Max file size: 5 MB
 - Upload method: multipart/form-data
-- Backend endpoint: POST /preferences/upload-sample-resume
+- Backend endpoint: POST /api/v1/preferences/upload-sample-resume
 
 **Dart Model:**
 ```dart

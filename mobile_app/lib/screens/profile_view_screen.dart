@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/profile.dart' as model;
 import '../providers/profile_provider.dart';
+import '../providers/preference_provider.dart';
 import '../widgets/error_display.dart';
 
 class ProfileViewScreen extends ConsumerWidget {
@@ -61,6 +63,8 @@ class ProfileViewScreen extends ConsumerWidget {
                   _buildSkillsSection(context, profile.skills),
                   const SizedBox(height: 24),
                   _buildProjectsSection(context, profile.projects),
+                  const SizedBox(height: 24),
+                  _buildAIGenerationPreferencesSection(context),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -562,6 +566,541 @@ class ProfileViewScreen extends ConsumerWidget {
       return '${months[parsedDate.month - 1]} ${parsedDate.year}';
     } catch (e) {
       return date; // If parsing fails, return the date string as is
+    }
+  }
+
+  Widget _buildAIGenerationPreferencesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'AI Generation Preferences'),
+        const SizedBox(height: 8),
+        const Text(
+          'Upload sample documents to teach the AI your preferred formatting and writing style for tailored resume and cover letter generation.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const _SampleResumeUploadCard(),
+        const SizedBox(height: 16),
+        const _SampleCoverLetterUploadCard(),
+      ],
+    );
+  }
+}
+
+class _SampleResumeUploadCard extends ConsumerWidget {
+  const _SampleResumeUploadCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final exampleResumesState = ref.watch(exampleResumesProvider);
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.description, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Sample Resume',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upload a well-formatted resume to teach the AI your preferred layout and structure.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            exampleResumesState.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (err, stack) => Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    margin: const EdgeInsets.only(bottom: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      border: Border.all(color: Colors.red[300]!),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.error, color: Colors.red[700], size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Connection Error',
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Unable to load resume preferences. Please check that:\n'
+                          '• Backend server is running on port 8000\n'
+                          '• You are logged in with valid credentials\n'
+                          '• Network connection is stable',
+                          style: TextStyle(
+                            color: Colors.red[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ref.invalidate(exampleResumesProvider);
+                            },
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              data: (resumes) => Column(
+                children: [
+                  if (resumes.isNotEmpty) ...[
+                    ...resumes.map((resume) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.file_copy,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(
+                            resume.originalFilename,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          subtitle: Text(
+                            'Uploaded: ${resume.uploadedAt.toLocal().toString().split(' ')[0]}${resume.isPrimary ? ' (Primary)' : ''}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'delete') {
+                                await ref
+                                    .read(exampleResumesProvider.notifier)
+                                    .delete(resume.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Resume deleted successfully'),
+                                    ),
+                                  );
+                                }
+                              } else if (value == 'primary') {
+                                await ref
+                                    .read(exampleResumesProvider.notifier)
+                                    .setPrimary(resume.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Set as primary resume'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              if (!resume.isPrimary)
+                                const PopupMenuItem(
+                                  value: 'primary',
+                                  child: Text('Set as Primary'),
+                                ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _uploadSampleResume(ref, context),
+                      icon: const Icon(Icons.upload_file),
+                      label: Text(
+                        resumes.isEmpty ? 'Upload Resume' : 'Upload Another Resume',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadSampleResume(WidgetRef ref, BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx', 'txt'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.path != null) {
+          // Validate file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('File size too large. Maximum allowed size is 5 MB.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+
+          await ref.read(exampleResumesProvider.notifier).upload(file.path!);
+          
+          // Check if the upload resulted in an error
+          final newState = ref.read(exampleResumesProvider);
+          
+          if (context.mounted) {
+            newState.when(
+              data: (resumes) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Resume uploaded successfully! AI preferences have been updated.',
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+              loading: () {}, // Loading state handled by provider
+              error: (error, stackTrace) {
+                String errorMessage = 'Upload failed: Unknown error';
+                
+                // Handle specific error types
+                if (error.toString().contains('413')) {
+                  errorMessage = 'File size too large. Maximum allowed size is 5 MB.';
+                } else if (error.toString().contains('415')) {
+                  errorMessage = 'Unsupported file type. Please upload PDF, DOCX, or TXT.';
+                } else if (error.toString().contains('404')) {
+                  errorMessage = 'Upload service not available. Please try again later.';
+                } else if (error.toString().contains('DioException')) {
+                  // Extract meaningful error message from DioException
+                  final errorStr = error.toString();
+                  if (errorStr.contains('bad response') && errorStr.contains('null')) {
+                    errorMessage = 'Server connection error. Please check if the backend is running.';
+                  } else {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                  }
+                } else {
+                  errorMessage = 'Upload failed: ${error.toString()}';
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              },
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File selection failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _SampleCoverLetterUploadCard extends ConsumerWidget {
+  const _SampleCoverLetterUploadCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coverLettersState = ref.watch(sampleCoverLettersProvider);
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.edit_document, color: Colors.green[700]),
+                const SizedBox(width: 8),
+                Text(
+                  'Sample Cover Letter',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upload a cover letter to teach the AI your preferred writing style and tone.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            coverLettersState.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (err, stack) => Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    margin: const EdgeInsets.only(bottom: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      border: Border.all(color: Colors.red[300]!),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.error, color: Colors.red[700], size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Connection Error',
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Unable to load cover letter preferences. Please check that:\n'
+                          '• Backend server is running on port 8000\n'
+                          '• You are logged in with valid credentials\n'
+                          '• Network connection is stable',
+                          style: TextStyle(
+                            color: Colors.red[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ref.invalidate(sampleCoverLettersProvider);
+                            },
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              data: (coverLetters) => Column(
+                children: [
+                  if (coverLetters.isNotEmpty) ...[
+                    ...coverLetters.map((coverLetter) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.article,
+                            color: Colors.green[700],
+                          ),
+                          title: const Text('Cover Letter Sample'),
+                          subtitle: Text(
+                            'Writing Style: ${coverLetter.tone}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () async {
+                              await ref
+                                  .read(sampleCoverLettersProvider.notifier)
+                                  .delete(coverLetter.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Cover letter sample deleted'),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _uploadCoverLetter(ref, context),
+                      icon: const Icon(Icons.upload_file),
+                      label: Text(
+                        coverLetters.isEmpty 
+                            ? 'Upload Cover Letter' 
+                            : 'Upload Another Sample',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadCoverLetter(WidgetRef ref, BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx', 'txt'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.path != null) {
+          // Validate file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('File size too large. Maximum allowed size is 5 MB.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+
+          await ref.read(sampleCoverLettersProvider.notifier).upload(file.path!);
+          
+          // Check if the upload resulted in an error
+          final newState = ref.read(sampleCoverLettersProvider);
+          
+          if (context.mounted) {
+            newState.when(
+              data: (coverLetters) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Cover letter uploaded successfully! AI writing style has been updated.',
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+              loading: () {}, // Loading state handled by provider
+              error: (error, stackTrace) {
+                String errorMessage = 'Upload failed: Unknown error';
+                
+                // Handle specific error types
+                if (error.toString().contains('413')) {
+                  errorMessage = 'File size too large. Maximum allowed size is 5 MB.';
+                } else if (error.toString().contains('415')) {
+                  errorMessage = 'Unsupported file type. Please upload PDF, DOCX, or TXT.';
+                } else if (error.toString().contains('404')) {
+                  errorMessage = 'Upload service not available. Please try again later.';
+                } else if (error.toString().contains('DioException')) {
+                  // Extract meaningful error message from DioException
+                  final errorStr = error.toString();
+                  if (errorStr.contains('bad response') && errorStr.contains('null')) {
+                    errorMessage = 'Server connection error. Please check if the backend is running.';
+                  } else {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                  }
+                } else {
+                  errorMessage = 'Upload failed: ${error.toString()}';
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              },
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File selection failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

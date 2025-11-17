@@ -1,0 +1,133 @@
+HUY (HARRY) KY
+Software Engineer
+(425) 470-9340 • huyky26@gmail.com • Everett, WA
+GitHub: https://github.com/Harry908 • LinkedIn: www.linkedin.com/in/huy-ky-7282a918a
+
+First-generation computer science student with a 4.0 GPA pursuing a B.S. in Software Engineering. Experienced in 
+AI orchestration, full-stack development, and system architecture with a strong foundation in algorithms, data 
+structures, and cross-platform development. Passionate about building scalable solutions and mentoring peers, 
+seeking an internship to apply technical expertise and collaborative skills in software engineering and systems design.
+
+TECHNICAL SKILLS
+• Languages: C++, C#, Python, Java, SQL, HTML/CSS, JavaScript, MIPS
+• Frameworks/Tools: WPF, Blazor, WinForms, PyTorch, Unity, Azure SDK, PostgreSQL, NUnit, Mockito, JUnit, 
+  Flask, OpenCV, Git, Visual Studio, Eclipse, PyCharm
+• Concepts: Object-Oriented Programming (OOP), Data Structures & Algorithms, Software Development Life 
+  Cycle (SDLC), AI/ML Integration, Cloud Computing, IoT Development, Test-Driven Development (TDD)
+
+EDUCATION
+Bachelor of Science in Software Engineering                                           Expected: December 2025
+Washington State University, Everett, WA                                                        Cumulative GPA: 4.0
+Relevant Coursework: Advanced Data Structures, Design & Analysis of Algorithms, Software Engineering 
+Principles, Object-Oriented Programming, Database Systems, Artificial Intelligence, Software Testing
+
+Associate in Art and Science (Computer Science)                                              Graduated: August 2023
+Everett Community College, Everett, WA                                                           Cumulative GPA: 3.93
+
+PROFESSIONAL EXPERIENCE
+
+Software Engineering Tutor                                                               October 2024 – Present
+Washington State University, Everett, WA
+• Assist students with technical challenges across programming languages and mathematical concepts, providing 
+  individualized support to enhance problem-solving skills.
+• Break down complex algorithms and software design principles into clear, digestible explanations to strengthen 
+  student understanding and confidence.
+• Adapt tutoring approaches to meet diverse learning styles and skill levels, fostering inclusive and effective 
+  learning environments.
+
+Undergraduate Research Assistant                                                        June 2025 – August 2025
+Washington State University, Everett, WA
+• Architected an AI-powered Sommelier NPC enabling real-time question-and-answer interactions within a Virtual 
+  Reality wine tasting simulation built in Unity 6.
+• Implemented an end-to-end AI orchestration pipeline integrating Speechify (voice recognition), Hugging Face 
+  large language models, and text-to-speech services to create seamless conversational experiences.
+• Resolved compatibility issues between the AI system and Meta XR SDK, ensuring smooth VR interactions and 
+  maintaining system performance under real-time constraints.
+• Collaborated with faculty advisors to design system architecture and troubleshoot integration challenges in an 
+  emerging VR research environment.
+
+Teaching Assistant – CPT_S 321 Object-Oriented Programming                         January 2025 – May 2025
+Washington State University, Everett, WA
+• Mentored a dedicated cohort of 15 students within a 100+ student class, providing weekly guidance on object-
+  oriented design principles, debugging strategies, and best practices.
+• Led code review sessions and one-on-one consultations to help students develop clean, maintainable code and 
+  strengthen their understanding of complex OOP concepts.
+• Supported course instructors by grading assignments, providing detailed feedback, and identifying common 
+  learning gaps to improve curriculum delivery.
+
+Program and Data Coordinator                                                          February 2022 – August 2023
+Everett Community College, Everett, WA
+• Diagnosed and resolved automation issues in utility data transfer pipelines, ensuring data accuracy and integrity 
+  in Energy Star Portfolio Manager software.
+• Streamlined data workflows and reporting processes, reducing manual intervention and improving operational 
+  efficiency across departmental systems.
+
+Student Senator                                                                          September 2022 – June 2023
+Everett Community College, Everett, WA
+• Analyzed survey data and addressed student concerns regarding campus technology resources, presenting 
+  findings and budget allocation recommendations to college leadership.
+• Advocated for student needs by facilitating communication between administration and student body, 
+  contributing to policy improvements and resource allocation decisions.
+
+PROJECTS AND TECHNICAL EXPERIENCE
+
+Azure Cloud Capstone Project | Microsoft-Sponsored
+Technologies: C/C++, C#, Python, PyTorch, HTML, Blazor, Arduino, Azure IoT Hub, Azure App Service, MQTT
+• Implemented C++ firmware for an ESP8266 microcontroller using the Azure SDK to collect and publish real-
+  time sensor data to Azure IoT Hub via the MQTT protocol.
+• Built and deployed a Blazor web application on Azure App Service to retrieve, process, and visualize power 
+  consumption data from an Azure Table database.
+• Designed and trained a denoising autoencoder model in PyTorch to disaggregate household energy 
+  consumption patterns, integrating an LLM pipeline to generate personalized energy-saving recommendations.
+• Applied end-to-end IoT and cloud architecture skills, from embedded systems development to cloud-based data 
+  processing and machine learning model deployment.
+
+Recipe Generator Application | 2nd Place, WSU Everett CougHacks 24
+Technologies: C#, WPF, MVVM Architecture, PostgreSQL
+• Architected a high-performance desktop application that generates a sorted graph of recipes from a given list of 
+  ingredients, completing the project within a 24-hour hackathon timeframe.
+• Implemented MVVM design pattern to separate business logic from UI, ensuring maintainable and testable code 
+  structure.
+• Designed efficient graph algorithms to optimize recipe suggestion logic based on ingredient availability and user 
+  preferences.
+
+MapRSS | Software Engineering Principles Class Project
+Technologies: C#, WPF, MVVM Architecture, Bing Maps API
+• Developed an RSS reader desktop client with an integrated map view that automatically categorizes articles into 
+  topics based on keywords and displays geographic relevance using Bing Maps API.
+• Applied software engineering principles including requirements analysis, design documentation, and iterative 
+  development to deliver a polished, user-friendly application.
+
+Spreadsheet Application | Object-Oriented Programming Class Project
+Technologies: C#, NUnit, WinForms
+• Built a fully functional desktop spreadsheet application supporting formulas, dependency tracking, and 
+  automatic cell updates using expression tree data structures.
+• Practiced test-driven development methodology with NUnit, achieving comprehensive unit test coverage and 
+  robust error handling.
+• Applied object-oriented design principles to create modular, extensible code with clear separation of concerns.
+
+Eclipse Checkstyle Plug-in | Software Testing Class Project
+Technologies: Java, JUnit, Mockito, Pitclipse
+• Developed an Eclipse plug-in to detect structural software metrics for Java code using static analysis techniques.
+• Implemented a comprehensive testing strategy combining white-box, black-box, and mutation testing using 
+  JUnit, Mockito, and Pitclipse to ensure plugin reliability and accuracy.
+
+Image Steganography | Cybersecurity Class Project
+Technologies: Python, Tkinter, OpenCV, Pillow
+• Built a Python application for encrypting and decrypting hidden messages in images using the Least Significant 
+  Bit (LSB) algorithm.
+• Designed a modular architecture supporting interchangeable encryption algorithms, demonstrating software 
+  design flexibility and extensibility.
+
+Sentiment Analysis Web Application | AI Class Project
+Technologies: Python, Flask, HTML/CSS, Transformer Models (T5)
+• Designed and implemented the front-end user interface for a web application performing sentiment analysis on 
+  text data, focusing on user experience and intuitive design.
+• Integrated the interface with a Python Flask backend utilizing a fine-tuned T5 transformer model to process and 
+  analyze text sentiment in real time.
+
+Business Analysis Application | Database Class Project
+Technologies: Python, PyQt, SQL, PostgreSQL
+• Built a standalone desktop application to analyze business performance metrics from the Yelp academic dataset.
+• Designed an optimized PostgreSQL schema and wrote efficient SQL queries to calculate and visualize business 
+  trends and performance indicators.

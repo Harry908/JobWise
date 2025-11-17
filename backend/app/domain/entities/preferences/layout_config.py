@@ -53,7 +53,7 @@ class LayoutConfig(BaseModel):
     ])
     
     # Header and contact styling
-    header_style: Literal["centered", "left-aligned", "two-column", "contact-block"] = "left-aligned"
+    header_style: Literal["centered", "left-aligned", "two-column", "contact-block", "name-contact"] = "left-aligned"
     date_format: Literal["MM/YYYY", "MM/DD/YYYY", "Month YYYY", "YYYY"] = "MM/YYYY"
     location_display: Literal["city-state", "full-address", "city-only", "remote"] = "city-state"
     

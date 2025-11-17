@@ -1,0 +1,14 @@
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the {JOB_TITLE} position at {COMPANY_NAME}. With my background in {FIELD} and experience in {KEY_SKILLS}, I am excited about the opportunity to contribute to your team.
+
+{PERSONALIZED_PARAGRAPH}
+
+My technical expertise includes {TECHNICAL_SKILLS}, which aligns well with the requirements for this role. In my previous position at {PREVIOUS_COMPANY}, I successfully {ACHIEVEMENT}, demonstrating my ability to deliver results in a collaborative environment.
+
+I am particularly drawn to {COMPANY_NAME} because of {COMPANY_REASON}. I believe my skills in {RELEVANT_SKILLS} would be valuable assets to your team.
+
+Thank you for considering my application. I look forward to the opportunity to discuss how my experience can contribute to {COMPANY_NAME}'s continued success.
+
+Sincerely,
+{FULL_NAME}

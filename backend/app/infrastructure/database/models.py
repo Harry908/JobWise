@@ -35,6 +35,10 @@ class MasterProfileModel(Base):
 
     # Professional summary
     professional_summary = Column(Text)
+    
+    # V3.0 ENHANCEMENT: AI-enhanced professional summary
+    enhanced_professional_summary = Column(Text)  # AI-polished version
+    enhancement_metadata = Column(JSON, default=dict)  # {"model": "llama-3.3-70b", "timestamp": "...", "confidence": 0.92}
 
     # Skills stored as JSON (technical, soft, languages, certifications)
     skills = Column(JSON, nullable=False)
@@ -68,6 +72,10 @@ class ExperienceModel(Base):
     is_current = Column(Boolean, default=False)
     description = Column(Text)
     achievements = Column(JSON)  # List of achievement strings
+    
+    # V3.0 ENHANCEMENT: AI-enhanced description
+    enhanced_description = Column(Text)  # AI-polished version with stronger action verbs, quantification
+    enhancement_metadata = Column(JSON, default=dict)  # {"model": "llama-3.3-70b", "timestamp": "...", "improvements": ["added metrics", "stronger verbs"]}
 
 
 class EducationModel(Base):
@@ -99,6 +107,10 @@ class ProjectModel(Base):
     url = Column(String)
     start_date = Column(String, nullable=False)  # ISO date string
     end_date = Column(String)  # ISO date string
+    
+    # V3.0 ENHANCEMENT: AI-enhanced description
+    enhanced_description = Column(Text)  # AI-polished version with technical depth, impact metrics
+    enhancement_metadata = Column(JSON, default=dict)  # {"model": "llama-3.3-70b", "timestamp": "...", "improvements": ["added impact", "technical details"]}
 
 
 class JobModel(Base):
@@ -146,6 +158,10 @@ class GenerationModel(Base):
     result = Column(Text)  # JSON stored as TEXT
     tokens_used = Column(Integer, default=0)
     generation_time = Column(Float)  # Seconds
+    
+    # V3.0 ENHANCEMENT: User-provided custom instructions
+    user_custom_prompt = Column(Text)  # Optional user instructions like "Emphasize leadership" or "Highlight Python skills"
+    
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
@@ -420,3 +436,131 @@ class JobTypeOverrideModel(Base):
     # Relationships
     user = relationship("UserModel", backref="user_job_type_overrides")
     generation_profile = relationship("UserGenerationProfileModel", backref="profile_job_type_overrides")
+
+
+# ============================================================
+# V3.0 Models - Text-Only Sample Storage & Job-Specific Ranking
+# ============================================================
+
+
+class SampleDocumentModel(Base):
+    """Text-only storage for user-uploaded sample resumes/cover letters (v3.0)."""
+    __tablename__ = "sample_documents"
+
+    # Primary identification
+    id = Column(String, primary_key=True)  # UUID as string
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Document classification
+    document_type = Column(String, nullable=False, index=True)  # 'resume' or 'cover_letter'
+    
+    # Original file metadata
+    original_filename = Column(String(255))  # e.g., "John_Doe_Resume_2024.txt"
+    upload_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # TEXT-ONLY STORAGE (no file_path, no BLOB)
+    original_text = Column(Text, nullable=False)  # Complete document content
+    
+    # Text statistics
+    word_count = Column(INTEGER)
+    character_count = Column(INTEGER)
+    line_count = Column(INTEGER)
+    
+    # Lifecycle management
+    is_active = Column(Boolean, default=True, nullable=False)
+    archived_at = Column(DateTime, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("UserModel", backref="sample_documents")
+
+
+class JobContentRankingModel(Base):
+    """Job-specific content rankings for AI generation (v3.0)."""
+    __tablename__ = "job_content_rankings"
+
+    # Primary identification
+    id = Column(String, primary_key=True)  # UUID as string
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False, index=True)
+    
+    # Ranked content arrays (stored as JSON of UUID arrays)
+    ranked_experience_ids = Column(JSON, nullable=False, default=list)  # ["uuid1", "uuid2", ...]
+    ranked_project_ids = Column(JSON, nullable=False, default=list)     # ["uuid3", "uuid4", ...]
+    ranked_skill_ids = Column(JSON, nullable=False, default=list)        # ["uuid5", "uuid6", ...]
+    
+    # AI generation metadata
+    ranking_model_used = Column(String)  # e.g., "llama-3.1-8b-instant"
+    ranking_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    ranking_confidence_score = Column(Float)  # 0.0-1.0
+    
+    # Ranking rationale (JSON with explanation per item)
+    ranking_explanations = Column(JSON, default=dict)  # {"uuid1": "Strong match because...", ...}
+    
+    # Usage tracking
+    times_used_in_generation = Column(INTEGER, default=0)
+    last_used_at = Column(DateTime)
+    
+    # User override capability
+    user_modified = Column(Boolean, default=False)
+    user_override_timestamp = Column(DateTime)
+    
+    # Lifecycle
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("UserModel", backref="job_content_rankings")
+    job = relationship("JobModel", backref="content_rankings")
+
+
+class PromptTemplateModel(Base):
+    """Database-stored Jinja2 prompt templates with versioning (v3.0)."""
+    __tablename__ = "prompt_templates"
+
+    # Primary identification
+    id = Column(String, primary_key=True)  # UUID as string
+    
+    # Template identification
+    template_name = Column(String(100), nullable=False, unique=True, index=True)
+    # Valid names: 'writing_style_extraction', 'profile_enhancement', 'content_ranking', 'cover_letter_generation'
+    
+    # Versioning (semantic versioning: MAJOR.MINOR.PATCH)
+    version = Column(String(20), nullable=False, default="1.0.0")
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Template content (Jinja2 syntax)
+    template_content = Column(Text, nullable=False)
+    # Example: "Based on the following resume:\n\n{{ sample_text }}\n\nExtract writing style..."
+    
+    # Required variables for template rendering
+    required_variables = Column(JSON, nullable=False, default=list)
+    # Example: ["sample_text", "word_limit"]
+    
+    # Optional variables with defaults
+    optional_variables = Column(JSON, default=dict)
+    # Example: {"tone": "professional", "format": "bullets"}
+    
+    # Template metadata
+    description = Column(Text)
+    expected_output_format = Column(String(50))  # e.g., "json", "markdown", "plain_text"
+    estimated_tokens = Column(INTEGER)  # Approximate token count for cost estimation
+    
+    # A/B testing support
+    ab_test_group = Column(String(50))  # e.g., "control", "variant_a", "variant_b"
+    performance_metrics = Column(JSON, default=dict)  # {"avg_quality": 0.85, "user_satisfaction": 4.2}
+    
+    # Lifecycle
+    deprecated_at = Column(DateTime)
+    superseded_by_template_id = Column(String)  # Points to newer template version
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_by = Column(String(50))  # "system" or "admin_user_id"

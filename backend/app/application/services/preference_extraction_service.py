@@ -100,13 +100,11 @@ class PreferenceExtractionService:
             style_config.source_text = text_content
             
             # Add metadata
-            style_config.source_document = Path(file_path).name
-            style_config.extraction_metadata = {
-                "extracted_at": datetime.now().isoformat(),
-                "word_count": extraction_result.get("statistics", {}).get("word_count", 0),
-                "confidence_score": self._calculate_confidence_score(text_content),
-                "analysis_context": analysis_context
-            }
+            style_config.source_document_type = "cover_letter"
+            style_config.source_document_hash = str(hash(text_content))
+            
+            # Set confidence score
+            style_config.extraction_confidence = self._calculate_confidence_score(text_content)
             
             logger.info(f"Successfully extracted writing style preferences for user {user_id}")
             return style_config
@@ -176,15 +174,9 @@ class PreferenceExtractionService:
             # Parse LLM response into structured layout preferences
             layout_config = self._parse_layout_response(analysis_response, user_id)
             
-            # Add metadata
-            layout_config.source_document = Path(file_path).name
-            layout_config.extraction_metadata = {
-                "extracted_at": datetime.now().isoformat(),
-                "word_count": extraction_result.get("statistics", {}).get("word_count", 0),
-                "detected_sections": extraction_result.get("statistics", {}).get("sections", []),
-                "confidence_score": self._calculate_confidence_score(text_content),
-                "analysis_context": analysis_context
-            }
+            # Add metadata and confidence
+            layout_config.source_resume_ids = [Path(file_path).name]
+            layout_config.extraction_confidence = self._calculate_confidence_score(text_content)
             
             logger.info(f"Successfully extracted layout preferences for user {user_id}")
             return layout_config
@@ -265,21 +257,46 @@ class PreferenceExtractionService:
             # Try to extract JSON from LLM response
             response_data = self._extract_json_from_response(llm_response)
             
+            # Extract nested data from LLM response
+            writing_style = response_data.get("writing_style", {})
+            language_patterns = response_data.get("language_patterns", {})
+            content_approach = response_data.get("content_approach", {})
+            
             # Map LLM analysis to WritingStyleConfig fields
             config = WritingStyleConfig(
                 user_id=user_id,
-                tone_preference=response_data.get("tone", "professional"),
-                formality_level=response_data.get("formality", "formal"),
-                sentence_structure=response_data.get("sentence_structure", "varied"),
-                vocabulary_complexity=response_data.get("vocabulary", "intermediate"),
-                personal_pronouns_usage=response_data.get("pronouns", "minimal"),
-                achievement_style=response_data.get("achievements", "action-focused"),
-                action_verb_style=response_data.get("action_verbs", "strong"),
-                industry_language_adaptation=response_data.get("industry_language", True),
-                confidence_level=response_data.get("confidence", "moderate"),
-                authenticity_markers=response_data.get("authenticity_markers", []),
-                communication_patterns=response_data.get("communication_patterns", {}),
-                is_active=True
+                vocabulary_level=writing_style.get("vocabulary_level", "professional"),
+                vocabulary_complexity_score=writing_style.get("vocabulary_complexity_score", 5),
+                tone=writing_style.get("tone", "semi-formal"),
+                formality_level=writing_style.get("formality_level", 5),
+                sentence_structure=writing_style.get("sentence_structure", "varied"),
+                avg_sentence_length=writing_style.get("avg_sentence_length", "medium"),
+                active_voice_ratio=writing_style.get("active_voice_ratio", 0.7),
+                first_person_frequency=writing_style.get("first_person_frequency", "moderate"),
+                transition_style=writing_style.get("transition_style", "standard"),
+                paragraph_length=writing_style.get("paragraph_length", "medium"),
+                closing_style=writing_style.get("closing_style", "warm"),
+                
+                # Language patterns
+                language_patterns={
+                    "action_verbs": language_patterns.get("action_verbs", [])[:20],
+                    "technical_terms": language_patterns.get("technical_terms", [])[:30],
+                    "connector_phrases": language_patterns.get("connector_phrases", [])[:15],
+                    "emphasis_words": language_patterns.get("emphasis_words", [])[:15],
+                    "qualification_language": language_patterns.get("qualification_language", [])[:10]
+                },
+                
+                # Content approach
+                content_approach={
+                    "storytelling_style": content_approach.get("storytelling_style", "achievement-focused"),
+                    "evidence_style": content_approach.get("evidence_style", "mixed"),
+                    "example_integration": content_approach.get("example_integration", "moderate"),
+                    "industry_language_usage": content_approach.get("industry_language_usage", "appropriate")
+                },
+                
+                # Metadata
+                extraction_confidence=0.8,  # Default confidence
+                source_document_type="cover_letter"
             )
             
             return config
@@ -289,9 +306,8 @@ class PreferenceExtractionService:
             # Return default config if parsing fails
             return WritingStyleConfig(
                 user_id=user_id,
-                tone_preference="professional",
-                formality_level="formal",
-                is_active=True
+                vocabulary_level="professional",
+                tone="semi-formal"
             )
 
     def _parse_layout_response(self, llm_response: str, user_id: int) -> LayoutConfig:
@@ -309,21 +325,64 @@ class PreferenceExtractionService:
             # Try to extract JSON from LLM response
             response_data = self._extract_json_from_response(llm_response)
             
+            # Extract nested data from LLM response
+            layout_prefs = response_data.get("layout_preferences", {})
+            content_density = response_data.get("content_density", {})
+            formatting = response_data.get("formatting_patterns", {})
+            sections = response_data.get("section_characteristics", {})
+            polish = response_data.get("professional_polish", {})
+            bullets_per_exp = content_density.get("bullets_per_experience", {})
+            
             # Map LLM analysis to LayoutConfig fields
             config = LayoutConfig(
                 user_id=user_id,
-                section_order_preference=response_data.get("section_order", "standard"),
-                header_style=response_data.get("header_style", "name-contact"),
-                contact_info_placement=response_data.get("contact_placement", "top-center"),
-                summary_section_preference=response_data.get("summary_style", "brief"),
-                skills_section_format=response_data.get("skills_format", "categorized"),
-                experience_date_format=response_data.get("date_format", "month-year"),
-                bullet_point_style=response_data.get("bullet_style", "consistent"),
-                spacing_preferences=response_data.get("spacing", {}),
-                font_style_preferences=response_data.get("font_preferences", {}),
-                length_preferences=response_data.get("length_preferences", {}),
-                section_emphasis=response_data.get("section_emphasis", {}),
-                is_active=True
+                
+                # Section organization
+                section_order=layout_prefs.get("section_order", ["contact", "summary", "experience", "education", "skills"]),
+                
+                # Header and contact styling
+                header_style=layout_prefs.get("header_style", "name-contact"),
+                date_format=layout_prefs.get("date_format", "MM/YYYY"),
+                location_display=layout_prefs.get("location_display", "city-state"),
+                bullet_style=layout_prefs.get("bullet_style", "achievement"),
+                
+                # Density and spacing with nested objects
+                content_density={
+                    "bullets_per_experience_min": bullets_per_exp.get("min", 2),
+                    "bullets_per_experience_max": bullets_per_exp.get("max", 5),
+                    "bullets_per_experience_preferred": bullets_per_exp.get("preferred", 3),
+                    "line_spacing": content_density.get("line_spacing", "standard"),
+                    "section_spacing": content_density.get("section_spacing", "standard"),
+                    "white_space_usage": content_density.get("white_space_usage", "balanced")
+                },
+                
+                formatting_patterns={
+                    "emphasis_style": formatting.get("emphasis_style", "bold"),
+                    "title_formatting": formatting.get("title_formatting", "bold"),
+                    "company_formatting": formatting.get("company_formatting", "bold"),
+                    "skill_grouping": formatting.get("skill_grouping", "categorized"),
+                    "contact_integration": formatting.get("contact_integration", "header")
+                },
+                
+                section_characteristics={
+                    "summary_style": sections.get("summary_style", "paragraph"),
+                    "experience_focus": sections.get("experience_focus", "achievements"),
+                    "education_detail_level": sections.get("education_detail_level", "standard"),
+                    "skills_presentation": sections.get("skills_presentation", "categorized"),
+                    "project_integration": sections.get("project_integration", "separate")
+                },
+                
+                professional_polish={
+                    "consistency_level": polish.get("consistency_level", "good"),
+                    "ats_optimization": polish.get("ats_optimization", "moderate"),
+                    "readability_score": polish.get("readability_score", 7),
+                    "visual_hierarchy": polish.get("visual_hierarchy", "good")
+                },
+                
+                # Metadata
+                extraction_confidence=0.8,
+                source_resume_ids=[],
+                extraction_method="single_resume"
             )
             
             return config
@@ -333,9 +392,8 @@ class PreferenceExtractionService:
             # Return default config if parsing fails
             return LayoutConfig(
                 user_id=user_id,
-                section_order_preference="standard",
-                header_style="name-contact",
-                is_active=True
+                section_order=["contact", "summary", "experience", "education", "skills"],
+                header_style="name-contact"
             )
 
     def _extract_json_from_response(self, response: str) -> Dict[str, Any]:

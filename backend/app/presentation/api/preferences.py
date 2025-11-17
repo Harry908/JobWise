@@ -24,7 +24,7 @@ from app.core.exceptions import PreferenceExtractionException, ValidationExcepti
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/preferences",
+    prefix="/api/v1/preferences",
     tags=["preferences"],
     responses={404: {"description": "Not found"}}
 )
@@ -36,9 +36,9 @@ def get_file_upload_service() -> FileUploadService:
     return FileUploadService()
 
 
-def get_text_extraction_service() -> TextExtractionService:
+def get_text_extraction_service(db: AsyncSession = Depends(get_db_session)) -> TextExtractionService:
     """Get text extraction service instance."""
-    return TextExtractionService()
+    return TextExtractionService(db)
 
 
 def get_groq_adapter() -> GroqAdapter:
@@ -392,11 +392,16 @@ async def get_example_resumes(
             "total": len(examples),
             "examples": [
                 {
-                    "id": ex.id,
-                    "filename": ex.original_filename,
-                    "is_primary": ex.is_primary,
-                    "uploaded_at": ex.uploaded_at.isoformat() if ex.uploaded_at else None,
-                    "layout_config_id": ex.layout_config_id
+                    "id": str(ex.id),  # Ensure string format
+                    "userId": ex.user_id,
+                    "filePath": ex.file_path,
+                    "originalFilename": ex.original_filename,
+                    "layoutConfigId": str(ex.layout_config_id),
+                    "isPrimary": ex.is_primary,
+                    "fileHash": ex.file_hash,
+                    "uploadedAt": ex.uploaded_at.isoformat() if ex.uploaded_at else None,
+                    "fileSize": ex.file_size or 0,
+                    "fileType": ex.file_type or "unknown"
                 }
                 for ex in examples
             ]

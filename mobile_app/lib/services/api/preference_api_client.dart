@@ -129,7 +129,8 @@ class PreferenceApiClient {
   /// List user's example resumes
   Future<List<ExampleResume>> getExampleResumes() async {
     final response = await _client.get('/preferences/example-resumes');
-    final List<dynamic> resumesJson = response.data;
+    final Map<String, dynamic> responseData = response.data;
+    final List<dynamic> resumesJson = responseData['examples'] ?? [];
     return resumesJson.map((json) => ExampleResume.fromJson(json)).toList();
   }
 

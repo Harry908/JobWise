@@ -1,6 +1,50 @@
 # Mobile Developer Log
 
-## Log Entry: 7
+## Log Entry: 8
+
+### User Request
+add upload sample resume and cover letter features
+
+### Response Summary
+Successfully implemented comprehensive sample resume and cover letter upload features for the JobWise mobile app. Added these features to the profile view screen (not settings screen as initially planned) since these uploads are part of the user's AI generation profile setup. The implementation includes complete UI cards for uploading, managing, and displaying sample documents with proper file validation, progress feedback, and error handling.
+
+### Actions Taken
+- **File:** `lib/screens/profile_view_screen.dart`
+  - **Change:** Added file_picker and preference_provider imports for upload functionality
+  - **Reason:** Enable native file selection and access to preference state management
+
+- **File:** `lib/screens/profile_view_screen.dart`
+  - **Change:** Added AI Generation Preferences section with explanatory text and upload cards
+  - **Reason:** Provide dedicated section in user's profile for AI generation-related preferences including sample document uploads
+
+- **File:** `lib/screens/profile_view_screen.dart`
+  - **Change:** Added _buildAIGenerationPreferencesSection method to main ProfileViewScreen class
+  - **Reason:** Organize AI preference UI into dedicated section between skills/projects and end of profile
+
+- **File:** `lib/screens/profile_view_screen.dart`
+  - **Change:** Created _SampleResumeUploadCard widget class with complete upload and management functionality
+  - **Reason:** Handle sample resume uploads with features including:
+    * Visual card with description and instructions
+    * List display of uploaded resumes with metadata (filename, upload date, primary status)
+    * Upload button with native file picker integration
+    * File validation (PDF, DOCX, TXT formats, 5MB size limit)
+    * PopupMenu for each resume (set primary, delete actions)
+    * Success/error feedback via SnackBar
+    * Loading states during API calls
+
+- **File:** `lib/screens/profile_view_screen.dart`
+  - **Change:** Created _SampleCoverLetterUploadCard widget class with writing style upload functionality
+  - **Reason:** Handle cover letter uploads for AI writing style extraction with features:
+    * Visual card with green icon and clear description
+    * Display of uploaded cover letters with writing style metadata
+    * Upload button for PDF/DOCX/TXT files
+    * File size validation and error handling
+    * Delete functionality with confirmation
+    * Integration with sampleCoverLettersProvider for state management
+
+---
+
+## Log entry:7
 
 ### User Request
 My app does not correctly display the jobs from the api.
