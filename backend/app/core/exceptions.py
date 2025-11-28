@@ -39,6 +39,13 @@ class ForbiddenException(HTTPException):
         super().__init__(status_code=403, detail=detail)
 
 
+class ConflictException(HTTPException):
+    """Exception raised when resource already exists or conflicts with existing data."""
+
+    def __init__(self, detail: str = "Resource already exists"):
+        super().__init__(status_code=409, detail=detail)
+
+
 # LLM Service Exceptions (Context7 pattern)
 class LLMServiceError(HTTPException):
     """Base exception for LLM service errors."""

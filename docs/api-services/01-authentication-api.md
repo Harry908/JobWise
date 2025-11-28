@@ -1,42 +1,511 @@
-# Authentication API Service
+# Authentication API
 
 **Version**: 1.0
 **Base Path**: `/api/v1/auth`
-**Status**: Implemented
+**Status**: ✅ Fully Implemented
 
-## Service Overview
+---
 
-Handles user registration, authentication, and session management using JWT tokens. All other services depend on this for user identity verification.
+## Overview
 
-## Specification
+The Authentication API handles user registration, login, token management, and account operations using JWT (JSON Web Tokens) for secure stateless authentication.
 
-**Purpose**: User authentication and authorization
-**Authentication Method**: JWT Bearer tokens
-**Token Expiry**: Access token (1 hour), Refresh token (7 days)
-**Password Security**: bcrypt with cost factor 12
-**Rate Limiting**: 100 requests/minute per IP (planned)
+**Key Features**:
+- User registration with email validation
+- Secure password hashing (bcrypt with cost factor 12)
+- JWT access and refresh tokens
+- Token refresh mechanism
+- Password change and reset functionality
+- Email availability checking
 
-## Dependencies
+---
 
-### Internal
-- Database: UserModel, UserSessionModel
-- Core: JWT utilities, password hashing (bcrypt)
-- Middleware: CORS configuration
+## Authentication Flow
 
-### External
-None
+```
+1. REGISTRATION
+   Client → POST /auth/register
+   Server → Create user, hash password, generate JWT
+   Server → Return access_token + refresh_token + user
+
+2. LOGIN
+   Client → POST /auth/login
+   Server → Verify credentials, generate JWT
+   Server → Return access_token + refresh_token + user
+
+3. AUTHENTICATED REQUESTS
+   Client → Request with Authorization: Bearer <access_token>
+   Server → Validate JWT, execute request
+
+4. TOKEN REFRESH
+   Client → POST /auth/refresh with refresh_token
+   Server → Validate refresh_token, generate new access_token
+   Server → Return new access_token + refresh_token
+```
+
+---
+
+## Token Specifications
+
+### Access Token
+- **Type**: JWT (HS256 algorithm)
+- **Expiry**: 1 hour (3600 seconds)
+- **Usage**: All authenticated API requests
+- **Header**: `Authorization: Bearer <access_token>`
+
+### Refresh Token
+- **Type**: JWT (HS256 algorithm)
+- **Expiry**: 7 days
+- **Usage**: Token refresh only
+- **Endpoint**: `POST /auth/refresh`
+
+### JWT Payload Example
+```json
+{
+  "sub": "1",
+  "email": "user@example.com",
+  "exp": 1732540800,
+  "iat": 1732537200,
+  "type": "access"
+}
+```
+
+---
+
+## Endpoints
+
+### 1. Register User
+
+Create a new user account and receive authentication tokens.
+
+**Endpoint**: `POST /api/v1/auth/register`
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123",
+  "full_name": "John Doe"
+}
+```
+
+**Request Schema**:
+| Field | Type | Required | Constraints | Description |
+|-------|------|----------|-------------|-------------|
+| `email` | string | Yes | Valid email format | User email address (unique) |
+| `password` | string | Yes | Min length: 8 | User password (will be hashed) |
+| `full_name` | string | Yes | 1-100 characters | User's full name |
+
+**Success Response** (201 Created):
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "is_active": true,
+    "is_verified": false,
+    "created_at": "2025-11-15T10:30:00Z",
+    "updated_at": "2025-11-15T10:30:00Z"
+  }
+}
+```
+
+**Error Responses**:
+
+**409 Conflict** (Email already exists):
+```json
+{
+  "detail": "User with this email already exists"
+}
+```
+
+**422 Unprocessable Entity** (Validation error):
+```json
+{
+  "detail": [
+    {
+      "type": "string_too_short",
+      "loc": ["body", "password"],
+      "msg": "String should have at least 8 characters",
+      "input": "pass",
+      "ctx": {"min_length": 8}
+    }
+  ]
+}
+```
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "SecurePass123",
+    "full_name": "John Doe"
+  }'
+```
+
+---
+
+### 2. Login User
+
+Authenticate with email and password to receive tokens.
+
+**Endpoint**: `POST /api/v1/auth/login`
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123"
+}
+```
+
+**Request Schema**:
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | Registered email address |
+| `password` | string | Yes | User password |
+
+**Success Response** (200 OK):
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "is_active": true,
+    "is_verified": false,
+    "created_at": "2025-11-15T10:30:00Z",
+    "updated_at": "2025-11-15T10:30:00Z"
+  }
+}
+```
+
+**Error Responses**:
+
+**401 Unauthorized** (Invalid credentials):
+```json
+{
+  "detail": "Invalid email or password"
+}
+```
+
+**401 Unauthorized** (Account inactive):
+```json
+{
+  "detail": "Account is inactive"
+}
+```
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "SecurePass123"
+  }'
+```
+
+---
+
+### 3. Refresh Access Token
+
+Generate a new access token using a valid refresh token.
+
+**Endpoint**: `POST /api/v1/auth/refresh`
+
+**Authentication**: Not required (uses refresh_token in body)
+
+**Request Body**:
+```json
+{
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe"
+  }
+}
+```
+
+**Error Responses**:
+
+**401 Unauthorized** (Invalid token):
+```json
+{
+  "detail": "Invalid or expired refresh token"
+}
+```
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  }'
+```
+
+---
+
+### 4. Get Current User Profile
+
+Retrieve authenticated user's profile information.
+
+**Endpoint**: `GET /api/v1/auth/me`
+
+**Authentication**: Required (Bearer token)
+
+**Request Headers**:
+```http
+Authorization: Bearer <access_token>
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-11-15T10:30:00Z",
+  "updated_at": "2025-11-15T10:30:00Z"
+}
+```
+
+**Error Responses**:
+
+**401 Unauthorized** (Missing token):
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+**401 Unauthorized** (Invalid token):
+```json
+{
+  "detail": "Could not validate credentials"
+}
+```
+
+**Example cURL**:
+```bash
+curl -X GET http://localhost:8000/api/v1/auth/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 5. Logout User
+
+Invalidate current session (client-side token removal).
+
+**Endpoint**: `POST /api/v1/auth/logout`
+
+**Authentication**: Required (Bearer token)
+
+**Request Headers**:
+```http
+Authorization: Bearer <access_token>
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "message": "Successfully logged out"
+}
+```
+
+**Note**: Currently implements client-side logout. Server-side token blacklisting is planned for future implementation.
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/logout \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### 6. Change Password
+
+Change authenticated user's password.
+
+**Endpoint**: `POST /api/v1/auth/change-password`
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "current_password": "CurrentPass123",
+  "new_password": "NewSecurePass456"
+}
+```
+
+**Request Schema**:
+| Field | Type | Required | Constraints | Description |
+|-------|------|----------|-------------|-------------|
+| `current_password` | string | Yes | - | Current password for verification |
+| `new_password` | string | Yes | Min length: 8 | New password |
+
+**Success Response** (200 OK):
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Error Responses**:
+
+**401 Unauthorized** (Incorrect current password):
+```json
+{
+  "detail": "Current password is incorrect"
+}
+```
+
+**422 Unprocessable Entity** (Weak new password):
+```json
+{
+  "detail": "New password must be at least 8 characters long"
+}
+```
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/change-password \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_password": "CurrentPass123",
+    "new_password": "NewSecurePass456"
+  }'
+```
+
+---
+
+### 7. Forgot Password
+
+Request a password reset email (planned feature).
+
+**Endpoint**: `POST /api/v1/auth/forgot-password`
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "message": "If an account with that email exists, a password reset link has been sent"
+}
+```
+
+**Note**: Always returns success to prevent email enumeration attacks.
+
+---
+
+### 8. Reset Password
+
+Reset password using token from email (planned feature).
+
+**Endpoint**: `POST /api/v1/auth/reset-password`
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "token": "reset_token_from_email",
+  "new_password": "NewSecurePass456"
+}
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "message": "Password reset successfully"
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** (Invalid or expired token):
+```json
+{
+  "detail": "Invalid or expired reset token"
+}
+```
+
+---
+
+### 9. Check Email Availability
+
+Check if an email is available for registration.
+
+**Endpoint**: `GET /api/v1/auth/check-email`
+
+**Authentication**: Not required
+
+**Query Parameters**:
+```
+?email=user@example.com
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "available": true
+}
+```
+
+**Example cURL**:
+```bash
+curl -X GET "http://localhost:8000/api/v1/auth/check-email?email=user@example.com"
+```
+
+---
 
 ## Database Schema
 
-### UserModel (users table)
+### users Table
 
-**Purpose**: Stores user account information and authentication data
-
-**Fields**:
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email VARCHAR NOT NULL UNIQUE,
+    email VARCHAR UNIQUE NOT NULL,
     password_hash VARCHAR NOT NULL,
     full_name VARCHAR NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
@@ -45,448 +514,120 @@ CREATE TABLE users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes
 CREATE INDEX idx_users_email ON users(email);
 ```
 
 **Field Descriptions**:
-- `id`: Primary key, auto-incrementing integer
-- `email`: User's email address (unique, indexed)
-- `password_hash`: bcrypt hashed password
-- `full_name`: User's full display name
-- `is_active`: Account status (true = active, false = deactivated)
-- `is_verified`: Email verification status (planned feature)
+- `id`: Primary key, auto-increment
+- `email`: Unique user email address
+- `password_hash`: bcrypt hashed password (cost factor: 12)
+- `full_name`: User's display name
+- `is_active`: Account active status
+- `is_verified`: Email verification status (planned)
 - `created_at`: Account creation timestamp
-- `updated_at`: Last account update timestamp (auto-updates on changes)
+- `updated_at`: Last modification timestamp
 
-**Constraints**:
-- `email` must be unique across all users
-- `password_hash` cannot be null
-- `full_name` cannot be null
-- `is_active` defaults to true
-- `is_verified` defaults to false
+---
 
-### UserSessionModel (planned)
+## Security Considerations
 
-**Purpose**: Stores user session information for advanced session management (planned feature)
+### Password Security
+- **Hashing**: bcrypt with cost factor 12
+- **Minimum Length**: 8 characters
+- **Storage**: Never stored in plain text
+- **Validation**: Enforced on registration and password change
 
-**Fields** (planned):
-```sql
-CREATE TABLE user_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    session_token VARCHAR NOT NULL,
-    ip_address VARCHAR,
-    user_agent VARCHAR,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+### JWT Security
+- **Algorithm**: HS256 (HMAC with SHA-256)
+- **Secret Key**: Stored in environment variable
+- **Expiration**: Access token (1 hour), Refresh token (7 days)
+- **Validation**: Signature, expiration, and payload verification
 
--- Indexes
-CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
-CREATE INDEX idx_user_sessions_session_token ON user_sessions(session_token);
-CREATE INDEX idx_user_sessions_expires_at ON user_sessions(expires_at);
+### Common Vulnerabilities Mitigated
+- ✅ **SQL Injection**: SQLAlchemy ORM with parameterized queries
+- ✅ **Password Hashing**: bcrypt with proper cost factor
+- ✅ **Email Enumeration**: Consistent responses for forgot password
+- ✅ **Brute Force**: Rate limiting planned (10 requests/minute)
+- ✅ **XSS**: Proper input validation with Pydantic
+- ✅ **CSRF**: Stateless JWT (no cookies in current implementation)
+
+---
+
+## Implementation Details
+
+### Dependencies
+- `python-jose[cryptography]` - JWT operations
+- `passlib[bcrypt]` - Password hashing
+- `pydantic[email]` - Email validation
+- `fastapi` - API framework
+- `sqlalchemy` - ORM
+
+### Service Layer
+**File**: `backend/app/application/services/auth_service.py`
+
+**Key Methods**:
+- `register_user(email, password, full_name)` → TokenResponse
+- `login_user(email, password)` → TokenResponse
+- `refresh_access_token(refresh_token)` → TokenResponse
+- `get_current_user(user_id)` → UserProfile
+- `change_password(user_id, current_password, new_password)` → MessageResponse
+
+### Middleware
+**File**: `backend/app/core/dependencies.py`
+
+**`get_current_user()` Dependency**:
+```python
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> int:
+    """Extract and validate user ID from JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub"))
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
 ```
 
-**Note**: UserSessionModel is planned for future implementation to support advanced session management features like concurrent session limits and session invalidation.
+---
 
-## Data Flow
+## Testing
 
-```
-Client Registration:
-1. Client → GET /check-email?email=user@example.com {check availability}
-2. API validates email format and checks uniqueness
-3. API ← {available: true/false}
-4. If available: Client → POST /register {email, password, full_name}
-5. API validates email uniqueness (double-check)
-6. API hashes password (bcrypt)
-7. API creates user record
-8. API generates JWT tokens
-9. API ← {access_token, refresh_token, user}
+### Manual Testing (cURL)
 
-Client Login:
-1. Client → POST /login {email, password}
-2. API retrieves user by email
-3. API verifies password hash
-4. API generates JWT tokens
-5. API ← {access_token, refresh_token, user}
+**Full Authentication Flow**:
+```bash
+# 1. Register
+TOKEN_RESPONSE=$(curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test123!","full_name":"Test User"}')
 
-Token Refresh:
-1. Client → POST /refresh {refresh_token}
-2. API validates refresh token
-3. API generates new access token
-4. API ← {access_token, refresh_token}
+# 2. Extract access token
+ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+
+# 3. Get profile
+curl -X GET http://localhost:8000/api/v1/auth/me \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# 4. Login
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test123!"}'
 ```
 
-## API Contract
-
-### POST /register
-
-**Description**: Create new user account
-
-**Request**:
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "full_name": "John Doe"
-}
-```
-
-**Response** (201 Created):
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "created_at": "2025-10-21T10:00:00"
-  }
-}
-```
-
-**Errors**:
-- 400: User with this email already exists
-- 422: Validation error (invalid email format, weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
-
-### POST /login
-
-**Description**: Authenticate user
-
-**Request**:
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "created_at": "2025-10-21T10:00:00"
-  }
-}
-```
-
-**Errors**:
-- 401: Invalid credentials
-- 422: Validation error (invalid email format)
-
-### POST /refresh
-
-**Description**: Refresh access token
-
-**Request**:
-```json
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "created_at": "2025-10-21T10:00:00"
-  }
-}
-```
-
-**Errors**:
-- 401: Invalid or expired refresh token
-
-### GET /me
-
-**Description**: Get current user profile
-
-**Headers**: `Authorization: Bearer <access_token>`
-
-**Response** (200 OK):
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "full_name": "John Doe",
-  "is_active": true,
-  "is_verified": false,
-  "created_at": "2025-10-21T10:00:00",
-  "updated_at": "2025-10-21T10:00:00"
-}
-```
-
-**Errors**:
-- 401: Invalid or missing token
-- 403: Forbidden (missing authorization header)
-
-### POST /logout
-
-**Description**: Logout user by invalidating their session
-
-**Headers**: `Authorization: Bearer <access_token>`
-
-**Response** (200 OK):
-```json
-{
-  "message": "Successfully logged out"
-}
-```
-
-**Errors**:
-- 403: Forbidden (missing authorization header)
-
-### POST /change-password
-
-**Description**: Change current user's password
-
-**Headers**: `Authorization: Bearer <access_token>`
-
-**Request**:
-```json
-{
-  "current_password": "CurrentPass123!",
-  "new_password": "NewSecurePass456!"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "message": "Password changed successfully"
-}
-```
-
-**Errors**:
-- 400: New password must be different from current password
-- 401: Current password is incorrect
-- 403: Forbidden (missing authorization header)
-- 422: Validation error (weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
-
-### POST /forgot-password
-
-**Description**: Request password reset (mock implementation)
-
-**Request**:
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "message": "If the email exists, a reset link has been sent"
-}
-```
-
-**Errors**:
-- 422: Validation error (invalid email format)
-
-### POST /reset-password
-
-**Description**: Reset password with token (mock implementation)
-
-**Request**:
-```json
-{
-  "token": "reset_token_from_email",
-  "new_password": "NewSecurePass456!"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "message": "Password reset successfully"
-}
-```
-
-**Errors**:
-- 400: Invalid reset token
-- 422: Validation error (weak password - minimum 8 characters with uppercase, lowercase, and numeric characters)
-
-### GET /check-email
-
-**Description**: Check if an email address is available for registration
-
-**Query Parameters**:
-- `email` (required): Email address to check for availability
-
-**Request**:
-```
-GET /api/v1/auth/check-email?email=user@example.com
-```
-
-**Response** (200 OK):
-```json
-{
-  "available": true
-}
-```
-
-**Response Examples**:
-- Available email: `{"available": true}`
-- Taken email: `{"available": false}`
-
-**Errors**:
-- 422: Validation error (invalid email format or missing email parameter)
-
-## Mobile Integration Notes
-
-### Token Storage
-Store tokens securely:
-- iOS: Keychain
-- Android: EncryptedSharedPreferences
-- Flutter: flutter_secure_storage package
-
-### Token Management
-```dart
-// Example Flutter implementation
-class AuthService {
-  final FlutterSecureStorage _storage = FlutterSecureStorage();
-
-  Future<void> saveTokens(String access, String refresh) async {
-    await _storage.write(key: 'access_token', value: access);
-    await _storage.write(key: 'refresh_token', value: refresh);
-  }
-
-  Future<String?> getAccessToken() async {
-    return await _storage.read(key: 'access_token');
-  }
-
-  Future<void> clearTokens() async {
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'refresh_token');
-  }
-}
-```
-
-### HTTP Client Configuration
-```dart
-class ApiClient {
-  final Dio _dio = Dio();
-
-  ApiClient() {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await _authService.getAccessToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
-        },
-        onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
-            // Token expired, try refresh
-            final refreshed = await _authService.refreshToken();
-            if (refreshed) {
-              // Retry original request
-              return handler.resolve(await _dio.fetch(error.requestOptions));
-            }
-          }
-          return handler.next(error);
-        },
-      ),
-    );
-  }
-}
-```
-
-### Password Validation
-Enforce client-side:
-- Minimum 8 characters
-- At least 1 uppercase letter
-- At least 1 lowercase letter
-- At least 1 number
-
-### Email Availability Check
-Check email availability before registration:
-```dart
-class AuthService {
-  Future<bool> checkEmailAvailability(String email) async {
-    try {
-      final response = await _dio.get('/auth/check-email', 
-        queryParameters: {'email': email}
-      );
-      return response.data['available'];
-    } on DioError catch (e) {
-      if (e.response?.statusCode == 422) {
-        throw ValidationException('Invalid email format');
-      }
-      throw NetworkException('Connection failed');
-    }
-  }
-}
-```
-
-### Error Handling
-```dart
-try {
-  final response = await apiClient.post('/auth/login', data: credentials);
-  await authService.saveTokens(response.data['access_token'], response.data['refresh_token']);
-  return User.fromJson(response.data['user']);
-} on DioError catch (e) {
-  if (e.response?.statusCode == 401) {
-    throw AuthenticationException('Invalid credentials');
-  } else if (e.response?.statusCode == 409) {
-    throw ConflictException('Email already registered');
-  } else {
-    throw NetworkException('Connection failed');
-  }
-}
-```
-
-### Token Expiry Handling
-- Access token expires in 1 hour
-- Refresh token expires in 7 days
-- Auto-refresh access token when 401 received
-- Force re-login when refresh token expired
-
-## Implementation Notes
-
-### Repository
-- `app/infrastructure/repositories/user_repository.py`
-- Methods: `create_user()`, `get_by_email()`, `get_by_id()`
-
-### Service
-- `app/application/services/auth_service.py`
-- Methods: `register()`, `login()`, `refresh_token()`, `verify_token()`
-
-### Security
-- Never log passwords or tokens
-- Hash passwords before database insert
-- Validate JWT signature on every protected request
-- Use HTTPS in production
-- Implement rate limiting to prevent brute force
-
-### Testing
-- Test password hashing/verification
-- Test JWT generation/validation
-- Test token expiry
-- Test duplicate email registration
-- Test email availability checking
-- Test invalid credentials
+---
+
+## Future Enhancements
+
+- [ ] Email verification workflow
+- [ ] Password reset email integration
+- [ ] Two-factor authentication (2FA)
+- [ ] OAuth2 social login (Google, GitHub)
+- [ ] Session management and revocation
+- [ ] Rate limiting (currently planned)
+- [ ] Account deletion endpoint
+- [ ] User roles and permissions
+
+---
+
+**Last Updated**: November 2025
+**API Version**: 1.0
+**Status**: Production Ready

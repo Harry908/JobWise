@@ -18,10 +18,17 @@ from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.adapters.llm_factory import get_llm_service
 from app.domain.ports.llm_service import ILLMService
 from app.application.services.prompt_service import get_prompt_service, PromptService
-from app.application.services.writing_style_service import get_writing_style_service, WritingStyleService
-from app.application.services.profile_enhancement_service import get_profile_enhancement_service, ProfileEnhancementService
-from app.application.services.content_ranking_service import get_content_ranking_service, ContentRankingService
-from app.application.services.document_generation_service import get_document_generation_service, DocumentGenerationService
+from app.application.services.writing_style_service import WritingStyleService
+from app.application.services.profile_enhancement_service import ProfileEnhancementService
+from app.application.services.content_ranking_service import ContentRankingService
+from app.application.services.document_generation_service import DocumentGenerationService
+from app.core.dependencies import (
+    get_current_user,
+    get_writing_style_service,
+    get_profile_enhancement_service,
+    get_content_ranking_service,
+    get_document_generation_service
+)
 from app.infrastructure.database.models import (
     SampleDocumentModel,
     JobContentRankingModel,
@@ -161,10 +168,10 @@ class SampleDetailResponse(BaseModel):
 
 @router.post("/samples/upload", response_model=SampleUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_sample_document(
-    document_type: Annotated[str, Form()],
-    file: Annotated[UploadFile, File()],
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)]
+    document_type: str = Form(),
+    file: UploadFile = File(),
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
 ) -> SampleUploadResponse:
     """
     Upload a sample resume or cover letter as plain text.
@@ -225,7 +232,7 @@ async def upload_sample_document(
         stmt = (
             update(SampleDocumentModel)
             .where(
-                SampleDocumentModel.user_id == current_user["id"],
+                SampleDocumentModel.user_id == current_user_id,
                 SampleDocumentModel.document_type == document_type
             )
             .values(is_active=False)
@@ -233,8 +240,10 @@ async def upload_sample_document(
         await db.execute(stmt)
         
         # Create new sample
+        import uuid
         new_sample = SampleDocumentModel(
-            user_id=current_user["id"],
+            id=str(uuid.uuid4()),
+            user_id=current_user_id,
             document_type=document_type,
             original_filename=file.filename,
             original_text=text_content,
@@ -247,7 +256,7 @@ async def upload_sample_document(
         await db.commit()
         await db.refresh(new_sample)
         
-        logger.info(f"Sample uploaded: user={current_user['id']}, type={document_type}, words={word_count}")
+        logger.info(f"Sample uploaded: user={current_user_id}, type={document_type}, words={word_count}")
         
         return SampleUploadResponse(
             id=new_sample.id,
@@ -275,10 +284,10 @@ async def upload_sample_document(
 @router.post("/profile/enhance", response_model=ProfileEnhanceResponse)
 async def enhance_profile(
     request: ProfileEnhanceRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    writing_style_service: Annotated[WritingStyleService, Depends(get_writing_style_service)],
-    enhancement_service: Annotated[ProfileEnhancementService, Depends(get_profile_enhancement_service)]
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    writing_style_service: WritingStyleService = Depends(get_writing_style_service),
+    enhancement_service: ProfileEnhancementService = Depends(get_profile_enhancement_service)
 ) -> ProfileEnhanceResponse:
     """
     Enhance user's master profile using writing style from sample cover letter.
@@ -296,12 +305,12 @@ async def enhance_profile(
         if not profile:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Master profile not found")
         
-        if profile.user_id != current_user["id"]:
+        if profile.user_id != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to enhance this profile")
         
         # Fetch active cover letter sample
         sample_stmt = select(SampleDocumentModel).where(
-            SampleDocumentModel.user_id == current_user["id"],
+            SampleDocumentModel.user_id == current_user_id,
             SampleDocumentModel.document_type == "cover_letter",
             SampleDocumentModel.is_active == True
         )
@@ -314,8 +323,8 @@ async def enhance_profile(
                 detail="No active cover letter sample found. Please upload a sample first."
             )
         
-        # Extract writing style from sample
-        writing_style = await writing_style_service.extract_style(sample.original_text)
+        # Get or extract writing style from sample (cached in database)
+        writing_style = await writing_style_service.get_or_extract_style(current_user_id)
         
         # Fetch experiences and projects
         exp_stmt = select(ExperienceModel).where(ExperienceModel.user_profile_id == profile.id)
@@ -375,7 +384,7 @@ async def enhance_profile(
         
         await db.commit()
         
-        logger.info(f"Profile enhanced: profile_id={request.profile_id}, user={current_user['id']}")
+        logger.info(f"Profile enhanced: profile_id={request.profile_id}, user={current_user_id}")
         
         return ProfileEnhanceResponse(
             profile_id=profile.id,
@@ -405,9 +414,9 @@ async def enhance_profile(
 @router.post("/rankings/create", response_model=RankingCreateResponse)
 async def create_content_ranking(
     request: RankingCreateRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    ranking_service: Annotated[ContentRankingService, Depends(get_content_ranking_service)]
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    ranking_service: ContentRankingService = Depends(get_content_ranking_service)
 ) -> RankingCreateResponse:
     """
     Create job-specific content ranking.
@@ -426,7 +435,7 @@ async def create_content_ranking(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job posting not found")
         
         # Fetch user's profile
-        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user["id"])
+        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user_id)
         profile_result = await db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
         
@@ -489,7 +498,7 @@ async def create_content_ranking(
         
         # Check if ranking already exists (UPSERT logic)
         existing_stmt = select(JobContentRankingModel).where(
-            JobContentRankingModel.user_id == current_user["id"],
+            JobContentRankingModel.user_id == current_user_id,
             JobContentRankingModel.job_id == request.job_id
         )
         existing_result = await db.execute(existing_stmt)
@@ -510,7 +519,7 @@ async def create_content_ranking(
         else:
             # Create new ranking
             new_ranking = JobContentRankingModel(
-                user_id=current_user["id"],
+                user_id=current_user_id,
                 job_id=request.job_id,
                 ranked_experience_ids=ranking_result["ranked_experience_ids"],
                 ranked_project_ids=ranking_result["ranked_project_ids"],
@@ -525,7 +534,7 @@ async def create_content_ranking(
             await db.refresh(new_ranking)
             ranking = new_ranking
         
-        logger.info(f"Content ranking created: job_id={request.job_id}, user={current_user['id']}")
+        logger.info(f"Content ranking created: job_id={request.job_id}, user={current_user_id}")
         
         return RankingCreateResponse(
             id=ranking.id,
@@ -534,8 +543,8 @@ async def create_content_ranking(
             ranked_experience_ids=ranking.ranked_experience_ids,
             ranked_project_ids=ranking.ranked_project_ids,
             ranking_rationale=str(ranking.ranking_metadata.get("rationale", "")),
-            keyword_matches={},  # TODO: Extract from LLM response
-            relevance_scores={},  # TODO: Extract from LLM response
+            keyword_matches={},  # LLM response parsing not implemented
+            relevance_scores={},  # LLM response parsing not implemented
             llm_metadata={
                 "model": ranking.ranking_metadata.get("model"),
                 "tokens_used": ranking_result.get("tokens_used", 0),
@@ -560,8 +569,8 @@ async def create_content_ranking(
 @router.post("/generations/resume", response_model=GenerateResumeResponse)
 async def generate_resume(
     request: GenerateResumeRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)]
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
 ) -> GenerateResumeResponse:
     """
     Generate tailored resume using pure logic compilation (NO LLM).
@@ -581,7 +590,7 @@ async def generate_resume(
         
         # Fetch ranking
         ranking_stmt = select(JobContentRankingModel).where(
-            JobContentRankingModel.user_id == current_user["id"],
+            JobContentRankingModel.user_id == current_user_id,
             JobContentRankingModel.job_id == request.job_id
         )
         ranking_result = await db.execute(ranking_stmt)
@@ -594,7 +603,7 @@ async def generate_resume(
             )
         
         # Fetch profile
-        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user["id"])
+        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user_id)
         profile_result = await db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
         
@@ -625,8 +634,8 @@ async def generate_resume(
         resume_parts = []
         
         # Header
-        resume_parts.append(f"{profile.user.username.upper()}")
-        resume_parts.append(f"{profile.user.email}\n")
+        resume_parts.append(user.full_name or user.username or "USER NAME")
+        resume_parts.append(f"{user.email}\n")
         
         # Professional summary
         if request.include_summary:
@@ -657,7 +666,7 @@ async def generate_resume(
         keyword_match_ratio = len(job_keywords & resume_keywords) / max(len(job_keywords), 1)
         ats_score = min(0.95, keyword_match_ratio + 0.15)  # Boost baseline score
         
-        logger.info(f"Resume generated: job_id={request.job_id}, user={current_user['id']}, ats_score={ats_score:.2f}")
+        logger.info(f"Resume generated: job_id={request.job_id}, user={current_user_id}, ats_score={ats_score:.2f}")
         
         # Mock generation ID (in real app, store in generations table)
         from uuid import uuid4
@@ -700,10 +709,10 @@ async def generate_resume(
 @router.post("/generations/cover-letter", response_model=GenerateCoverLetterResponse)
 async def generate_cover_letter(
     request: GenerateCoverLetterRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    writing_style_service: Annotated[WritingStyleService, Depends(get_writing_style_service)],
-    document_service: Annotated[DocumentGenerationService, Depends(get_document_generation_service)]
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    writing_style_service: WritingStyleService = Depends(get_writing_style_service),
+    document_service: DocumentGenerationService = Depends(get_document_generation_service)
 ) -> GenerateCoverLetterResponse:
     """
     Generate tailored cover letter using LLM.
@@ -723,7 +732,7 @@ async def generate_cover_letter(
         
         # Fetch ranking
         ranking_stmt = select(JobContentRankingModel).where(
-            JobContentRankingModel.user_id == current_user["id"],
+            JobContentRankingModel.user_id == current_user_id,
             JobContentRankingModel.job_id == request.job_id
         )
         ranking_result = await db.execute(ranking_stmt)
@@ -737,7 +746,7 @@ async def generate_cover_letter(
         
         # Fetch sample cover letter
         sample_stmt = select(SampleDocumentModel).where(
-            SampleDocumentModel.user_id == current_user["id"],
+            SampleDocumentModel.user_id == current_user_id,
             SampleDocumentModel.document_type == "cover_letter",
             SampleDocumentModel.is_active == True
         )
@@ -750,11 +759,11 @@ async def generate_cover_letter(
                 detail="No active cover letter sample found. Please upload a sample first."
             )
         
-        # Extract writing style
-        writing_style = await writing_style_service.extract_style(sample.original_text)
+        # Get or extract writing style from sample (cached in database)
+        writing_style = await writing_style_service.get_or_extract_style(current_user_id)
         
         # Fetch profile
-        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user["id"])
+        profile_stmt = select(MasterProfileModel).where(MasterProfileModel.user_id == current_user_id)
         profile_result = await db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
         
@@ -789,17 +798,30 @@ async def generate_cover_letter(
             for proj_id in top_project_ids if proj_id in all_projects
         ]
         
+        # Extract top skills from profile
+        top_skills = []
+        if profile and profile.skills:
+            # Extract technical skills from JSON structure
+            skills_data = profile.skills
+            if isinstance(skills_data, dict):
+                technical_skills = skills_data.get("technical", [])
+                top_skills = technical_skills[:5] if isinstance(technical_skills, list) else ["Python", "FastAPI", "AI"]
+            else:
+                top_skills = ["Python", "FastAPI", "AI"]
+        else:
+            top_skills = ["Python", "FastAPI", "AI"]
+        
         # Generate cover letter
         generation_result = await document_service.generate_cover_letter(
             job_title=job.title,
             job_company=request.company_name or job.company or "Unknown Company",
             job_description=job.description,
-            user_name=profile.user.username,
-            user_email=profile.user.email,
+            user_name=user.full_name or user.username or "User Name",
+            user_email=user.email,
             professional_summary=profile.enhanced_professional_summary or profile.professional_summary or "",
             top_experiences=top_experiences,
             top_projects=top_projects,
-            top_skills=["Python", "FastAPI", "AI"],  # TODO: Fetch from skills
+            top_skills=top_skills,
             writing_style=writing_style,
             user_custom_prompt=request.custom_prompt
         )
@@ -810,7 +832,7 @@ async def generate_cover_letter(
         keyword_match_ratio = len(job_keywords & cover_letter_keywords) / max(len(job_keywords), 1)
         ats_score = min(0.95, keyword_match_ratio + 0.20)  # Higher boost for cover letters
         
-        logger.info(f"Cover letter generated: job_id={request.job_id}, user={current_user['id']}, ats_score={ats_score:.2f}")
+        logger.info(f"Cover letter generated: job_id={request.job_id}, user={current_user_id}, ats_score={ats_score:.2f}")
         
         # Mock generation ID
         from uuid import uuid4
@@ -833,7 +855,7 @@ async def generate_cover_letter(
             llm_metadata={
                 "model": generation_result["generation_model_used"],
                 "tokens_used": generation_result["tokens_used"],
-                "generation_time": 0.0  # TODO: Track actual time
+                "generation_time": generation_result.get("generation_time", 0.0)
             },
             created_at=datetime.utcnow()
         )
@@ -852,8 +874,8 @@ async def generate_cover_letter(
 
 @router.get("/samples", response_model=SampleListResponse)
 async def get_sample_documents(
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
     document_type: Optional[str] = Query(None, regex="^(resume|cover_letter|all)$"),
     active_only: bool = Query(True)
 ) -> SampleListResponse:
@@ -865,7 +887,7 @@ async def get_sample_documents(
     try:
         from sqlalchemy import select
         
-        stmt = select(SampleDocumentModel).where(SampleDocumentModel.user_id == current_user["id"])
+        stmt = select(SampleDocumentModel).where(SampleDocumentModel.user_id == current_user_id)
         
         if document_type and document_type != "all":
             stmt = stmt.where(SampleDocumentModel.document_type == document_type)
@@ -905,9 +927,9 @@ async def get_sample_documents(
 
 @router.get("/samples/{sample_id}", response_model=SampleDetailResponse)
 async def get_sample_detail(
-    sample_id: Annotated[UUID, Path()],
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)]
+    sample_id: UUID = Path(),
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
 ) -> SampleDetailResponse:
     """
     Retrieve specific sample document with full text.
@@ -922,7 +944,7 @@ async def get_sample_detail(
         if not sample:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sample document not found")
         
-        if sample.user_id != current_user["id"]:
+        if sample.user_id != current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have permission to access this sample"
@@ -936,8 +958,8 @@ async def get_sample_detail(
             word_count=sample.word_count,
             character_count=sample.character_count,
             is_active=sample.is_active,
-            last_used_for_generation=None,  # TODO: Track usage
-            generation_count=0,  # TODO: Track usage
+            last_used_for_generation=None,  # Usage tracking not implemented
+            generation_count=0,  # Usage tracking not implemented
             created_at=sample.created_at
         )
     
@@ -955,9 +977,9 @@ async def get_sample_detail(
 
 @router.delete("/samples/{sample_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sample_document(
-    sample_id: Annotated[UUID, Path()],
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)]
+    sample_id: UUID = Path(),
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """
     Delete a sample document.
@@ -972,7 +994,7 @@ async def delete_sample_document(
         if not sample:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sample document not found")
         
-        if sample.user_id != current_user["id"]:
+        if sample.user_id != current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have permission to delete this sample"
@@ -982,7 +1004,7 @@ async def delete_sample_document(
         await db.execute(delete_stmt)
         await db.commit()
         
-        logger.info(f"Sample deleted: sample_id={sample_id}, user={current_user['id']}")
+        logger.info(f"Sample deleted: sample_id={sample_id}, user={current_user_id}")
         
         return None
     
@@ -1000,9 +1022,9 @@ async def delete_sample_document(
 
 @router.get("/rankings/job/{job_id}", response_model=RankingCreateResponse)
 async def get_job_rankings(
-    job_id: Annotated[UUID, Path()],
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)]
+    job_id: UUID = Path(),
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
 ) -> RankingCreateResponse:
     """
     Retrieve content rankings for a specific job.
@@ -1011,7 +1033,7 @@ async def get_job_rankings(
         from sqlalchemy import select
         
         stmt = select(JobContentRankingModel).where(
-            JobContentRankingModel.user_id == current_user["id"],
+            JobContentRankingModel.user_id == current_user_id,
             JobContentRankingModel.job_id == job_id
         )
         result = await db.execute(stmt)
@@ -1052,8 +1074,8 @@ async def get_job_rankings(
 
 @router.get("/generations/history")
 async def get_generation_history(
-    current_user: Annotated[dict, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
     document_type: Optional[str] = Query(None, regex="^(resume|cover_letter|all)$"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0)

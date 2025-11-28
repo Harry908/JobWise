@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.application.services.auth_service import AuthService
 from app.core.dependencies import get_auth_service, get_current_user
-from app.core.exceptions import AuthenticationException, ValidationException
+from app.core.exceptions import AuthenticationException, ValidationException, ConflictException
 from app.core.security import get_user_id_from_token
 
 
@@ -145,6 +145,8 @@ async def register_user(
             password=request.password,
             full_name=request.full_name
         )
+    except ConflictException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ValidationException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:

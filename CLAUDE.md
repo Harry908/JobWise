@@ -4,22 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**JobWise** is an AI-powered job application assistant built with Flutter (mobile) and FastAPI (backend). The app helps users generate tailored resumes and cover letters for specific job postings by combining their master profile with AI-driven document generation.
+**JobWise** is an AI-powered job application assistant built with Flutter (mobile) and FastAPI (backend). The app helps users generate tailored resumes and cover letters for specific job postings using their master profile and AI-driven content generation with real Groq LLM integration.
 
 **Current Status** (Updated November 2025):
-- ✅ **Sprint 1 Complete**: Backend foundation with Auth, Profile, and Job APIs
-- ✅ **Sprint 2 Complete**: Documentation ready, implementation pending
-- ✅ **Sprint 3 Complete**: Mobile job management screens fully implemented
-- 🚧 **Sprint 4 Ready**: Generation & Document APIs ready for implementation
+- ✅ **Sprints 1-3 Complete**: Backend foundation (Auth, Profile, Job APIs) + Mobile UI
+- ✅ **V3 Generation API**: 10 endpoints fully implemented with real Groq LLM
+- ✅ **Mobile App**: 13 screens across 5 feature areas
+- 🔄 **Architecture Redesign**: Sprint 5 design docs complete, implementation in progress
 
-**IMPORTANT - Sprint 4 Status**:
-- **Implemented**: Auth API, Profile API, Job API (Sprint 1-3)
-- **Ready for Implementation**: Generation API, Document API (Sprint 4)
-- All Generation & Document API specs have been reviewed and corrected (Nov 7, 2025)
-- See `docs/api-services/GENERATION_API_REVIEW.md` for detailed spec review
-- 9 critical issues fixed in API specifications before Sprint 4 implementation
+**IMPORTANT - Implementation Status**:
+- **Fully Implemented**: Auth API, Profile API, Job API, V3 Generation API (10 endpoints with real LLM)
+- **Backend Services**: WritingStyleService, ProfileEnhancementService, ContentRankingService, DocumentGenerationService
+- **Real AI Integration**: Groq API (llama-3.3-70b-versatile, llama-3.1-8b-instant) confirmed working
+
+---
 
 ## Common Development Commands
+
+### Windows Environment
+
+**CRITICAL**: This project runs on Windows with PowerShell. All commands use PowerShell syntax.
+
+```powershell
+# PowerShell command chaining (use semicolon, not &&)
+cd backend ; python -m pytest
+
+# Virtual environment activation
+cd backend ; .\venv\Scripts\Activate.ps1
+
+# NOT bash syntax (will fail)
+cd backend && python -m pytest  # ❌ WRONG
+```
 
 ### Backend (FastAPI)
 
@@ -27,27 +42,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Environment Setup**:
 ```powershell
-# Windows PowerShell
 cd backend
-.\venv\Scripts\Activate.ps1
-
-# Windows CMD
-cd backend
-call venv\Scripts\activate.bat
+.\venv\Scripts\Activate.ps1   # PowerShell
+# OR
+venv\Scripts\activate          # CMD
 ```
 
 **Start Server**:
 ```powershell
 cd backend
-.\start-server.bat
-# Server runs at http://localhost:8000
-# API docs at http://localhost:8000/docs
-```
-
-Or manually:
-```powershell
-cd backend
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Server: http://localhost:8000
+# Docs: http://localhost:8000/docs
 ```
 
 **Testing**:
@@ -55,25 +61,19 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 cd backend
 
 # Run all tests with coverage
-pytest --cov=app --cov-report=html --cov-report=term-missing -v
+python -m pytest --cov=app --cov-report=html --cov-report=term-missing -v
 
 # Run specific test file
-pytest tests/test_profile_api_live.py -v
+python -m pytest tests/test_profile_api.py -v
 
-# Run with fail-fast (stop on first failure)
-pytest --maxfail=1 -q
+# Run with fail-fast
+python -m pytest --maxfail=1 -q
 
 # Run only unit tests
-pytest -m unit
+python -m pytest -m unit
 
 # Run only integration tests
-pytest -m integration
-
-# Run tests in parallel
-pytest -n auto
-
-# Check which tests are failing
-pytest --tb=no -q
+python -m pytest -m integration
 ```
 
 **Database**:
@@ -85,16 +85,13 @@ alembic upgrade head
 
 # Create new migration
 alembic revision --autogenerate -m "description"
-
-# Downgrade migration
-alembic downgrade -1
 ```
 
 **Code Quality**:
 ```powershell
 cd backend
 
-# Format code with black
+# Format code
 black app/ tests/
 
 # Sort imports
@@ -121,23 +118,23 @@ flutter pub get
 ```powershell
 cd mobile_app
 
-# Run on default device
+# Default device
 flutter run
 
-# Run on specific platform
-flutter run -d chrome       # Web
-flutter run -d android      # Android
-flutter run -d ios          # iOS (macOS only)
+# Specific platform
+flutter run -d chrome
+flutter run -d android
+flutter run -d ios  # macOS only
 ```
 
 **Code Generation (Freezed models)**:
 ```powershell
 cd mobile_app
 
-# Generate freezed and json_serializable files
+# Generate freezed files
 flutter pub run build_runner build --delete-conflicting-outputs
 
-# Watch mode (auto-regenerate on changes)
+# Watch mode
 flutter pub run build_runner watch --delete-conflicting-outputs
 ```
 
@@ -148,50 +145,57 @@ cd mobile_app
 # Run all tests
 flutter test
 
-# Run with coverage
+# With coverage
 flutter test --coverage
-
-# Generate coverage report
-genhtml coverage/lcov.info -o coverage/html
 ```
+
+---
 
 ## Architecture Overview
 
 ### Backend Clean Architecture
 
-The backend follows **Clean Architecture** with clear separation of concerns:
+The backend follows **Clean Architecture** with Ports & Adapters pattern:
 
 ```
 backend/app/
-├── presentation/api/        # API layer (FastAPI routers)
-│   ├── auth.py             # ✅ EXISTS
-│   ├── profile.py          # ✅ EXISTS
-│   └── job.py              # ✅ EXISTS
+├── presentation/
+│   ├── api/                    # FastAPI routers
+│   │   ├── auth.py            # ✅ Authentication
+│   │   ├── profile.py         # ✅ Profile management
+│   │   └── job.py             # ✅ Job CRUD
+│   └── v3_api.py              # ✅ V3 Generation System (10 endpoints)
 │
-├── application/services/    # Business logic orchestration
+├── application/services/       # Business logic orchestration
 │   ├── auth_service.py
 │   ├── profile_service.py
-│   └── job_service.py
+│   ├── job_service.py
+│   ├── writing_style_service.py         # ✅ NEW (Sprint 5)
+│   ├── profile_enhancement_service.py   # ✅ NEW (Sprint 5)
+│   ├── content_ranking_service.py       # ✅ NEW (Sprint 5)
+│   ├── document_generation_service.py   # ✅ NEW (Sprint 5)
+│   ├── generation_service.py            # ✅ NEW (Sprint 5)
+│   └── prompt_service.py                # ✅ NEW (Sprint 5)
 │
-├── domain/entities/         # Core business entities
-│   ├── user.py
-│   ├── profile.py
-│   └── job.py
+├── domain/
+│   ├── entities/               # Core business entities
+│   │   ├── user.py
+│   │   ├── profile.py
+│   │   └── job.py
+│   └── ports/                  # Service interfaces
+│       ├── llm_service.py      # ILLMService interface
+│       └── pdf_generator.py    # IPDFGenerator interface
 │
-├── infrastructure/
-│   ├── database/            # Database layer
-│   │   ├── models.py       # SQLAlchemy models
-│   │   └── connection.py
-│   └── repositories/        # Data access implementations
-│       ├── user_repository.py
-│       ├── profile_repository.py
-│       └── job_repository.py
-│
-└── core/                    # Shared utilities
-    ├── config.py
-    ├── security.py
-    ├── exceptions.py
-    └── dependencies.py
+└── infrastructure/
+    ├── adapters/               # External service implementations
+    │   └── llm_factory.py      # LLM service factory
+    ├── database/
+    │   ├── models.py           # SQLAlchemy ORM models
+    │   └── connection.py       # Database session management
+    └── repositories/           # Data access implementations
+        ├── user_repository.py
+        ├── profile_repository.py
+        └── job_repository.py
 ```
 
 **Key Principles**:
@@ -199,76 +203,132 @@ backend/app/
 - **Dependency Injection**: FastAPI Depends() for session management
 - **Async/Await**: All I/O operations use async SQLAlchemy
 - **Clean Separation**: presentation → application → domain ← infrastructure
+- **Ports & Adapters**: Domain defines interfaces, infrastructure implements
 
-### Database Architecture
+---
 
-**ORM**: SQLAlchemy 2.0 with async support (`aiosqlite` for SQLite, `asyncpg` for PostgreSQL)
+## Database Architecture
+
+**ORM**: SQLAlchemy 2.0 with async support (`aiosqlite` for SQLite)
 
 **Key Models**:
-- **User**: Authentication and user management (JWT tokens)
-- **Profile**: Master resume with experiences, education, skills, projects
-- **JobModel**: Unified job model with `source` field (api, static, user_created, scraped, imported)
+- **UserModel**: Authentication and user management (JWT tokens)
+- **MasterProfileModel**: Master resume with JSON fields (personal_info, skills, custom_fields)
+- **ExperienceModel**: Work experiences with enhanced_description support
+- **ProjectModel**: Projects with enhanced_description support
+- **JobModel**: Unified job model with `source` field (api, user_created, scraped, etc.)
+- **SampleDocumentModel**: Uploaded resume/cover letter samples (full text stored)
+- **WritingStyleModel**: Normalized writing style configs (separate table)
+- **JobContentRankingModel**: Job-specific content rankings
+- **GenerationModel**: Generation requests and results
 
-**Important**: Uses **Unified Job Model** - single table with source discrimination, not separate tables per source.
+**Important Design Decisions**:
+- **Unified Job Model**: Single `jobs` table with `source` discrimination (not separate tables)
+- **JSON Fields**: Profile uses JSON for flexible schema (personal_info, skills, custom_fields)
+- **Enhanced Content**: Experiences/projects have both `description` and `enhanced_description`
+- **Sample Storage**: Full text stored in database for re-analysis capability
 
-### Mobile App Architecture (Flutter + Riverpod)
+---
+
+## Mobile App Architecture (Flutter + Riverpod)
 
 **State Management**: Riverpod with StateNotifier pattern
 
 **Key Patterns**:
-- **Riverpod StateNotifier**: Used for AuthNotifier, ProfileNotifier, JobNotifier
-- **Freezed Models**: Job-related models use `@freezed` annotation for immutability
-- **Manual Models**: Profile models use manual data classes (inconsistent - consider migrating)
-- **API Clients**: Dio-based clients with interceptors for auth and logging
+- **Riverpod StateNotifier**: AuthNotifier, ProfileNotifier, JobNotifier
+- **Freezed Models**: Job-related models use `@freezed` annotation
+- **Manual Models**: Profile models use manual data classes
+- **API Clients**: Dio-based clients with interceptors (auth, logging)
 - **Secure Storage**: flutter_secure_storage for JWT tokens
 
-**Screens** (9 total):
-- Authentication: Login, Register
-- Profile: View, Edit (multi-step form), Settings
-- Jobs: Browse, List (saved jobs), Detail, Paste (text input)
-- Debug: Debug utilities
+**Mobile Screens** (13 total):
+- **Authentication** (2): Login, Register
+- **Profile** (3): View, Edit (multi-step), Settings
+- **Jobs** (4): Browse, List (saved), Detail, Paste (text input)
+- **Generation** (4): Options, Progress, Result, History
+- **Debug** (1): Debug utilities
 
 **Data Flow**:
-1. User authenticates → JWT token stored securely
-2. User creates/edits Profile (experiences, education, skills, projects)
-3. User browses/saves Jobs → stored in backend with application status
-4. *(Future Sprint 2)* User generates resume → AI tailoring → PDF export
+1. User authenticates → JWT stored securely
+2. User creates/edits Profile (manual entry)
+3. User uploads sample documents (resume/cover letter .txt files)
+4. User browses/saves Jobs → stored with application status
+5. User generates tailored resume/cover letter → AI pipeline
+6. User downloads PDF exports
+
+---
 
 ## API Service Boundaries
 
 ```
-Auth API (✅) ──> Profile API (✅) ──> Job API (✅) ──> Generation API (🚧) ──> Document API (🚧)
-   Complete           Complete            Complete         SPRINT 4 READY        SPRINT 4 READY
+Auth API     Profile API     Job API     V3 Generation API
+   (✅)    →      (✅)    →    (✅)    →       (✅)
+Complete        Complete      Complete    10 Endpoints Live
 ```
 
-**Implemented APIs** (Sprint 1-3):
-- **Auth API**: Register, login, token refresh, JWT validation
-- **Profile API**: CRUD, bulk operations (experiences, education, projects), skills management, custom fields
-- **Job API**: Browse, create, list, get, update (status/keywords), delete
+### Implemented APIs
 
-**Sprint 4 Ready** (Specs reviewed Nov 7, 2025):
-- **Generation API**: 5-stage AI pipeline fully specified with error handling, progress tracking
-- **Document API**: PDF/DOCX export with 3 templates (modern, classic, creative)
+**Auth API** (`/api/v1/auth/`):
+- POST /register - Create user account
+- POST /login - Authenticate (JWT)
+- POST /refresh - Refresh token
+- GET /me - Get current user
+
+**Profile API** (`/api/v1/profiles/`):
+- Full CRUD operations
+- Bulk operations (experiences, education, projects)
+- Skills management (technical, soft)
+- Custom fields support
+- Profile analytics
+
+**Job API** (`/api/v1/jobs/`):
+- POST / - Create job (text parsing supported)
+- GET / - List user's jobs (with filters)
+- GET /{id} - Get job details
+- PUT /{id} - Update job
+- DELETE /{id} - Delete job
+
+**V3 Generation API** (`/api/v1/`):
+1. POST /samples/upload - Upload sample documents
+2. POST /profile/enhance - AI-enhance profile
+3. POST /rankings/create - Rank content for job
+4. POST /generations/resume - Generate resume (pure logic)
+5. POST /generations/cover-letter - Generate cover letter (LLM)
+6. GET /samples - List uploaded samples
+7. GET /samples/{id} - Get sample details
+8. DELETE /samples/{id} - Delete sample
+9. GET /rankings/job/{id} - Get job rankings
+10. GET /generations/history - Generation history
+
+---
 
 ## Key Technical Decisions
 
 ### Authentication
 - **JWT tokens** with bcrypt password hashing
-- Token stored in Authorization header: `Bearer <token>`
-- All `/api/v1/*` endpoints require authentication (except `/auth/register`, `/auth/login`)
-- Middleware validates JWT and injects user context into requests
+- Token in Authorization header: `Bearer <token>`
+- All `/api/v1/*` endpoints require auth (except /auth/register, /auth/login)
+
+### AI Integration (Groq LLM)
+- **Provider**: Groq.com (ultra-fast inference)
+- **Models**:
+  - llama-3.3-70b-versatile (quality, resume/cover letter generation)
+  - llama-3.1-8b-instant (speed, analysis/ranking)
+- **Status**: ✅ Real API integration confirmed working
+- **Token Usage**: Tracked per request, logged in GenerationModel
+- **Rate Limiting**: Planned (10 generations/hour per user)
 
 ### Database Patterns
-- **Repository Pattern**: All database access goes through repositories
-- **Async/Await**: All database operations use SQLAlchemy async sessions
-- **Value Objects**: Complex types (Experience, Education, Skills) in domain entities
-- **No Raw SQL**: Use SQLAlchemy ORM queries exclusively
+- **Repository Pattern**: All DB access through repositories
+- **Async/Await**: SQLAlchemy async sessions everywhere
+- **Value Objects**: Complex types (Experience, Education) in domain
+- **No Raw SQL**: SQLAlchemy ORM queries only
 
 ### API Design
-- **RESTful** conventions with proper HTTP methods and status codes
-- **Pydantic v2** for request/response validation
-- **OpenAPI 3.0** spec auto-generated at `/docs` (Swagger UI)
-- **Consistent Error Format**:
+- **RESTful**: Proper HTTP methods and status codes
+- **Pydantic v2**: Request/response validation
+- **OpenAPI 3.0**: Auto-generated at `/docs`
+- **Consistent Errors**:
   ```json
   {
     "error": {
@@ -281,46 +341,48 @@ Auth API (✅) ──> Profile API (✅) ──> Job API (✅) ──> Generatio
 
 ### Testing Strategy
 - **pytest** with async support (`pytest-asyncio`)
-- **Test Markers**: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.slow`
-- **Coverage Target**: 80%+ (currently ~50% with many failing tests)
-- **Test Database**: Separate SQLite database (`test_jobwise.db`) with fixtures in `tests/conftest.py`
+- **Test Markers**: `@pytest.mark.unit`, `@pytest.mark.integration`
+- **Coverage Target**: 80%+
+- **Test Database**: Separate SQLite (`test_jobwise.db`)
 
 ### Code Style
-- **Backend**: Black formatter (line length: 88), isort, type hints, mypy
+- **Backend**: Black (line length: 88), isort, type hints, mypy
 - **Mobile**: Dart analyzer, flutter_lints
-- **Async-first**: All I/O operations must be async
+- **Async-first**: All I/O must be async
+
+---
 
 ## Common Patterns and Conventions
 
 ### Adding a New API Endpoint
 
-1. **Define DTOs** in `app/application/dtos/`
+1. **Define Request/Response DTOs** in router file
 2. **Create/Update Domain Entity** in `app/domain/entities/`
 3. **Define Repository Interface** (if new entity)
 4. **Implement Repository** in `app/infrastructure/repositories/`
 5. **Create Application Service** in `app/application/services/`
-6. **Add API Router** in `app/presentation/api/v1/`
-7. **Register Router** in `app/main.py`
+6. **Add API Router** endpoint
+7. **Register Router** in `app/main.py` (if new router file)
 8. **Write Tests** in `tests/`
 
 ### Async Database Sessions
 
-Always use dependency injection for database sessions:
+Always use dependency injection:
 
 ```python
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.database.connection import get_db
+from app.infrastructure.database.connection import get_db_session
 
-async def my_endpoint(db: AsyncSession = Depends(get_db)):
+async def my_endpoint(db: AsyncSession = Depends(get_db_session)):
     async with db.begin():
-        # Transaction automatically committed or rolled back
+        # Transaction auto-committed or rolled back
         pass
 ```
 
 ### Error Handling
 
-Use custom exceptions from `app/core/exceptions.py`:
+Use custom exceptions:
 
 ```python
 from app.core.exceptions import NotFoundException
@@ -336,13 +398,12 @@ if not resource:
 ### Mobile State Management (Riverpod)
 
 ```dart
-// StateNotifier with no public properties beyond state
+// StateNotifier - no public properties beyond state
 class ProfileNotifier extends StateNotifier<ProfileState> {
   ProfileNotifier(this._apiClient) : super(ProfileState.initial());
 
   final ProfilesApiClient _apiClient;
 
-  // Use methods to update state, never expose mutable properties
   Future<void> fetchProfile() async {
     state = state.copyWith(isLoading: true);
     try {
@@ -355,47 +416,109 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 }
 ```
 
+---
+
 ## Important Files and Locations
 
 ### Configuration
-- `backend/.env` - Environment variables (DATABASE_URL, JWT_SECRET, etc.)
-- `backend/.env.example` - Template for environment variables
-- `backend/app/core/config.py` - Settings class using pydantic-settings
-- `mobile_app/.env` - Mobile environment (API_BASE_URL)
+- `backend/.env` - Environment variables (GROQ_API_KEY, JWT_SECRET, DATABASE_URL)
+- `backend/.env.example` - Template
+- `backend/app/core/config.py` - Settings class
+- `mobile_app/.env` - Mobile config (API_BASE_URL)
 
-### Documentation
-- `README.md` - Project overview (**Note**: Claims Sprint 2-3 complete but code disagrees)
-- `docs/sprint2/sprint2-plan.md` - Sprint 2 planning (not yet implemented)
-- `docs/api-services/` - API specifications for each service
-- `docs/mobile/` - Mobile feature designs
+### Design Documentation
+**IMPORTANT**: All design documents are in `docs/` folder:
+
+**Sprint 5 (Current Architecture)**:
+- `docs/sprint5/00-OVERVIEW.md` - System redesign overview
+- `docs/sprint5/01-DATABASE-SCHEMA.md` - Complete schema
+- `docs/sprint5/02-AI-PIPELINE.md` - LLM workflows
+- `docs/sprint5/03-API-ENDPOINTS.md` - API specifications
+- `docs/sprint5/04-PROMPT-MANAGEMENT.md` - Prompt system
+- `docs/sprint5/05-LLM-ADAPTER.md` - LLM integration
+
+**Comprehensive Guides**:
+- `docs/UNIFIED-BACKEND-ARCHITECTURE.md` - Single backend design
+- `docs/JOBWISE_AI_GENERATION_SYSTEM.md` - Complete AI system reference
+- `docs/BACKEND_DESIGN_DOCUMENT.md` - Backend architecture
+- `docs/COVER_LETTER_TEXT_STORAGE_IMPLEMENTATION.md` - Text storage design
+
+**Mobile Documentation**:
+- `docs/mobile/README.md` - Mobile feature overview
+- `docs/mobile/00-api-configuration.md` - API integration
+- `docs/mobile/01-authentication-feature.md` - Auth screens
+- `docs/mobile/02-profile-feature.md` - Profile management
+- `docs/mobile/03-job-browsing-feature.md` - Job screens
+- `docs/mobile/04-generation-feature.md` - Generation UI
+- `docs/mobile/05-document-feature.md` - Document export
+
+**Legacy/Archive**:
+- `docs/legacy/` - Older API specs (reference only)
+- `docs/sprint1/` - Sprint 1 planning
+- `docs/sprint2/` - Sprint 2 planning
+- `docs/sprint3/` - Sprint 3 planning
 
 ### Database
 - `backend/alembic/` - Database migrations
 - `backend/jobwise.db` - Development SQLite database
-- `backend/test_jobwise.db` - Test SQLite database
+- `backend/test_jobwise.db` - Test database
 
 ### Testing
-- `backend/tests/conftest.py` - Pytest fixtures and test configuration
+- `backend/tests/conftest.py` - Pytest fixtures
 - `backend/pytest.ini` - Test configuration
 
-### Current Codebase Stats (November 2025)
-- **Backend Files**: 19 Python files in `app/`
-- **Mobile Files**: 38 Dart files in `lib/`
-- **Total Tests**: 150 tests across 10 test files
-- **Tests Passing**: 76 (51% pass rate)
-- **Tests Failing**: 72 (49% failure rate - mostly profile API "live" tests)
-- **API Endpoints**: Auth (complete), Profile (complete), Job (complete)
-- **APIs NOT Implemented**: Generation, Document
-- **Mobile Screens**: 9 screens (2 auth, 3 profile, 4 job)
+### Agent Configuration
+**IMPORTANT**: This project uses GitHub Copilot custom agents:
 
-**Test Health Warning**: Nearly half of all tests are currently failing, primarily in profile bulk operations and granular operations. These need investigation and fixes before proceeding to Sprint 2.
+- `.github/agents/backend-developer.agent.md` - Backend development agent
+- `.github/agents/mobile-developer.agent.md` - Flutter/Dart agent
+- `.github/agents/solutions-architect.agent.md` - Architecture decisions
+- `.github/agents/qa-engineer.agent.md` - Testing and QA
+- `.github/agents/business-analyst.agent.md` - Requirements analysis
+
+**Agent Summaries**:
+- `.context/backend-developer-summary.md` - Backend implementation status
+- `.context/mobile-developer-summary.md` - Mobile implementation status
+
+**Agent Logs**:
+- `log/backend-developer-log.md` - Backend interaction log
+- `log/mobile-developer-log.md` - Mobile interaction log
+
+---
+
+## Current Codebase Stats (November 2025)
+
+- **Backend Files**: 35+ Python files in `app/`
+- **Mobile Files**: 60+ Dart files in `lib/`
+- **Mobile Screens**: 13 screens (2 auth, 3 profile, 4 job, 4 generation, 1 debug)
+- **API Endpoints**: 40+ endpoints across 4 routers
+  - Auth API (4 endpoints)
+  - Profile API (15+ endpoints)
+  - Job API (5 endpoints)
+  - V3 Generation API (10 endpoints)
+- **Backend Services**: 11 service files
+- **Repositories**: 8+ repository implementations
+- **Tests**: 100+ tests (unit + integration)
+- **Test Coverage**: 64% (target: 80%+)
+
+**V3 API Implementation**:
+- ✅ Sample upload endpoint with text extraction
+- ✅ Profile enhancement with real LLM
+- ✅ Content ranking with llama-3.1-8b-instant
+- ✅ Resume generation (pure logic, <1s)
+- ✅ Cover letter generation (LLM, ~3-5s)
+- ✅ Sample management (list, get, delete)
+- ✅ Ranking retrieval
+- ✅ Generation history
+
+---
 
 ## Development Tips
 
 ### Working with Pydantic v2
-- Use `model_config = ConfigDict(from_attributes=True)` instead of deprecated `orm_mode=True`
+- Use `model_config = ConfigDict(from_attributes=True)` not `orm_mode=True`
 - Use `model_validate()` instead of `from_orm()`
-- Field definitions: `field: str = Field(..., description="...")` not `Field(default=...)`
+- Field definitions: `field: str = Field(..., description="...")`
 
 ### Pytest Async Tests
 ```python
@@ -408,115 +531,158 @@ async def test_async_operation():
 ```
 
 ### Working with Freezed (Mobile)
-- Job models use `@freezed` annotation for immutability and JSON serialization
-- After modifying `*.dart` files with `@freezed`:
+- Job models use `@freezed` for immutability
+- After modifying freezed files:
   ```powershell
   flutter pub run build_runner build --delete-conflicting-outputs
   ```
-- Generates `*.freezed.dart` and `*.g.dart` files
-- **Inconsistency**: Profile models use manual data classes - consider migrating to Freezed
+- Generates `*.freezed.dart` and `*.g.dart`
 
 ### Date Handling (Mobile)
-- Mobile supports 3 date formats: US (MM/dd/yyyy), European (dd/MM/yyyy), ISO (yyyy-MM-dd)
-- User can configure in Settings screen
-- API always expects `yyyy-MM-dd` format
-- Use date conversion utilities in validators.dart
+- Mobile supports 3 formats: US (MM/dd/yyyy), European (dd/MM/yyyy), ISO (yyyy-MM-dd)
+- User configurable in Settings
+- API always expects `yyyy-MM-dd`
+
+---
 
 ## Quick Diagnostic Commands
 
-### Check Current Status
 ```powershell
-# See what tests exist
-cd backend && python -m pytest --collect-only -q
+# Check backend test status
+cd backend ; python -m pytest --collect-only -q
 
 # Check test pass/fail counts
-cd backend && python -m pytest --tb=no -q
+cd backend ; python -m pytest --tb=no -q
 
-# Check test coverage
-cd backend && python -m pytest --cov=app --cov-report=term-missing -q
+# Check coverage
+cd backend ; python -m pytest --cov=app --cov-report=term-missing -q
 
 # List all API endpoints
-cd backend && python -c "from app.main import app; print('\n'.join([r.path for r in app.routes]))"
-
-# Verify which API routers are registered
-cd backend && python -c "from app.main import app; [print(r.prefix) for r in app.routes if hasattr(r, 'prefix')]"
+cd backend ; python -c "from app.main import app; print('\n'.join([r.path for r in app.routes]))"
 
 # Check database tables
-cd backend && python -c "from app.infrastructure.database.models import Base; print([t.name for t in Base.metadata.sorted_tables])"
+cd backend ; python -c "from app.infrastructure.database.models import Base; print([t.name for t in Base.metadata.sorted_tables])"
 ```
+
+---
 
 ## Known Gotchas
 
-1. **Sprint 4 Status**: Generation & Document API specifications reviewed and corrected (Nov 7, 2025). Ready for implementation. See `GENERATION_API_REVIEW.md` for details.
+1. **PowerShell Syntax**: Use `;` not `&&` for command chaining
+2. **Virtual Environment**: Use `.\venv\Scripts\Activate.ps1` on Windows
+3. **Pydantic v2**: This project uses Pydantic v2 syntax
+4. **Async Sessions**: Always use `async with` for transactions
+5. **JWT Required**: All API endpoints require auth except /auth/register, /auth/login
+6. **Test Database**: Tests use separate SQLite file
+7. **Unified Job Model**: Single `jobs` table with `source` field
+8. **Freezed**: Job models use Freezed, Profile models use manual classes
+9. **Android Emulator**: Use `10.0.2.2` to access localhost, not `localhost`
+10. **GoRouter**: Use `context.push()` for secondary screens, `context.go()` for top-level
 
-2. **Test Failures**: 48% of tests currently failing (72/150), mostly profile API tests. Run `pytest -v` to see failures before making changes.
+---
 
-3. **Pydantic v2 Syntax**: This project uses Pydantic v2 - check version-specific syntax.
+## V3 Generation System (Implemented)
 
-4. **Async Sessions**: Always use `async with` for transaction management.
+**Status**: ✅ Complete with real Groq LLM integration
 
-5. **JWT Middleware**: Endpoints outside `/api/v1/auth/*` require authentication.
+### User Flow
 
-6. **Test Database**: Tests use separate SQLite file, automatically created/torn down.
+1. **Upload Sample Documents** → User provides .txt files
+2. **Extract Writing Style** → WritingStyleService analyzes cover letter
+3. **Enhance Profile** → ProfileEnhancementService improves content
+4. **Create Ranking** → ContentRankingService ranks by job relevance
+5. **Generate Documents**:
+   - Resume: Pure logic compilation (fast, <1s)
+   - Cover Letter: LLM generation (llama-3.3-70b-versatile, ~3-5s)
 
-7. **Unified Job Model**: Single `JobModel` table with `source` field - don't create separate tables.
+### LLM Integration
 
-8. **Windows Paths**: Use forward slashes or raw strings for file paths in tests.
+**Provider**: Groq.com
+**Models**:
+- `llama-3.3-70b-versatile` - High quality (cover letters, enhancements)
+- `llama-3.1-8b-instant` - Fast speed (ranking, analysis)
 
-9. **Freezed Inconsistency**: Job models use Freezed, Profile models use manual classes. Pick one pattern.
+**Confirmed Working**:
+- Real API calls successfully tested
+- Token usage tracked and logged
+- Generation metadata stored in database
 
-10. **No Adapters Directory**: Documentation references `infrastructure/adapters/` but this directory does not exist and won't be needed until Sprint 4 implements Generation/Document APIs.
+### Key Files
 
-11. **Android Emulator**: Use `10.0.2.2` to access localhost backend from Android emulator, not `localhost`.
+**Services**:
+- `app/application/services/writing_style_service.py`
+- `app/application/services/profile_enhancement_service.py`
+- `app/application/services/content_ranking_service.py`
+- `app/application/services/document_generation_service.py`
 
-12. **GoRouter Context**: Use `context.push()` for secondary screens to enable back button, `context.go()` for top-level navigation.
+**API Router**:
+- `app/presentation/v3_api.py` - All 10 V3 endpoints
+
+**Domain Ports**:
+- `app/domain/ports/llm_service.py` - ILLMService interface
+
+**Infrastructure**:
+- `app/infrastructure/adapters/llm_factory.py` - LLM adapter factory
+
+---
 
 ## Multi-Agent Coordination
 
 This project uses multiple AI agents with defined roles:
 
-- **Business Analyst Agent** (Claude 3.5 Sonnet): Requirements, user stories
-- **Solutions Architect Agent** (ChatGPT-4): Architecture decisions, ADRs
-- **Backend Developer Agent** (GitHub Copilot + Claude): Implementation
-- **Mobile Developer Agent** (GitHub Copilot): Flutter development
-- **QA Engineer Agent** (GitHub Copilot + ChatGPT): Testing strategy
+- **Backend Developer Agent**: FastAPI, SQLAlchemy, AI integration
+- **Mobile Developer Agent**: Flutter, Riverpod, Material Design
+- **Solutions Architect Agent**: Architecture decisions, ADRs
+- **QA Engineer Agent**: Testing strategy, quality assurance
+- **Business Analyst Agent**: Requirements, user stories
 
-**Coordination Logs**:
-- `session-logs/sprint1-log/backend-developer-log.md`
-- `session-logs/sprint1-log/mobile-developer-log.md`
-- `session-logs/sprint1-log/solutions-architect-log.md`
-- `session-logs/sprint1-log/qa-engineer-log.md`
+**Coordination**:
+- Agents update `.context/*-summary.md` files
+- Agents log interactions in `log/*-log.md`
+- Use PowerShell syntax
+- No emoji usage
 
-When making significant changes, update the relevant log file with implementation details, decisions, and learnings.
+**When making significant changes**, update relevant log file and agent summary.
 
-## Sprint 4 Implementation Guide
+---
 
-**Status**: Ready to begin (Specifications reviewed and corrected Nov 7, 2025)
+## Sprint 5 Implementation Guide
 
-Implement in this order:
+**Status**: Design documents complete, implementation in progress
 
-1. **Generation Domain Models**: Create `app/domain/entities/generation.py` and `document.py`
-2. **Generation Repository**: Implement `app/infrastructure/repositories/generation_repository.py`
-3. **Generation Service**: Create 5-stage pipeline services (job analyzer, profile compiler, content generator, quality validator, export prep)
-4. **Generation API**: Add `app/presentation/api/generation.py` router
-5. **Document Service**: PDF generation with templates
-6. **Document API**: Add `app/presentation/api/document.py` router
-7. **Tests**: 50+ tests covering all stages and endpoints
-8. **Integration**: Update `app/main.py` to include new routers
+**Key Changes from Previous Sprints**:
+- Simplified sample document storage (single table)
+- Job-specific tailoring only (no generic preferences)
+- Enhanced descriptions stored alongside originals
+- Database-stored prompts with versioning
+- Clear LLM vs pure logic separation
 
-**Critical: Follow Corrected Specifications**:
-- Use `id` not `generation_id` in API responses
-- Implement progress calculation with stage weights [20, 20, 40, 15, 5]
-- Use exact stage names from specification
-- Follow error response format matching Auth/Profile/Job APIs
-- Implement regeneration endpoint
-- Add Pagination model to mobile
+**Implementation Order**:
+1. Database schema updates (sample_documents, enhanced fields)
+2. Sample upload endpoints
+3. Writing style extraction service
+4. Profile enhancement service
+5. Content ranking service
+6. Resume compilation (pure logic)
+7. Cover letter generation (LLM)
+8. Mobile UI integration
 
-**Don't prematurely create**:
-- Adapter directories and interfaces (wait until 2+ implementations needed)
-- Service factories and dependency injection complexity
-- Infrastructure for "future" LLM providers
+**See**: `docs/sprint5/00-OVERVIEW.md` for complete implementation plan
 
-**YAGNI Principle**: Build what Sprint 4 actually needs, not what future sprints might need.
+---
 
-**See**: `docs/api-services/GENERATION_API_REVIEW.md` for complete implementation checklist.
+## References
+
+- **FastAPI**: https://fastapi.tiangolo.com/
+- **SQLAlchemy 2.0**: https://docs.sqlalchemy.org/
+- **Pydantic v2**: https://docs.pydantic.dev/
+- **Flutter**: https://docs.flutter.dev/
+- **Riverpod**: https://riverpod.dev/
+- **Groq API**: https://console.groq.com/docs/
+
+---
+
+**Last Updated**: November 2025
+**Project Phase**: Sprint 5 (Backend redesign + Mobile integration)
+**Backend Status**: V3 API fully implemented with real LLM
+**Mobile Status**: 13 screens complete, generation UI in progress

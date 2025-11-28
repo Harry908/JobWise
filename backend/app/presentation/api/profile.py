@@ -953,7 +953,7 @@ async def update_education_bulk(
 @router.delete("/{profile_id}/education")
 async def delete_education_bulk(
     profile_id: str,
-    education_ids: List[str],
+    request: BulkDeleteEducationRequest,
     current_user_id: int = Depends(get_current_user),
     profile_service: ProfileService = Depends(get_profile_service)
 ):
@@ -962,7 +962,7 @@ async def delete_education_bulk(
         deleted_count = await profile_service.delete_education_bulk(
             profile_id=profile_id,
             user_id=current_user_id,
-            education_ids=education_ids
+            education_ids=request.education_ids
         )
         return {"message": f"Deleted {deleted_count} education entries successfully"}
     except NotFoundError as e:
@@ -1030,7 +1030,7 @@ async def update_projects_bulk(
 @router.delete("/{profile_id}/projects")
 async def delete_projects_bulk(
     profile_id: str,
-    project_ids: List[str],
+    request: BulkDeleteProjectsRequest,
     current_user_id: int = Depends(get_current_user),
     profile_service: ProfileService = Depends(get_profile_service)
 ):
@@ -1039,7 +1039,7 @@ async def delete_projects_bulk(
         deleted_count = await profile_service.delete_projects_bulk(
             profile_id=profile_id,
             user_id=current_user_id,
-            project_ids=project_ids
+            project_ids=request.project_ids
         )
         return {"message": f"Deleted {deleted_count} projects successfully"}
     except NotFoundError as e:

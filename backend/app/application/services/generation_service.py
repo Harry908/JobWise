@@ -19,10 +19,7 @@ from app.domain.entities.generation import (
 from app.infrastructure.repositories.generation_repository import GenerationRepository
 from app.infrastructure.repositories.profile_repository import ProfileRepository
 from app.infrastructure.repositories.job_repository import JobRepository
-from app.infrastructure.repositories.user_generation_profile_repository import UserGenerationProfileRepository
 from app.infrastructure.adapters.groq_llm_service import GroqLLMService
-from app.application.services.preference_extraction_service import PreferenceExtractionService
-from app.application.services.file_upload.text_extraction_service import TextExtractionService
 from app.domain.ports.llm_service import ILLMService, LLMMessage
 from app.core.exceptions import NotFoundError, ForbiddenException, ValidationException, LLMServiceError
 from app.core.config import get_settings
@@ -50,7 +47,6 @@ class GenerationService:
         self.repository = GenerationRepository(db)
         self.profile_repository = ProfileRepository(db)
         self.job_repository = JobRepository(db)
-        self.user_generation_profile_repository = UserGenerationProfileRepository(db)
         self.llm_service = llm_service or GroqLLMService()
         
         # Initialize preference extraction service
@@ -226,64 +222,26 @@ class GenerationService:
         user_id: int, 
         profile
     ) -> Dict[str, Any]:  # Return Dict instead of Optional[object]
-        """Get existing user preferences or create new ones if missing."""
-        try:
-            # Try to get existing preferences
-            user_profile = await self.user_generation_profile_repository.get_by_user_id(user_id)
-            
-            if user_profile and user_profile.is_ready_for_generation():
-                logger.debug(f"Using existing preferences for user {user_id}")
-                # Convert to dict format
-                return {
-                    'writing_style': {
-                        'tone': 'professional',
-                        'formality_level': 7,
-                        'vocabulary_level': 'professional'
-                    },
-                    'layout_preferences': {
-                        'template': 'modern',
-                        'section_order': ['summary', 'experience', 'education', 'skills', 'projects'],
-                        'bullet_style': 'achievement'
-                    },
-                    'quality_targets': {
-                        'target_ats_score': 0.85,
-                        'min_keyword_coverage': 0.75
-                    }
-                }
-            
-            # No preferences found or incomplete - extract on-demand
-            logger.info(f"Extracting preferences on-demand for user {user_id}")
-            
-            # For MVP: Create basic preferences from master profile
-            # In production: Would analyze uploaded cover letter and example resumes
-            basic_preferences = {
-                'writing_style': {
-                    'tone': 'professional',
-                    'formality_level': 7,
-                    'vocabulary_level': 'professional'
-                },
-                'layout_preferences': {
-                    'template': 'modern',
-                    'section_order': ['summary', 'experience', 'education', 'skills', 'projects'],
-                    'bullet_style': 'achievement'
-                },
-                'quality_targets': {
-                    'target_ats_score': 0.85,
-                    'min_keyword_coverage': 0.75
-                }
+        """V3 system no longer uses user generation profiles."""
+        # V3 uses sample documents for writing style extraction
+        # Return basic preferences for backward compatibility
+        logger.debug(f"Using default preferences for user {user_id} (V3 system)")
+        return {
+            'writing_style': {
+                'tone': 'professional',
+                'formality_level': 6,
+                'vocabulary_level': 'professional'
+            },
+            'layout_preferences': {
+                'template': 'modern',
+                'section_order': ['summary', 'experience', 'education', 'skills', 'projects'],
+                'bullet_style': 'achievement'
+            },
+            'quality_targets': {
+                'target_ats_score': 0.85,
+                'preferred_length': 'one_page'
             }
-            
-            logger.debug(f"Created basic preferences for user {user_id}")
-            return basic_preferences
-            
-        except Exception as e:
-            logger.warning(f"Failed to get/create preferences for user {user_id}: {e}")
-            # Return default preferences as fallback
-            return {
-                'writing_style': {'tone': 'professional'},
-                'layout_preferences': {'template': 'modern'},
-                'quality_targets': {'target_ats_score': 0.80}
-            }
+        }
             
     async def _analyze_job_posting(self, generation_id: str, job) -> Dict[str, Any]:
         """Analyze the selected job posting to extract requirements and keywords."""

@@ -29,138 +29,46 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# CORS Configuration
-ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8080", "http://10.0.2.2:8000", "http://127.0.0.1:8000", "http://10.229.64.194:8000", "*"]
-```
-
----
-
-## Mobile Client Configuration
-
-### Connection URLs by Platform
-
-#### Android Emulator
-```dart
-// Android emulator uses special IP to access host machine
-static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8000';
-```
-- **Why `10.0.2.2`?**: Android emulator's special alias for host machine's `localhost`
-- **Alternative**: Use computer's local network IP (e.g., `http://192.168.1.10:8000`)
-
-#### iOS Simulator
-```dart
-// iOS simulator can use localhost directly
-static const String iOSSimulatorBaseUrl = 'http://localhost:8000';
-// OR
-static const String iOSSimulatorAltUrl = 'http://127.0.0.1:8000';
-```
-
-#### Physical Devices
-```dart
-// Physical devices need computer's local network IP
-static const String physicalDeviceBaseUrl = 'http://192.168.1.10:8000';
-// Replace with your computer's actual IP address
-```
-
-**How to find your computer's local IP:**
-- Windows: `ipconfig` → Look for IPv4 Address
-- macOS/Linux: `ifconfig` → Look for inet address
-- Example: `192.168.1.10`, `10.0.0.5`, `172.16.0.2`
-
-#### Production (Future)
-```dart
-static const String productionBaseUrl = 'https://api.jobwise.com';
-```
-
----
-
-## Complete App Configuration File
-
+### AppConfig (Dart) - Current Implementation
 ```dart
 // lib/config/app_config.dart
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
-  // ============================================================
-  // ENVIRONMENT DETECTION
-  // ============================================================
-  
-  static const bool isDevelopment = kDebugMode;
-  static const bool isProduction = kReleaseMode;
-
-  // ============================================================
-  // BASE URLS
-  // ============================================================
-  
-  // Android Emulator
-  static const String androidEmulatorUrl = 'http://10.0.2.2:8000';
-  
-  // iOS Simulator
-  static const String iOSSimulatorUrl = 'http://localhost:8000';
-  
-  // Physical devices (update with your computer's local IP)
-  static const String physicalDeviceUrl = 'http://192.168.1.10:8000';
-  
-  // Production
-  static const String productionUrl = 'https://api.jobwise.com';
-
-  // ============================================================
-  // DYNAMIC BASE URL SELECTION
-  // ============================================================
-  
-  static String get baseUrl {
-    if (isProduction) {
-      return productionUrl;
-    }
-    
-    // Development mode
-    if (Platform.isAndroid) {
-      // Check if running on emulator or physical device
-      // For now, default to emulator
-      return androidEmulatorUrl;
-    } else if (Platform.isIOS) {
-      return iOSSimulatorUrl;
-    }
-    
-    // Fallback
-    return androidEmulatorUrl;
+  // The API base URL is provided via the environment variable API_BASE_URL.
+  // Example: http://10.0.2.2:8000/api/v1 for Android emulator.
+  static String get apiBaseUrl {
+    return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000/api/v1';
   }
+
+  static Future<void> load() async {
+    await dotenv.load(fileName: '.env');
+  }
+}
+```
 
   // ============================================================
   // API CONFIGURATION
   // ============================================================
   
-  static const String apiVersion = 'v1';
-  static const String apiPrefix = '/api/$apiVersion';
-  
-  // Full API base URL
-  static String get apiBaseUrl => '$baseUrl$apiPrefix';
+  // Base URL: The app reads `API_BASE_URL` from the `.env` file and uses
+  // `AppConfig.apiBaseUrl` at runtime. Timeouts and other HTTP options are
+  // configured within `BaseHttpClient`.
+
+  // Note: AppConfig in the current codebase is minimal and only exposes
+  // `apiBaseUrl` (from `.env`). To change timeout values, adjust the
+  // `BaseHttpClient` implementation or provide explicit environment keys.
 
   // ============================================================
-  // TIMEOUT CONFIGURATION
+  // HTTP CLIENT (BaseHttpClient)
   // ============================================================
   
-  static const Duration connectTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-  static const Duration sendTimeout = Duration(seconds: 30);
+  // Timeouts and headers are configured in `BaseHttpClient`. The Dio
+  // validateStatus function is set to accept <500 so the app can handle
+  // non-2xx responses with custom error handling.
 
-  // ============================================================
-  // FEATURE FLAGS
-  // ============================================================
-  
-  static const bool enableLogging = isDevelopment;
-  static const bool enableAnalytics = isProduction;
-  static const bool enableCrashReporting = isProduction;
-
-  // ============================================================
-  // API RATE LIMITS (from backend)
-  // ============================================================
-  
-  static const int generalApiRateLimit = 100; // per minute
-  static const int generationRateLimit = 10; // per hour
-  static const int documentDownloadRateLimit = 50; // per hour
-}
+  // API rate limiting is enforced server-side. The app should respect
+  // rate limit errors (429) and expose user-friendly messages.
 ```
 
 ---
@@ -330,35 +238,27 @@ class BaseHttpClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await storage.getAccessToken();
+          final token = await storage.getToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           
-          // Logging in development
-          if (AppConfig.enableLogging) {
-            print('🌐 ${options.method} ${options.uri}');
-            print('📤 Headers: ${options.headers}');
-            if (options.data != null) {
-              print('📦 Body: ${options.data}');
-            }
-          }
+          // Logging (developer.log informs console output for debugging)
+          developer.log('HTTP OUT: ${options.method} ${options.uri}', name: 'HTTP');
           
           return handler.next(options);
         },
         
         onResponse: (response, handler) {
-          if (AppConfig.enableLogging) {
-            print('📥 ${response.statusCode} ${response.requestOptions.uri}');
-            print('📦 Response: ${response.data}');
-          }
+          developer.log('HTTP IN: ${response.statusCode} ${response.requestOptions.uri}', name: 'HTTP');
+          developer.log('Response data type: ${response.data.runtimeType}', name: 'HTTP');
           return handler.next(response);
         },
         
         onError: (error, handler) async {
-          if (AppConfig.enableLogging) {
-            print('❌ ${error.response?.statusCode} ${error.requestOptions.uri}');
-            print('❌ Error: ${error.response?.data}');
+          developer.log('HTTP ERROR: ${error.response?.statusCode} ${error.requestOptions.uri}', name: 'HTTP');
+          if (error.response?.data != null) {
+            developer.log('HTTP ERROR DATA: ${error.response?.data}', name: 'HTTP');
           }
           
           // Handle 401 (token expired) - attempt refresh

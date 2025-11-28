@@ -10,32 +10,33 @@
 
 ## Implementation Status
 
-### ❌ Not Implemented - Generation Core Features
-- Generation initiation screen (select job + options)
-- Real-time progress tracking screen with stage updates
-- Generation result screen (ATS score, recommendations)
-- Generation history list screen
-- Template selection UI
+### ✅ Implemented - Generation Core Features
+- Generation initiation screen (select job + options) — `generation_options_screen.dart`
+- Real-time progress tracking screen with stage updates — `generation_progress_screen.dart`
+- Generation result screen (ATS score, recommendations) — `generation_result_screen.dart`
+- Generation history list screen — `generation_history_screen.dart`
+- Template selection UI — `templatesProvider` + UI
 - Generation options form (length, focus areas, custom instructions)
-- Rate limit handling and user feedback
-- Generation API client (all endpoints)
-- Generation state management (Riverpod provider)
-- Polling mechanism for progress updates
-- Error handling and retry logic
+- Rate limit handling and user feedback (429 handling and RateLimitException)
+- Generation API client (endpoints implemented in `generation_api_client.dart`)
+- Generation state management (`generation_provider.dart`)
+- Polling mechanism for progress updates (stream-based polling in API client)
+- Error handling and retry logic (exceptions, retry patterns)
 
-### ❌ Not Implemented - Preference Management Features (NEW)
-- Sample resume upload screen
-- Sample cover letter upload screen
-- Preference setup wizard/onboarding flow
-- Example resume management screen (list, view, delete, set primary)
-- Layout preference configuration screen
-- Writing style preference configuration screen
-- User generation profile settings screen
-- File picker integration for PDF/DOCX uploads
-- File upload progress tracking
-- Text extraction and validation UI
-- LLM preference extraction progress feedback
-- Preference API client (all preference endpoints)
+### ✅ Implemented - Preference Management Features (Partial)
+- Sample resume upload screen — `upload_sample_resume_screen.dart` (multipart uploads implemented)
+- Sample cover letter upload screen — `upload_cover_letter_screen.dart`
+- Example resume management screen (list, delete, set primary) — `manage_example_resumes_screen.dart`
+- Layout preference configuration UI partially (needs polish)
+- Writing style preference UI partially (needs polish)
+- User generation profile endpoints and client implemented (`preference_api_client.dart`)
+- File picker integration and multipart uploads implemented
+- File upload progress handling implemented in API client
+- LLM preference extraction and response display implemented on upload
+
+Remaining TODOs:
+- Complete preference setup wizard/onboarding flow UI
+- Improve layout/style editing screens and saving
 
 ### ✅ API Ready (Backend Fully Implemented)
 
@@ -62,7 +63,7 @@
 ## Feature Overview
 
 ### Purpose
-Enable users to generate AI-tailored resumes and cover letters by combining their master profile with specific job descriptions. Real-time progress tracking shows the 5-stage AI pipeline in action.
+Enable users to generate AI-tailored resumes and cover letters by combining their master profile with specific job descriptions. Real-time progress tracking shows a multi-stage AI pipeline; the UI displays the number of stages as provided by the backend.
 
 ### Key Features
 
@@ -70,7 +71,7 @@ Enable users to generate AI-tailored resumes and cover letters by combining thei
 1. **Job Selection** - Choose saved job for tailored generation
 2. **Template Selection** - Pick resume template (Modern, Classic, Creative)
 3. **Generation Options** - Configure length, focus areas, custom instructions
-4. **Real-Time Progress** - Watch 2-stage pipeline with live updates (Analysis & Matching → Generation & Validation)
+4. **Real-Time Progress** - Watch multi-stage pipeline with live updates (analysis → generation → validation; backend-controlled stages)
 5. **ATS Scoring** - View keyword coverage and match percentage
 6. **Recommendations** - Get actionable suggestions to improve resume
 7. **Generation History** - Access previous generations
@@ -164,7 +165,7 @@ User Journey:
 6. Optional: User adds focus areas (e.g., "Leadership", "Cloud Architecture")
 7. Optional: User adds custom instructions
 8. User taps "Generate"
-9. Progress screen shows with stage indicators (0/2 stages)
+9. Progress screen shows with stage indicators (0/N stages as reported by backend)
 10. Real-time polling updates progress every 2 seconds
 11. Stage 1: "Analyzing job description and matching content..." (40% complete)
     - Uses user's master profile as content source
@@ -193,7 +194,7 @@ Mobile fetches result → Display ATS score and PDF
 
 Key Difference from Original Flow:
 - Generation now uses uploaded sample preferences
-- 2-stage pipeline (not 5-stage)
+-- Backend reports the pipeline stages; the UI presents whatever number of stages are returned (default backend stages may be 5)
 - Layout/style consistency tracked and reported
 ```
 

@@ -1,6 +1,6 @@
 """Job API endpoints."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 
@@ -79,7 +79,7 @@ class BrowseJobListResponse(BaseModel):
 
 @router.post("", response_model=Job, status_code=status.HTTP_201_CREATED)
 async def create_job(
-    request: JobCreateFromText | JobCreateFromURL | JobCreateStructured,
+    request: Union[JobCreateFromText, JobCreateFromURL, JobCreateStructured],
     service: JobService = Depends(get_job_service),
     user_id: int = Depends(get_current_user)
 ) -> Job:

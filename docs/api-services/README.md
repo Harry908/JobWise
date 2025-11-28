@@ -1,350 +1,432 @@
-# JobWise API Services Documentation
+# JobWise API Documentation
 
-Comprehensive design specifications for all JobWise backend API services. Each document provides complete implementation and integration guidance.
+**Version**: 1.0
+**Base URL**: `http://localhost:8000`
+**API Documentation**: `http://localhost:8000/docs` (Swagger UI)
+**Last Updated**: November 2025
+
+---
 
 ## Overview
 
-JobWise backend consists of 5 core API services following Clean Architecture with Ports & Adapters pattern.
+JobWise provides a RESTful API for AI-powered job application document generation. The API consists of five main service groups plus comprehensive database documentation:
 
-```
-User Flow:
-1. Authentication → Register/Login
-2. Profile → Create master resume
-3. Job → Save job descriptions
-4. Generation → Generate tailored resume
-5. Document → Download PDF
-```
-
-## API Services
-
-### 1. Authentication API
-**File**: [01-authentication-api.md](01-authentication-api.md)
-**Base Path**: `/api/v1/auth`
-**Status**: Implemented
-
-User registration, authentication, and JWT token management.
-
-**Key Endpoints**:
-- POST /register
-- POST /login
-- POST /refresh
-- GET /me
-
-**Dependencies**: None (foundation service)
+1. **Authentication API** - User registration and JWT authentication
+2. **Profile API** - Master resume profile management
+3. **Job API** - Job posting management and text parsing
+4. **V3 Generation API** - AI-powered document generation (10 endpoints)
+5. **Document Export API** - PDF/DOCX formatting and export (9 endpoints) 🔄 Planned
+6. **Database Schema** - Complete database documentation (10 tables)
 
 ---
 
-### 2. Profile API
-**File**: [02-profile-api.md](02-profile-api.md)
-**Base Path**: `/api/v1/profiles`
-**Status**: Implemented
-
-Master resume profile management with experiences, education, skills, and projects.
-
-**Key Endpoints**:
-- POST /profiles
-- GET /profiles
-- GET /profiles/{id}
-- PUT /profiles/{id}
-- DELETE /profiles/{id}
-- GET /profiles/{id}/analytics
-
-**Dependencies**: Authentication API
-
----
-
-### 3. Job API
-**File**: [03-job-api.md](03-job-api.md)
-**Base Path**: `/api/v1/jobs`
-**Status**: Implemented
-
-Unified job description management supporting raw text parsing and structured data.
-
-**Key Endpoints**:
-- POST /jobs (raw text or structured)
-- GET /jobs (with filtering)
-- GET /jobs/{id}
-- PUT /jobs/{id}
-- DELETE /jobs/{id}
-
-**Dependencies**: Authentication API
-
-**Special Features**:
-- Text parsing with LLM fallback
-- Multi-source support (user_created, indeed, linkedin)
-- Hard delete behavior
-
----
-
-### 4. Generation API
-**File**: [04-generation-api.md](04-generation-api.md)
-**Base Path**: `/api/v1/generations`
-**Status**: Sprint 2 (In Development)
-
-AI-powered resume generation using 5-stage pipeline with asynchronous processing.
-
-**Key Endpoints**:
-- POST /generations/resume
-- POST /generations/cover-letter
-- GET /generations/{id} (polling)
-- GET /generations/{id}/result
-- POST /generations/{id}/regenerate
-- DELETE /generations/{id}
-- GET /generations (list with filters)
-- GET /generations/templates
-
-**Dependencies**: Authentication API, Profile API, Job API, Document API
-
-**Special Features**:
-- 5-stage pipeline (6s target)
-- Real-time progress tracking
-- Rate limiting (10/hour)
-- Token budget management (8000 tokens)
-- ATS scoring and optimization
-
-**Pipeline Stages**:
-1. Job Analysis (1s, 1500 tokens)
-2. Profile Compilation (1s, 2000 tokens)
-3. Content Generation (2s, 3000 tokens)
-4. Quality Validation (1s, 1500 tokens)
-5. Export Preparation (0.5s, 0 tokens)
-
----
-
-### 5. Document API
-**File**: [05-document-api.md](05-document-api.md)
-**Base Path**: `/api/v1/documents`
-**Status**: Sprint 2 (In Development)
-
-Document storage, retrieval, and PDF download.
-
-**Key Endpoints**:
-- GET /documents (with filtering)
-- GET /documents/{id}
-- GET /documents/{id}/download
-- DELETE /documents/{id}
-- PUT /documents/{id}
-- GET /documents/export-formats
-
-**Dependencies**: Authentication API, Generation API
-
-**Special Features**:
-- PDF generation with ReportLab
-- Multiple content formats (text, HTML, markdown)
-- File storage (local dev, S3 prod)
-- Streaming downloads
-
----
-
-## Service Dependencies
+## Service Architecture
 
 ```
-Authentication (JWT)
-    ↓
-    ├─→ Profile (master resume)
-    ├─→ Job (job descriptions)
-    │
-    └─→ Generation (AI pipeline)
-            ↓
-            └─→ Document (PDF storage)
+┌─────────────────────────────────────────────────────────────┐
+│                     JobWise API v1.0                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Auth API                Profile API       Job API         │
+│  /api/v1/auth/*         /api/v1/profiles/* /api/v1/jobs/*  │
+│  ├─ POST /register      ├─ POST /         ├─ POST /       │
+│  ├─ POST /login         ├─ GET /me        ├─ GET /        │
+│  ├─ POST /refresh       ├─ PUT /{id}      ├─ GET /{id}    │
+│  ├─ GET /me             ├─ DELETE /{id}   ├─ PUT /{id}    │
+│  └─ POST /logout        └─ ... (15+ more) └─ DELETE /{id} │
+│                                                             │
+│  V3 Generation API                                          │
+│  /api/v1/*                                                  │
+│  ├─ POST /samples/upload                                    │
+│  ├─ POST /profile/enhance                                   │
+│  ├─ POST /rankings/create                                   │
+│  ├─ POST /generations/resume                                │
+│  ├─ POST /generations/cover-letter                          │
+│  ├─ GET /samples                                            │
+│  ├─ GET /samples/{id}                                       │
+│  ├─ DELETE /samples/{id}                                    │
+│  ├─ GET /rankings/job/{job_id}                              │
+│  └─ GET /generations/history                                │
+│                                                             │
+│  Document Export API (Planned)                              │
+│  /api/v1/exports/*                                          │
+│  ├─ POST /pdf                                               │
+│  ├─ POST /docx                                              │
+│  ├─ POST /batch                                             │
+│  ├─ GET /templates                                          │
+│  ├─ GET /templates/{id}                                     │
+│  ├─ POST /preview                                           │
+│  ├─ GET /files                                              │
+│  ├─ GET /files/{id}/download                                │
+│  └─ DELETE /files/{id}                                      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Common Patterns
+---
 
-### Authentication
-All endpoints (except /auth/register and /auth/login) require JWT authentication:
-```
+## Authentication
+
+All endpoints except the following require JWT authentication:
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+
+**Authentication Header**:
+```http
 Authorization: Bearer <access_token>
 ```
 
-### Error Response Format
+**Token Response**:
 ```json
 {
-  "error": "error_code_snake_case",
-  "message": "Human-readable message",
-  "details": {
-    "field": "specific error details"
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "full_name": "John Doe"
   }
 }
 ```
 
-### Pagination
+---
+
+## API Services
+
+### 1. [Authentication API](01-authentication-api.md)
+**Base Path**: `/api/v1/auth`
+
+User registration, login, and token management.
+
+**Endpoints**:
+- `POST /register` - Create new user account
+- `POST /login` - Authenticate and receive tokens
+- `POST /refresh` - Refresh access token
+- `GET /me` - Get current user profile
+- `POST /logout` - Invalidate session
+- `POST /change-password` - Change user password
+- `POST /forgot-password` - Request password reset
+- `POST /reset-password` - Reset password with token
+- `GET /check-email` - Check email availability
+
+### 2. [Profile API](02-profile-api.md)
+**Base Path**: `/api/v1/profiles`
+
+Master resume profile management with experiences, education, projects, and skills.
+
+**Features**:
+- CRUD operations for profiles
+- Bulk operations for experiences, education, projects
+- Skills management (technical, soft, languages, certifications)
+- Custom fields support
+- Profile analytics and completeness scoring
+
+**Endpoints**: 20+ endpoints for comprehensive profile management
+
+### 3. [Job API](03-job-api.md)
+**Base Path**: `/api/v1/jobs`
+
+Job posting management with intelligent text parsing.
+
+**Features**:
+- Create from text (AI parsing)
+- Create from URL (scraping)
+- Create from structured data
+- List and filter jobs
+- Update application status
+- Delete jobs
+
+**Endpoints**: 5 core endpoints with flexible input handling
+
+### 4. [V3 Generation API](04-v3-generation-api.md)
+**Base Path**: `/api/v1`
+
+AI-powered resume and cover letter generation using Groq LLM.
+
+**Features**:
+- Sample document upload and writing style extraction
+- AI-powered profile enhancement
+- Job-specific content ranking
+- Resume generation (pure logic compilation)
+- Cover letter generation (LLM-powered)
+
+**AI Models**:
+- `llama-3.3-70b-versatile` - High quality (cover letters, enhancements)
+- `llama-3.1-8b-instant` - Fast speed (ranking, analysis)
+
+**Endpoints**: 10 specialized endpoints
+
+### 5. [Document Export API](05-document-export-api.md) 🔄 Planned
+**Base Path**: `/api/v1/exports`
+
+Professional PDF and DOCX export with multiple templates and customization.
+
+**Features**:
+- PDF export with 4 professional templates
+- DOCX export for editable documents
+- Batch export (resume + cover letter packages)
+- Template preview and customization
+- File management and downloads
+
+**Templates**:
+- Modern (85% ATS) - Tech/Startups
+- Classic (95% ATS) - Corporate/Finance
+- Creative (75% ATS) - Design/Marketing
+- ATS-Optimized (98% ATS) - Enterprise
+
+**Endpoints**: 9 endpoints for complete export workflow
+
+### 6. [Database Schema](06-database-schema.md)
+**Database**: SQLite (Dev), PostgreSQL (Prod)
+
+Complete database schema documentation including all 10 tables, relationships, indexes, and data structures.
+
+**Tables**:
+- `users` - User authentication and accounts
+- `master_profiles` - Master resume profiles
+- `experiences` - Work experience history
+- `education` - Educational background
+- `projects` - Personal and professional projects
+- `jobs` - Job postings (saved, scraped, API-sourced)
+- `generations` - AI document generation tracking
+- `writing_styles` - Extracted user writing styles (v3.0)
+- `sample_documents` - User-uploaded sample documents (v3.0)
+- `job_content_rankings` - Job-specific content rankings (v3.0)
+
+**Features**:
+- Complete schema with column types and constraints
+- Foreign key relationships and cascade rules
+- JSON field structures and examples
+- Index optimization for query performance
+- Migration management with Alembic
+- Storage estimates and retention policies
+
+---
+
+## Error Responses
+
+All endpoints follow consistent error response format:
+
+### Standard Error Format
 ```json
 {
-  "pagination": {
-    "total": 100,
-    "limit": 20,
-    "offset": 0,
-    "has_next": true,
-    "has_previous": false
-  }
+  "detail": "Error message description"
 }
 ```
 
 ### HTTP Status Codes
-- 200: OK (successful GET, PUT)
-- 201: Created (successful POST)
-- 204: No Content (successful DELETE)
-- 400: Bad Request (validation error)
-- 401: Unauthorized (missing/invalid token)
-- 403: Forbidden (not authorized for resource)
-- 404: Not Found (resource doesn't exist)
-- 409: Conflict (duplicate resource)
-- 422: Unprocessable Entity (semantic validation error)
-- 429: Too Many Requests (rate limit exceeded)
-- 500: Internal Server Error
 
-## Mobile Integration
+| Status Code | Meaning | Example |
+|-------------|---------|---------|
+| `200 OK` | Successful GET/PUT/PATCH | Profile retrieved successfully |
+| `201 Created` | Successful POST | User registered successfully |
+| `204 No Content` | Successful DELETE | Job deleted successfully |
+| `400 Bad Request` | Invalid request data | Missing required field |
+| `401 Unauthorized` | Missing/invalid authentication | Invalid JWT token |
+| `403 Forbidden` | Insufficient permissions | Cannot access other user's profile |
+| `404 Not Found` | Resource not found | Profile ID does not exist |
+| `409 Conflict` | Resource conflict | Email already registered |
+| `422 Unprocessable Entity` | Validation error | Invalid date format |
+| `500 Internal Server Error` | Server error | Database connection failed |
 
-Each service document includes:
-- Dart/Flutter models
-- Service classes with API methods
-- UI patterns and examples
-- Error handling strategies
-- Local caching recommendations
+---
 
-### Quick Start - Flutter Example
+## Common Request Patterns
 
-```dart
-// 1. Setup API client
-final apiClient = ApiClient(baseUrl: 'http://localhost:8000/api/v1');
+### Pagination
 
-// 2. Authenticate
-final authService = AuthService(apiClient);
-final auth = await authService.login('user@example.com', 'password');
-apiClient.setToken(auth.accessToken);
+Endpoints that return lists support pagination:
 
-// 3. Create profile
-final profileService = ProfileService(apiClient);
-final profile = await profileService.createProfile(Profile(...));
-
-// 4. Save job
-final jobService = JobService(apiClient);
-final job = await jobService.createFromText(pastedJobDescription);
-
-// 5. Generate resume
-final generationService = GenerationService(apiClient);
-final generation = await generationService.startResumeGeneration(
-  profileId: profile.id,
-  jobId: job.id,
-);
-
-// 6. Poll for completion
-await for (final status in generationService.pollGeneration(generation.id)) {
-  print('Progress: ${status.progress.percentage}%');
-  if (status.isComplete) {
-    final pdfUrl = status.result!.pdfUrl;
-    break;
-  }
-}
-
-// 7. Download document
-final documentService = DocumentService(apiClient);
-final pdfBytes = await documentService.downloadPDF(
-  generation.result!.documentId,
-);
+**Query Parameters**:
+```
+?limit=20&offset=0
 ```
 
-## Testing Strategy
+**Response**:
+```json
+{
+  "items": [...],
+  "total": 100,
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 100,
+    "hasMore": true
+  }
+}
+```
 
-Each service includes test coverage for:
-- Unit tests (domain logic)
-- Integration tests (API endpoints)
-- Repository tests (database operations)
-- Service tests (business logic)
+### Filtering
 
-### Test Markers
-- `@pytest.mark.unit` - Fast unit tests
-- `@pytest.mark.integration` - API + database tests
-- `@pytest.mark.slow` - Slow-running tests
-- `@pytest.mark.ai` - Tests requiring LLM services
+List endpoints support filtering:
 
-### Coverage Targets
-- Overall: 80%
-- Domain Layer: 90%+
-- Service Layer: 85%+
-- API Layer: 75%+
+**Job Filtering**:
+```
+GET /api/v1/jobs?status=active&source=user_created&limit=20
+```
 
-## Performance Targets
+### Bulk Operations
 
-| Operation | Target |
-|-----------|--------|
-| CRUD Operations | <200ms |
-| Job Search | <2s |
-| Resume Generation | <6s (5-stage pipeline) |
-| PDF Export | <2s |
-| PDF Download | <1s (streaming) |
+Profile API supports bulk operations for efficient updates:
 
-## Rate Limits
+**Bulk Create Experiences**:
+```json
+POST /api/v1/profiles/{id}/experiences/bulk
+{
+  "experiences": [
+    {...},
+    {...}
+  ]
+}
+```
 
-| Endpoint | Limit |
-|----------|-------|
-| General APIs | 100 requests/minute |
-| AI Generation | 10 requests/hour |
-| Document Download | 50 requests/hour |
+---
+
+## Rate Limiting (Planned)
+
+| Endpoint Type | Limit | Window |
+|---------------|-------|--------|
+| General API | 100 requests | per minute |
+| Authentication | 10 requests | per minute |
+| AI Generation | 10 requests | per hour |
+
+---
+
+## Data Formats
+
+### Date Format
+All dates use ISO 8601 format: `YYYY-MM-DD`
+
+**Example**: `2025-11-15`
+
+### Timestamp Format
+All timestamps use ISO 8601 with UTC timezone:
+
+**Example**: `2025-11-15T10:30:00Z`
+
+### UUID Format
+All resource IDs use UUID v4 format:
+
+**Example**: `550e8400-e29b-41d4-a716-446655440000`
+
+---
+
+## Development
+
+### Interactive API Documentation
+
+Visit `http://localhost:8000/docs` for interactive Swagger UI documentation where you can:
+- View all endpoints
+- Test API calls directly
+- See request/response schemas
+- Generate code samples
+
+### Alternative Documentation
+
+Visit `http://localhost:8000/redoc` for ReDoc documentation with:
+- Clean, organized layout
+- Detailed schema descriptions
+- Better readability for documentation
+
+---
 
 ## API Versioning
 
-Current version: `v1`
-Base URL: `/api/v1`
+Current version: **v1.0**
 
-All endpoints are versioned. Breaking changes will result in new API version (v2).
+All endpoints are prefixed with `/api/v1/` to support future versioning.
 
-## OpenAPI Specification
+**Example**: `http://localhost:8000/api/v1/profiles/me`
 
-Complete OpenAPI 3.0 specification available at:
-- Development: `http://localhost:8000/docs` (Swagger UI)
-- File: `.context/api/openapi-spec.yaml`
+---
 
-## Support and Feedback
+## Quick Start
 
-For questions or issues with API integration:
-1. Check individual service documentation
-2. Review OpenAPI spec at `/docs`
-3. Check backend design document: `backend/BACKEND_DESIGN_DOCUMENT.md`
-4. Review test examples in `backend/tests/`
+### 1. Register User
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123",
+    "full_name": "John Doe"
+  }'
+```
 
-## Document Version
+### 2. Login
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123"
+  }'
+```
 
-**Version**: 1.0
-**Last Updated**: October 21, 2025
-**Status**: Complete for Sprint 1-2 services
+### 3. Create Profile
+```bash
+curl -X POST http://localhost:8000/api/v1/profiles \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "personal_info": {
+      "full_name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+1-555-123-4567",
+      "location": "Seattle, WA"
+    },
+    "professional_summary": "Senior software engineer with 8+ years...",
+    "skills": {
+      "technical": ["Python", "FastAPI", "React"],
+      "soft": ["Leadership", "Communication"]
+    }
+  }'
+```
 
-## Service Status Summary
+### 4. Create Job
+```bash
+curl -X POST http://localhost:8000/api/v1/jobs \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "raw_text": "Senior Python Developer at TechCorp..."
+  }'
+```
 
-| Service | Status | Sprint | Endpoints | Tests |
-|---------|--------|--------|-----------|-------|
-| Authentication | Implemented | Sprint 1 | 5 | 13 |
-| Profile | Implemented | Sprint 1 | 12 | 12 |
-| Job | Implemented | Sprint 1 | 5 | 10 |
-| Generation | In Development | Sprint 2 | 11 | Pending |
-| Document | In Development | Sprint 2 | 8 | Pending |
+### 5. Upload Sample Document
+```bash
+curl -X POST http://localhost:8000/api/v1/samples/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "document_type=cover_letter" \
+  -F "file=@my_cover_letter.txt"
+```
 
-## Next Steps for Mobile Developers
+### 6. Generate Resume
+```bash
+curl -X POST http://localhost:8000/api/v1/generations/resume \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_id": "550e8400-e29b-41d4-a716-446655440000",
+    "max_experiences": 5,
+    "max_projects": 3,
+    "include_summary": true
+  }'
+```
 
-1. **Read Service Documents**: Review each API service specification
-2. **Setup Development Environment**:
-   - Backend API: `http://localhost:8000/api/v1`
-   - Swagger UI: `http://localhost:8000/docs`
-3. **Implement Models**: Create Dart models from JSON schemas
-4. **Build Services**: Implement service classes with API methods
-5. **Add Error Handling**: Implement retry logic and user-friendly errors
-6. **Test Integration**: Use Swagger UI to verify API behavior
-7. **Implement UI**: Build screens with proper state management
-8. **Add Offline Support**: Cache data locally for offline access
+---
 
-## Architecture Diagrams
+## Support
 
-See `backend/BACKEND_DESIGN_DOCUMENT.md` for:
-- System architecture diagrams
-- Database ERD
-- Data flow sequences
-- Design patterns
+- **API Documentation**: http://localhost:8000/docs
+- **Source Code**: GitHub repository
+- **Issues**: GitHub Issues
 
-## Change Log
+---
 
-### Version 1.0 (October 21, 2025)
-- Initial comprehensive API service documentation
-- Complete specifications for all 5 services
-- Mobile integration examples (Flutter/Dart)
-- Implementation and testing guidance
+**Last Updated**: November 2025
+**API Version**: 1.0
+**Documentation Status**: Complete

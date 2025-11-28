@@ -21,6 +21,7 @@ class Job(BaseModel):
     benefits: List[str] = Field(default_factory=list, description="Job benefits")
     salary_range: Optional[str] = Field(None, description="Salary range")
     remote: bool = Field(default=False, description="Remote position flag")
+    employment_type: str = Field(default="full_time", description="Employment type: full_time, part_time, contract, temporary, internship")
     status: str = Field(default="active", description="Job status: active, archived, draft")
     application_status: str = Field(default="not_applied", description="Application status: not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")

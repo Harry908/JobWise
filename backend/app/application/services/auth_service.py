@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from app.core.exceptions import AuthenticationException, ValidationException, NotFoundError
+from app.core.exceptions import AuthenticationException, ValidationException, NotFoundError, ConflictException
 from app.core.security import (
     hash_password,
     verify_password,
@@ -26,7 +26,7 @@ class AuthService:
         # Check if user already exists
         existing_user = await self.user_repository.get_by_email(email)
         if existing_user:
-            raise ValidationException("User with this email already exists")
+            raise ConflictException("User with this email already exists")
 
         # Validate email format
         if not User.validate_email(email):

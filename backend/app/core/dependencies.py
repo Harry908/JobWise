@@ -100,3 +100,37 @@ def get_llm_service() -> ILLMService:
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to initialize Groq service: {e}")
         raise ValueError(f"Failed to initialize Groq LLM service: {e}. Please check your GROQ_API_KEY.")
+
+
+# ==================== V3 API Service Dependencies ====================
+
+async def get_writing_style_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "WritingStyleService":
+    """Get writing style service instance with database session."""
+    from app.application.services.writing_style_service import WritingStyleService
+    return WritingStyleService(db)
+
+
+async def get_profile_enhancement_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "ProfileEnhancementService":
+    """Get profile enhancement service instance."""
+    from app.application.services.profile_enhancement_service import ProfileEnhancementService
+    return ProfileEnhancementService(db)
+
+
+async def get_content_ranking_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "ContentRankingService":
+    """Get content ranking service instance."""
+    from app.application.services.content_ranking_service import ContentRankingService
+    return ContentRankingService(db)
+
+
+async def get_document_generation_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "DocumentGenerationService":
+    """Get document generation service instance."""
+    from app.application.services.document_generation_service import DocumentGenerationService
+    return DocumentGenerationService(db)

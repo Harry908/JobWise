@@ -3,25 +3,24 @@
 **Version**: 1.0
 **Feature**: Generated Document Management and PDF Viewing
 **API Service**: Document API
-**Status**: ❌ **Not Implemented** (Fully specified, ready for implementation)
+**Status**: ⚠️ **Partially Implemented** - generation result download and local caching implemented; full Documents feature and API client are pending
 **Last Updated**: November 2, 2025
 
 ---
 
 ## Implementation Status
 
-### ❌ Not Implemented
-- Document list screen (view all generated resumes/cover letters)
-- Document detail screen (view content and metadata)
-- PDF viewer integration (in-app PDF viewing)
-- PDF download functionality (save to device)
-- PDF sharing functionality (share via email, messaging apps)
-- Document filtering and search
-- Document deletion with confirmation
-- Document API client (all endpoints)
-- Document state management (Riverpod provider)
-- Local PDF caching for offline viewing
-- Document metadata display (ATS score, keywords)
+### ✅ Implemented / Partially Implemented
+- PDF download & local caching: DocumentStorageService supports saving and caching of PDFs
+- Generation result screen supports viewing generation text and exposes PDF URLs from generation result
+- Download/Share/View actions are present in UI (generation result screen) but contain TODOs to complete platform-specific code (open/save/share implementation)
+
+### ❌ Not Implemented (Remaining)
+- Dedicated Documents tab & list screen with API-driven document list
+- Document API client (`DocumentApiClient`) – not implemented in current codebase
+- Document detail screen with full metadata (ATS, keyword coverage) and editing
+- In-app PDF viewer integration for direct PDF render (currently TODO placeholders)
+- Offline cache management UI, clear cache, and sync logic
 
 ### ✅ API Ready (Backend Specified)
 - GET /documents - List user's documents with filtering

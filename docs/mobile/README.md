@@ -1,412 +1,581 @@
-# JobWise Mobile App - Feature Design Documents
+# JobWise Mobile App - Feature Documentation
 
-**Version**: 1.0  
-**Purpose**: Quick reference index for all mobile feature design documents  
-**Last Updated**: October 22, 2025
+**Version**: 1.0
+**Platform**: Flutter (iOS & Android)
+**State Management**: Riverpod
+**Last Updated**: November 2025
 
 ---
 
-## Document Structure
+## Overview
 
-All feature design documents are located in `.context/mobile/` and follow a consistent structure:
+This directory contains comprehensive design documentation for all mobile app features, organized by backend API service alignment.
 
-1. **Feature Overview** - Purpose and user stories
-2. **API Integration** - Backend endpoints and connection details
-3. **Data Models** - Freezed models with JSON serialization
-4. **State Management** - Riverpod providers and state classes
+**Total Features**: 5 core features matching 5 backend APIs
+**Total Screens**: 13 screens across 5 feature areas
+**Architecture**: Clean Architecture with Riverpod state management
+
+---
+
+## Documentation Structure
+
+Each feature document is aligned with its corresponding backend API service and includes:
+
+1. **Feature Overview** - User stories and requirements
+2. **Backend API Integration** - Endpoint mapping and request/response handling
+3. **Data Models** - Freezed/manual models with JSON serialization
+4. **State Management** - Riverpod providers and StateNotifiers
 5. **Service Layer** - API clients and business logic
-6. **UI Components** - Screens and widgets
-7. **Security/Testing** - Implementation details
+6. **UI Screens** - Screen designs and navigation
+7. **Security & Testing** - Implementation details
 
 ---
 
-## Available Design Documents
+## Feature Documents (Organized by Backend API)
 
-### 0. API Configuration
-**File**: `00-api-configuration.md`  
-**Status**: ✅ Complete
+### 1. [Authentication Feature](01-authentication-feature.md)
+**Backend API**: [Authentication API](../api-services/01-authentication-api.md)
+**Base Path**: `/api/v1/auth`
+**Status**: ✅ Fully Implemented
 
-**Contents**:
-- Backend connection URLs (Android emulator: `10.0.2.2:8000`, iOS: `localhost:8000`)
-- CORS configuration
-- All API endpoints summary (37+ endpoints across 5 services)
-- Dio HTTP client setup with interceptors
-- Environment-specific configuration
-- Common connection issues and solutions
-
-**Key Takeaway**: Use `http://10.0.2.2:8000/api/v1` for Android emulator development.
-
----
-
-### 1. Authentication Feature
-**File**: `01-authentication-feature.md`  
-**Status**: ✅ Complete  
-**API Base Path**: `/api/v1/auth`
+**Screens** (2):
+- LoginScreen
+- RegisterScreen
 
 **Key Features**:
-- User registration and login
-- JWT token management with auto-refresh
+- User registration with email validation
+- Login with JWT token management
+- Automatic token refresh on 401
 - Secure token storage (flutter_secure_storage)
-- Password validation (8+ chars, uppercase, lowercase, number)
-- Automatic 401 handling with token refresh
+- Password change and reset flows
+- Email availability checking
 
-**Models**: `User`, `AuthResponse`, `LoginRequest`, `RegisterRequest`
-
-**State**: `AuthState` with `AuthNotifier`
-
-**Services**: `AuthApiClient`, `StorageService`, `BaseHttpClient`
-
-**Screens**: `LoginScreen`, `RegisterScreen`
-
-**Key Dependencies**:
-```yaml
-flutter_riverpod: ^2.4.9
-dio: ^5.4.0
-flutter_secure_storage: ^9.0.0
-freezed_annotation: ^2.4.1
-```
+**API Endpoints Used**: 9 endpoints
+- POST /register
+- POST /login
+- POST /refresh
+- GET /me
+- POST /logout
+- POST /change-password
+- POST /forgot-password
+- POST /reset-password
+- GET /check-email
 
 ---
 
-### 2. Profile Feature
-**File**: `02-profile-feature.md`  
-**Status**: ✅ Complete  
-**API Base Path**: `/api/v1/profiles`
+### 2. [Profile Management Feature](02-profile-management-feature.md)
+**Backend API**: [Profile API](../api-services/02-profile-api.md)
+**Base Path**: `/api/v1/profiles`
+**Status**: ✅ Fully Implemented
+
+**Screens** (3):
+- ProfileViewScreen
+- ProfileEditScreen (multi-step form)
+- SettingsScreen
 
 **Key Features**:
-- Master resume profile management
+- Master resume profile CRUD
+- Multi-step form (Personal Info → Experiences → Education → Skills → Projects)
 - Bulk operations for experiences, education, projects
-- Multi-step form (Personal Info → Experience → Education/Skills → Projects)
+- Skills management (technical, soft, languages, certifications)
 - Profile completeness analytics
-- Version control support
+- Custom fields support
 
-**Models**: 
-- `Profile`, `PersonalInfo`, `Experience`, `Education`
-- `Skills`, `Language`, `Certification`, `Project`
-
-**State**: `ProfileState` with `ProfileNotifier`
-
-**Services**: `ProfilesApiClient` with bulk operation methods
-
-**Screens**: `ProfileEditScreen` (multi-step stepper)
-
-**Key Endpoints**:
-- `POST /profiles` - Create with all components
-- `GET /profiles/me` - Get current user's profile
-- `POST /profiles/{id}/experiences` - Add multiple experiences
-- `PUT /profiles/{id}/experiences` - Update multiple experiences
+**API Endpoints Used**: 24 endpoints (profile CRUD, bulk operations, skills management)
 
 ---
 
-### 3. Job Feature
-**File**: `03-job-feature.md` (To be created)  
-**API Base Path**: `/api/v1/jobs`
+### 3. [Job Management Feature](03-job-management-feature.md)
+**Backend API**: [Job API](../api-services/03-job-api.md)
+**Base Path**: `/api/v1/jobs`
+**Status**: ✅ Fully Implemented
+
+**Screens** (4):
+- JobBrowseScreen (API job search - future)
+- JobListScreen (saved jobs)
+- JobDetailScreen
+- JobPasteScreen (text input)
 
 **Key Features**:
-- Job description management (paste text or manual entry)
-- Text parsing with LLM extraction
-- Job filtering (status, source)
-- Save jobs for resume generation
+- Create job from pasted text (AI parsing)
+- Create job from structured input
+- List saved jobs with filters
+- Update application status tracking
+- Delete jobs
+- Job keyword highlighting
 
-**Models**: `Job`, `SavedJob` (with notes)
-
-**Endpoints**:
-- `POST /jobs` - Create from raw text or structured data
-- `GET /jobs` - List with filters (status, source)
-- `PUT /jobs/{id}` - Update job
-- `DELETE /jobs/{id}` - Hard delete
+**API Endpoints Used**: 5 endpoints
+- POST / (create from text or structured)
+- GET / (list with filters)
+- GET /{id} (details)
+- PUT /{id} (update)
+- DELETE /{id}
 
 ---
 
-### 4. Generation Feature
-**File**: `04-generation-feature.md` (To be created)  
-**API Base Path**: `/api/v1/generations`
+### 4. [Generation Feature](04-generation-feature.md)
+**Backend API**: [V3 Generation API](../api-services/04-v3-generation-api.md)
+**Base Path**: `/api/v1`
+**Status**: ✅ Fully Implemented
+
+**Screens** (4):
+- GenerationOptionsScreen
+- GenerationProgressScreen
+- GenerationResultScreen
+- GenerationHistoryScreen
 
 **Key Features**:
-- AI resume and cover letter generation
-- 5-stage pipeline with progress tracking
-- Real-time polling for status updates
-- ATS score and keyword coverage analytics
+- Sample document upload (.txt files)
+- AI-powered profile enhancement
+- Job-specific content ranking
+- Resume generation (pure logic, <1s)
+- Cover letter generation (LLM-powered, ~3-5s)
+- Real-time generation status tracking
+- ATS score display
+- Generation history with filtering
 
-**Models**: `Generation`, `GenerationProgress`, `GenerationResult`
-
-**State**: Polling stream with status updates
-
-**Key Flow**:
-1. Start generation → Get generation_id
-2. Poll `/generations/{id}` every 2 seconds
-3. Show progress (Stage 1/5, 20%, "Job Analysis...")
-4. On completion, get result with document_id and PDF URL
-
-**Endpoints**:
-- `POST /generations/resume` - Start resume generation
-- `GET /generations/{id}` - Poll for status
-- `GET /generations/{id}/result` - Get final result
+**API Endpoints Used**: 10 endpoints
+- POST /samples/upload
+- POST /profile/enhance
+- POST /rankings/create
+- POST /generations/resume
+- POST /generations/cover-letter
+- GET /samples
+- GET /samples/{id}
+- DELETE /samples/{id}
+- GET /rankings/job/{job_id}
+- GET /generations/history
 
 ---
 
-### 5. Document Feature
-**File**: `05-document-feature.md` (To be created)  
-**API Base Path**: `/api/v1/documents`
+### 5. [Document Export Feature](05-document-export-feature.md) 🔄 Planned
+**Backend API**: [Document Export API](../api-services/05-document-export-api.md)
+**Base Path**: `/api/v1/exports`
+**Status**: 🔄 Design Complete - Implementation Pending
+
+**Screens** (3 planned):
+- TemplateSelectionScreen
+- ExportOptionsScreen
+- ExportedFilesScreen
 
 **Key Features**:
-- View generated documents
-- Download PDF files
-- Share documents
-- Document history and versioning
+- PDF export with 4 professional templates
+- DOCX export for editable documents
+- Template preview before export
+- Batch export (resume + cover letter packages)
+- File download and management
+- Template customization (fonts, colors, spacing)
+- Storage tracking
 
-**Models**: `Document`, `DocumentContent`, `DocumentMetadata`, `PDFInfo`
-
-**Key Flow**:
-1. List documents with metadata
-2. View document content (text, HTML, markdown)
-3. Download PDF → Save to device
-4. Share PDF via system share sheet
-
-**Endpoints**:
-- `GET /documents` - List documents with filters
-- `GET /documents/{id}` - Get document with content
-- `GET /documents/{id}/download` - Download PDF binary
-- `DELETE /documents/{id}` - Delete document
-
----
-
-## Implementation Priority
-
-### Sprint 1 (Core Features)
-1. ✅ Authentication (login, register, token management)
-2. ✅ Profile (create, edit master resume)
-3. 🔄 Job (save job descriptions)
-
-### Sprint 2 (AI Features)
-4. ⏳ Generation (AI resume generation)
-5. ⏳ Document (view and download PDFs)
-
-### Sprint 3 (Enhancements)
-- Offline support with local caching
-- Profile analytics dashboard
-- Batch resume generation
-- Document templates selection
+**API Endpoints Planned**: 9 endpoints
+- POST /pdf
+- POST /docx
+- POST /batch
+- GET /templates
+- GET /templates/{id}
+- POST /preview
+- GET /files
+- GET /files/{id}/download
+- DELETE /files/{id}
 
 ---
 
-## Shared Components
+## App Architecture
 
-### Reusable Widgets
-Located in `lib/widgets/`:
+### State Management: Riverpod
 
-- `loading_overlay.dart` - Fullscreen loading indicator
-- `error_display.dart` - Error message display
-- `profile_card.dart` - Profile summary card
-- `job_card.dart` - Job listing card
-- `generation_card.dart` - Generation status card
-- `document_card.dart` - Document listing card
-- `profile_completeness_indicator.dart` - Progress bar for profile
-- `match_score_widget.dart` - Visual match percentage
-- `ats_score_badge.dart` - ATS score display
-- `pdf_viewer_widget.dart` - Inline PDF viewer
-
-### Utilities
-Located in `lib/utils/`:
-
-- `validators.dart` - Form validation helpers
-- `formatters.dart` - Date, currency formatting
-- `date_utils.dart` - Date parsing and formatting
-
----
-
-## State Management Architecture
-
-### Provider Hierarchy
-```dart
-// Top-level providers
-authProvider → Manages user authentication state
-  ↓
-profileProvider → Manages user profile (depends on auth)
-  ↓
-jobsProvider → Manages saved jobs (depends on auth)
-  ↓
-generationsProvider → Manages generation requests (depends on profile + jobs)
-  ↓
-documentsProvider → Manages generated documents (depends on generations)
+**Provider Hierarchy**:
+```
+AuthProvider
+  ├─→ ProfileProvider
+  │     ├─→ ExperiencesProvider
+  │     ├─→ EducationProvider
+  │     ├─→ ProjectsProvider
+  │     └─→ SkillsProvider
+  ├─→ JobsProvider
+  ├─→ GenerationsProvider
+  │     ├─→ SamplesProvider
+  │     ├─→ RankingsProvider
+  │     └─→ GenerationHistoryProvider
+  └─→ ExportsProvider (planned)
+        ├─→ TemplatesProvider
+        └─→ ExportedFilesProvider
 ```
 
-### State Pattern
-All feature states follow this pattern:
-```dart
-@freezed
-class FeatureState with _$FeatureState {
-  const factory FeatureState({
-    DataModel? data,
-    @Default(false) bool isLoading,
-    @Default(false) bool isSaving,
-    String? errorMessage,
-  }) = _FeatureState;
-}
+### Clean Architecture Layers
+
 ```
+UI Layer (Screens & Widgets)
+    ↓
+State Layer (Riverpod Providers)
+    ↓
+Service Layer (API Clients)
+    ↓
+Models Layer (Freezed/Manual Models)
+    ↓
+Network Layer (Dio HTTP Client)
+```
+
+---
+
+## Screen Navigation Map
+
+```
+AppShell (Go Router)
+├── Authentication Flow
+│   ├── LoginScreen
+│   └── RegisterScreen
+│
+├── Main Navigation (Bottom Nav)
+│   ├── Home Tab
+│   │   ├── HomeScreen
+│   │   └── GenerationHistoryScreen
+│   │
+│   ├── Profile Tab
+│   │   ├── ProfileViewScreen
+│   │   ├── ProfileEditScreen (multi-step)
+│   │   └── SettingsScreen
+│   │
+│   ├── Jobs Tab
+│   │   ├── JobListScreen
+│   │   ├── JobDetailScreen
+│   │   ├── JobPasteScreen
+│   │   └── JobBrowseScreen (future)
+│   │
+│   └── Generation Tab
+│       ├── GenerationOptionsScreen
+│       ├── GenerationProgressScreen
+│       ├── GenerationResultScreen
+│       └── (Templates/Export when implemented)
+│
+└── Debug Screen (dev mode only)
+```
+
+**Total Screens**: 13 implemented + 3 planned = 16 screens
+
+---
+
+## Data Models Summary
+
+### Freezed Models (Immutable)
+Used for Job-related entities:
+- `Job`
+- `JobFilter`
+- `SavedJob`
+
+### Manual Models
+Used for Auth and Profile:
+- `User`, `AuthResponse`
+- `Profile`, `PersonalInfo`, `Experience`, `Education`, `Project`, `Skills`
+
+### Future: Migrate to Freezed
+Consider migrating Profile models to Freezed for consistency.
 
 ---
 
 ## API Client Architecture
 
-### BaseHttpClient (Shared)
+### BaseHttpClient
+**File**: `lib/services/api/base_http_client.dart`
+
+**Features**:
 - Dio configuration with base URL
 - Request interceptor (add JWT token)
 - Response interceptor (logging)
 - Error interceptor (auto-refresh on 401)
+- Timeout configuration
 
-### Feature-Specific Clients
-- `AuthApiClient` → `/api/v1/auth`
-- `ProfilesApiClient` → `/api/v1/profiles`
-- `JobsApiClient` → `/api/v1/jobs`
-- `GenerationsApiClient` → `/api/v1/generations`
-- `DocumentsApiClient` → `/api/v1/documents`
+### Feature-Specific API Clients
 
----
-
-## Testing Strategy
-
-### Unit Tests
-- Model serialization/deserialization
-- State notifier logic
-- API client methods (mocked)
-
-### Widget Tests
-- Form validation
-- UI component rendering
-- User interactions
-
-### Integration Tests
-- Full user flows (register → create profile → save job → generate resume)
-- API integration with test backend
-- Offline behavior
+| Client | Base Path | File |
+|--------|-----------|------|
+| `AuthApiClient` | /api/v1/auth | `lib/services/api/auth_api_client.dart` |
+| `ProfilesApiClient` | /api/v1/profiles | `lib/services/api/profiles_api_client.dart` |
+| `JobsApiClient` | /api/v1/jobs | `lib/services/api/jobs_api_client.dart` |
+| `GenerationsApiClient` | /api/v1 | `lib/services/api/generations_api_client.dart` |
+| `ExportsApiClient` | /api/v1/exports | `lib/services/api/exports_api_client.dart` (planned) |
 
 ---
 
-## Next Steps for Implementation
+## Shared UI Components
 
-1. **Setup Project Dependencies** (pubspec.yaml)
-   - Add all required packages
-   - Run code generation (`flutter pub run build_runner build`)
+### Reusable Widgets
+**Location**: `lib/widgets/`
 
-2. **Create Base Infrastructure**
-   - Implement `BaseHttpClient` with interceptors
-   - Implement `StorageService` for token storage
-   - Setup app configuration
+**Core Components**:
+- `loading_overlay.dart` - Fullscreen loading indicator
+- `error_display.dart` - Error message display
+- `empty_state.dart` - Empty list placeholder
+- `confirmation_dialog.dart` - Action confirmation
+- `custom_button.dart` - Styled button
+- `custom_text_field.dart` - Styled input field
 
-3. **Implement Authentication** (Sprint 1)
-   - Create models, providers, services
-   - Build login and register screens
-   - Test token management
-
-4. **Implement Profile** (Sprint 1)
-   - Create profile models (nested structures)
-   - Build multi-step form UI
-   - Test bulk operations
-
-5. **Implement Job** (Sprint 1)
-   - Create job models
-   - Build job list and detail screens
-   - Implement text parsing integration
-
-6. **Implement Generation** (Sprint 2)
-   - Create generation models
-   - Build progress tracking UI
-   - Implement polling mechanism
-
-7. **Implement Document** (Sprint 2)
-   - Create document models
-   - Build PDF viewer
-   - Implement download and share
+**Feature-Specific Components**:
+- `profile_card.dart` - Profile summary card
+- `profile_completeness_indicator.dart` - Progress bar
+- `experience_card.dart` - Experience list item
+- `job_card.dart` - Job listing card
+- `generation_card.dart` - Generation status card
+- `ats_score_badge.dart` - ATS score display
+- `keyword_chip.dart` - Keyword tag
+- `match_score_widget.dart` - Visual match percentage
 
 ---
 
-## Quick Reference Commands
+## Backend Connectivity
 
-### Backend Server
+### Development Environment
+
+**Android Emulator**:
+```dart
+static const String baseUrl = 'http://10.0.2.2:8000';
+```
+
+**iOS Simulator**:
+```dart
+static const String baseUrl = 'http://localhost:8000';
+```
+
+**Physical Device**:
+```dart
+static const String baseUrl = 'http://192.168.1.10:8000'; // Your computer's local IP
+```
+
+### Backend Server Setup
+
+**Start Backend**:
 ```powershell
-# Start backend server
 cd backend
-.\start-server.bat
-
-# Server will run on http://0.0.0.0:8000
-# API available at http://localhost:8000/api/v1
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Flutter App
-```powershell
-# Run on Android emulator
-cd mobile_app
-flutter run
-
-# Code generation
-flutter pub run build_runner build --delete-conflicting-outputs
-
-# Run tests
-flutter test
-```
-
-### Health Check
-```powershell
-# Test backend connectivity
+**Verify Health**:
+```bash
 curl http://localhost:8000/health
-
-# Expected: {"status":"healthy","timestamp":"..."}
+# Expected: {"status":"healthy"}
 ```
+
+**API Documentation**:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ---
 
-## Dependencies Summary
+## Dependencies
 
 ### Core Dependencies
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # State Management
   flutter_riverpod: ^2.4.9
-  
+  riverpod_annotation: ^2.3.0
+
   # HTTP & Networking
   dio: ^5.4.0
-  
+
   # Secure Storage
   flutter_secure_storage: ^9.0.0
-  
+
   # Code Generation
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
-  
+
+  # Navigation
+  go_router: ^12.1.1
+
   # UI Components
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.0
-  
-  # PDF Handling
+
+  # File Handling
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+
+  # PDF (for future export feature)
   flutter_pdfview: ^1.3.2
   open_file: ^3.3.2
-  path_provider: ^2.1.1
-  
-  # File Sharing
   share_plus: ^7.2.1
-  
-  # Date/Time
-  intl: ^0.18.1
 
+  # Utilities
+  intl: ^0.18.1
+  uuid: ^4.2.1
+```
+
+### Dev Dependencies
+```yaml
 dev_dependencies:
   # Code Generators
   build_runner: ^2.4.6
   freezed: ^2.4.6
   json_serializable: ^6.7.1
-  
+  riverpod_generator: ^2.3.0
+
   # Testing
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
+
+  # Linting
   flutter_lints: ^3.0.1
 ```
 
 ---
 
-**Document Status**: Index Complete  
-**Feature Docs**: 3/6 Complete (Authentication, Profile, API Config)  
-**Next**: Complete Job, Generation, Document feature design docs
+## Quick Start Commands
+
+### Setup
+```bash
+# Install dependencies
+cd mobile_app
+flutter pub get
+
+# Generate code (Freezed, JSON serialization)
+flutter pub run build_runner build --delete-conflicting-outputs
+
+# Watch mode (auto-regenerate)
+flutter pub run build_runner watch --delete-conflicting-outputs
+```
+
+### Run
+```bash
+# Run on default device
+flutter run
+
+# Run on specific platform
+flutter run -d chrome       # Web
+flutter run -d android      # Android
+flutter run -d ios          # iOS
+```
+
+### Testing
+```bash
+# Run all tests
+flutter test
+
+# Run with coverage
+flutter test --coverage
+
+# Run specific test file
+flutter test test/services/auth_api_client_test.dart
+```
+
+---
+
+## Implementation Status
+
+### Completed (✅)
+- Authentication Feature (2 screens)
+- Profile Management Feature (3 screens)
+- Job Management Feature (4 screens)
+- Generation Feature (4 screens)
+- Debug Screen (1 screen)
+
+**Total**: 13 screens implemented
+
+### Planned (🔄)
+- Document Export Feature (3 screens)
+- PDF viewer integration
+- Template customization UI
+- Batch export workflow
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+**Coverage**: Model serialization, state logic, API clients (mocked)
+
+**Example**:
+```dart
+test('AuthApiClient login returns AuthResponse', () async {
+  // Mock Dio response
+  final mockDio = MockDio();
+  final client = AuthApiClient(mockDio);
+
+  // Test login
+  final response = await client.login('test@example.com', 'password');
+
+  // Assertions
+  expect(response.accessToken, isNotNull);
+  expect(response.user.email, 'test@example.com');
+});
+```
+
+### Widget Tests
+**Coverage**: UI components, form validation, user interactions
+
+**Example**:
+```dart
+testWidgets('LoginScreen shows error on invalid credentials', (tester) async {
+  await tester.pumpWidget(MyApp());
+
+  // Enter invalid credentials
+  await tester.enterText(find.byKey(Key('email')), 'invalid@example.com');
+  await tester.enterText(find.byKey(Key('password')), 'wrongpass');
+  await tester.tap(find.byKey(Key('login_button')));
+  await tester.pump();
+
+  // Expect error message
+  expect(find.text('Invalid email or password'), findsOneWidget);
+});
+```
+
+### Integration Tests
+**Coverage**: Full user flows with real backend
+
+**Example**:
+```dart
+testWidgets('Complete registration and profile creation flow', (tester) async {
+  // 1. Register user
+  await tester.tap(find.text('Register'));
+  // ... fill form and submit
+
+  // 2. Create profile
+  await tester.tap(find.text('Create Profile'));
+  // ... fill multi-step form
+
+  // 3. Verify profile created
+  expect(find.text('Profile created successfully'), findsOneWidget);
+});
+```
+
+---
+
+## Next Steps
+
+### Phase 1: Document Export Feature (Next Sprint)
+1. Implement `ExportsApiClient`
+2. Create export data models
+3. Build `TemplateSelectionScreen`
+4. Implement PDF preview
+5. Add download and share functionality
+
+### Phase 2: Enhancements
+1. Offline mode with local caching
+2. Profile version history
+3. Batch generation for multiple jobs
+4. Analytics dashboard
+5. Push notifications for generation completion
+
+### Phase 3: Polish
+1. Accessibility improvements (screen readers)
+2. Internationalization (i18n)
+3. Dark mode
+4. Onboarding tutorial
+5. Performance optimization
+
+---
+
+**Documentation Status**: Complete
+**Features Documented**: 5/5 (Auth, Profile, Job, Generation, Export)
+**Implementation Status**: 4/5 features complete (Export pending)
+**Total Screens**: 13 implemented + 3 planned
+
+---
+
+**Last Updated**: November 2025
+**Maintained By**: Mobile Development Team
+**Related Docs**: [Backend API Documentation](../api-services/README.md)

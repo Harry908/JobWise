@@ -1,0 +1,18 @@
+Dear Hiring Manager,
+
+I am a software engineering student at Washington State University with a passion for building scalable systems and solving complex technical challenges. With a 4.0 GPA and hands-on experience spanning AI orchestration, full-stack development, and undergraduate research, I am seeking an internship opportunity where I can apply my technical foundation and collaborative mindset to contribute to impactful projects.
+
+Throughout my academic and professional journey, I have developed a strong foundation in software architecture, backend systems, and AI integration. As an Undergraduate Research Assistant, I architected an AI-powered Sommelier NPC for a VR wine tasting simulation, implementing an orchestration pipeline that integrated voice recognition, large language models, and text-to-speech services. This experience taught me how to navigate complex system integrations, resolve compatibility issues with existing frameworks, and deliver seamless user experiences in cutting-edge environments.
+
+My experience as a Teaching Assistant and Software Engineering Tutor has honed my ability to break down complex concepts and collaborate effectively with diverse teams. Mentoring 15 students weekly on advanced debugging and object-oriented programming principles strengthened my communication skills and deepened my understanding of software fundamentals. I take pride in making technical concepts accessible and fostering environments where teams can thrive.
+
+Beyond the classroom, I have applied my skills to real-world challenges through projects like my Azure Cloud Capstone, where I implemented C++ firmware for IoT devices, built Blazor web applications, and designed machine learning pipelines for energy consumption analysis. My Recipe Generator Application placed second at WSU Everett CougHacks 24, demonstrating my ability to architect high-performance solutions under pressure in a collaborative hackathon environment.
+
+I am drawn to opportunities that challenge me to grow as an engineer while contributing to meaningful work. I bring persistence, adaptability, and a commitment to writing clean, maintainable code. I am excited about the possibility of joining your team and contributing to innovative projects that push the boundaries of what technology can achieve.
+
+Thank you for considering my application. I look forward to the opportunity to discuss how my skills and experiences align with your team's goals.
+
+Sincerely,
+Huy Ky
+(425) 470-9340
+huyky26@gmail.com

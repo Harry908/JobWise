@@ -11,7 +11,9 @@
       "Bash(alembic revision:*)",
       "Bash($null)",
       "Bash(dir:*)",
-      "Bash(flutter pub run build_runner build:*)"
+      "Bash(flutter pub run build_runner build:*)",
+      "Bash(Get-ChildItem appapplicationservices -Name)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

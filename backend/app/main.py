@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 try:
     from dotenv import load_dotenv
     load_dotenv()
-    print("✅ Loaded environment variables from .env file")
+    print("[OK] Loaded environment variables from .env file")
 except ImportError:
-    print("⚠️  python-dotenv not available")
+    print("[WARNING] python-dotenv not available")
 
 from app.core.config import settings
 from app.infrastructure.database.connection import create_engine
@@ -20,8 +20,6 @@ from app.infrastructure.database.models import Base
 from app.presentation.api.auth import router as auth_router
 from app.presentation.api.profile import router as profile_router
 from app.presentation.api.job import router as job_router
-from app.presentation.api.generation import router as generation_router
-from app.presentation.api.preferences import router as preferences_router
 from app.presentation.v3_api import router as v3_router
 
 # Configure logging
@@ -82,8 +80,6 @@ def create_application() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(profile_router)
     app.include_router(job_router)
-    app.include_router(generation_router)
-    app.include_router(preferences_router)
     app.include_router(v3_router)  # V3.0 API endpoints
 
     @app.get("/health")
@@ -96,3 +92,7 @@ def create_application() -> FastAPI:
 
 # Create application instance
 app = create_application()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=True)

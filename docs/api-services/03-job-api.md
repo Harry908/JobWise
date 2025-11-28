@@ -1,837 +1,646 @@
-# Job API Service
+# Job API
 
-**Version**: 2.1
+**Version**: 1.0
 **Base Path**: `/api/v1/jobs`
-**Status**: ✅ **Implemented** (Core CRUD complete, Sprint 1-3)
-**Test Coverage**: Job API endpoints operational with mobile integration
-**Last Updated**: November 7, 2025
+**Status**: ✅ Fully Implemented
 
-## Service Overview
+---
 
-Unified CRUD API for managing job descriptions from multiple sources. Accepts raw text (auto-parsed) or structured data. Supports user-created jobs, imported jobs, and future integration with external job APIs.
+## Overview
 
-## Specification
+The Job API manages job postings with intelligent text parsing capabilities. Users can create jobs from raw text, URLs, or structured data, then track application status and use them for AI-powered document generation.
 
-**Purpose**: Job description management with multi-source support
-**Authentication**: Required (JWT)
-**Authorization**: Users can only manage jobs they created (user_created source)
-**Text Parsing**: Deterministic regex + optional LLM enhancement (rate-limited)
-**Delete Behavior**: Hard delete (immediate removal)
-**Performance**: <200ms for CRUD operations, <3s for text parsing
+**Key Features**:
+- **Three Input Methods**: Raw text parsing, URL scraping, structured data
+- **Intelligent Parsing**: AI-powered extraction of job details from text
+- **Application Tracking**: Status management (not_applied, preparing, applied, etc.)
+- **Flexible Filtering**: Filter by status, source, employment type
+- **Pagination**: Efficient list handling with limit/offset
+- **Unified Model**: Single table design for all job sources
 
-## Error Codes
+---
 
-| Status Code | Error Type | Description |
-|-------------|------------|-------------|
-| 201 | Created | Job successfully created |
-| 200 | OK | Request successful |
-| 204 | No Content | Delete successful (no response body) |
-| 400 | Bad Request | Validation error or malformed request |
-| 401 | Unauthorized | Missing or invalid JWT token |
-| 403 | Forbidden | User doesn't own the resource |
-| 404 | Not Found | Job doesn't exist |
-| 422 | Unprocessable Entity | Parsing failed or validation error |
-| 429 | Too Many Requests | LLM parsing rate limit exceeded |
-| 500 | Internal Server Error | Server error |
+## Job Sources
 
-## Validation Rules
+Jobs can come from multiple sources, tracked by the `source` field:
 
-**Required Fields (Structured Input):**
-- `source`: Must be one of: `user_created`, `indeed`, `linkedin`, `glassdoor`, `mock`, `imported`
-- `title`: Required, 1-200 chars
-- `company`: Required, 1-200 chars
+| Source | Description | Created By |
+|--------|-------------|------------|
+| `user_created` | Manually created by user | User via structured endpoint |
+| `text_parsed` | Parsed from raw text | User via text parsing |
+| `url_scraped` | Scraped from URL | User via URL scraping |
+| `api` | Fetched from job boards | External API integration (future) |
+| `imported` | Imported from file | Bulk import (future) |
 
-**Optional Fields:**
-- `location`: Max 200 chars, supports "Remote" keyword
-- `description`: Max 10,000 chars
-- `requirements`: Array of strings, max 50 items, each max 500 chars
-- `benefits`: Array of strings, max 30 items, each max 500 chars
-- `salary_range`: Format "min-max" (e.g., "100000-150000") or free text
-- `remote`: Boolean, default false
-- `status`: Must be one of: `active`, `archived`, `draft`
-- `application_status`: Must be one of: `not_applied`, `preparing`, `applied`, `interviewing`, `offer_received`, `rejected`, `accepted`, `withdrawn` (default: `not_applied`)
+---
 
-**Raw Text Input:**
-- `raw_text`: Required if structured fields not provided, min 50 chars, max 15,000 chars
-- Parsing extracts: title, company, location, requirements, benefits, keywords
+## Application Status Flow
 
-**Parsed Keywords:**
-- Auto-extracted from description and requirements
-- Lowercase, deduplicated
-- Common skills, technologies, tools
-- Max 50 keywords per job
+```
+not_applied
+    ↓
+preparing
+    ↓
+applied
+    ↓
+interviewing
+    ↓
+offer_received
+    ├→ accepted
+    ├→ rejected
+    └→ withdrawn
+```
 
-## Dependencies
+**Status Values**:
+- `not_applied` - Job saved, no action yet
+- `preparing` - Preparing application materials
+- `applied` - Application submitted
+- `interviewing` - In interview process
+- `offer_received` - Job offer received
+- `accepted` - Offer accepted
+- `rejected` - Application/offer rejected
+- `withdrawn` - Application withdrawn by user
 
-### Internal
-- Authentication API: User identity via JWT
-- Database: JobModel (unified table)
-- Repositories: JobRepository
-- LLM Service: Text parsing (optional, via ILLMService port)
+---
 
-### External
-- Future: Indeed API, LinkedIn API, Glassdoor API
+## Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/` | Create job (text, URL, or structured) |
+| GET | `/` | List user's jobs with filters |
+| GET | `/{job_id}` | Get specific job details |
+| PUT | `/{job_id}` | Update job information |
+| DELETE | `/{job_id}` | Delete job permanently |
+
+**Total Endpoints**: 5
+
+---
+
+## Endpoint Details
+
+### 1. Create Job
+
+Create a job posting using one of three methods: raw text parsing, URL scraping, or structured data.
+
+**Endpoint**: `POST /api/v1/jobs`
+
+**Authentication**: Required
+
+**Method 1: Raw Text Parsing** (AI-powered)
+
+Extract job details from pasted job description text.
+
+**Request Body**:
+```json
+{
+  "raw_text": "Senior Python Developer - TechCorp Inc.\n\nLocation: Seattle, WA (Remote Available)\n\nWe are seeking an experienced Senior Python Developer...\n\nRequirements:\n- 5+ years Python experience\n- FastAPI and Django expertise\n- AWS cloud experience\n\nBenefits:\n- Competitive salary $120k-$150k\n- Health insurance\n- 401k matching"
+}
+```
+
+**Success Response** (201 Created):
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": 1,
+  "source": "text_parsed",
+  "title": "Senior Python Developer",
+  "company": "TechCorp Inc.",
+  "location": "Seattle, WA",
+  "description": "We are seeking an experienced Senior Python Developer...",
+  "raw_text": "Senior Python Developer - TechCorp Inc...",
+  "parsed_keywords": ["Python", "FastAPI", "Django", "AWS"],
+  "requirements": [
+    "5+ years Python experience",
+    "FastAPI and Django expertise",
+    "AWS cloud experience"
+  ],
+  "benefits": [
+    "Competitive salary $120k-$150k",
+    "Health insurance",
+    "401k matching"
+  ],
+  "salary_range": "$120k-$150k",
+  "remote": true,
+  "employment_type": "full_time",
+  "status": "active",
+  "application_status": "not_applied",
+  "created_at": "2025-11-15T10:30:00Z",
+  "updated_at": "2025-11-15T10:30:00Z"
+}
+```
+
+**Method 2: URL Scraping** (Future)
+
+Fetch job details from a job posting URL.
+
+**Request Body**:
+```json
+{
+  "url": "https://jobs.techcorp.com/positions/senior-python-developer"
+}
+```
+
+**Success Response**: Same as raw text parsing, with `source: "url_scraped"`
+
+**Method 3: Structured Data**
+
+Provide job details directly with all fields.
+
+**Request Body**:
+```json
+{
+  "source": "user_created",
+  "title": "Senior Python Developer",
+  "company": "TechCorp Inc.",
+  "location": "Seattle, WA",
+  "description": "We are seeking an experienced Senior Python Developer to join our team...",
+  "requirements": [
+    "5+ years Python experience",
+    "FastAPI and Django expertise",
+    "AWS cloud experience"
+  ],
+  "benefits": [
+    "Competitive salary",
+    "Health insurance",
+    "401k matching"
+  ],
+  "salary_range": "$120k-$150k",
+  "remote": true,
+  "employment_type": "full_time",
+  "status": "active"
+}
+```
+
+**Request Schema**:
+| Field | Type | Required | Constraints | Description |
+|-------|------|----------|-------------|-------------|
+| `raw_text` | string | Conditional | 10-15000 chars | Raw job text (Method 1) |
+| `url` | string | Conditional | Valid URL | Job posting URL (Method 2) |
+| `source` | string | No | Default: "user_created" | Job source identifier |
+| `title` | string | Conditional | 1-200 chars | Job title (Method 3) |
+| `company` | string | Conditional | 1-200 chars | Company name (Method 3) |
+| `location` | string | No | Max 200 chars | Job location |
+| `description` | string | No | Max 10000 chars | Job description |
+| `requirements` | array | No | - | List of requirements |
+| `benefits` | array | No | - | List of benefits |
+| `salary_range` | string | No | Max 100 chars | Salary information |
+| `remote` | boolean | No | Default: false | Remote work option |
+| `employment_type` | string | No | See enum below | Employment type |
+| `status` | string | No | active/archived/draft | Job status |
+
+**Employment Type Enum**:
+- `full_time` (default)
+- `part_time`
+- `contract`
+- `internship`
+- `temporary`
+
+**Error Responses**:
+
+**422 Unprocessable Entity** (Missing required fields):
+```json
+{
+  "detail": "Either 'raw_text', 'url', or structured fields must be provided"
+}
+```
+
+**422 Unprocessable Entity** (Invalid text length):
+```json
+{
+  "detail": "raw_text must be between 10 and 15000 characters"
+}
+```
+
+---
+
+### 2. List User's Jobs
+
+Retrieve all jobs for the authenticated user with filtering and pagination.
+
+**Endpoint**: `GET /api/v1/jobs`
+
+**Authentication**: Required
+
+**Query Parameters**:
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `status` | string | No | - | Filter by job status (active/archived/draft) |
+| `source` | string | No | - | Filter by source (user_created, text_parsed, etc.) |
+| `employment_type` | string | No | - | Filter by employment type |
+| `remote` | boolean | No | - | Filter remote jobs |
+| `limit` | integer | No | 20 | Results per page (1-100) |
+| `offset` | integer | No | 0 | Results offset |
+
+**Example Requests**:
+```
+GET /api/v1/jobs
+GET /api/v1/jobs?status=active&limit=10
+GET /api/v1/jobs?source=text_parsed&remote=true
+GET /api/v1/jobs?employment_type=full_time&offset=20
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "jobs": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": 1,
+      "source": "text_parsed",
+      "title": "Senior Python Developer",
+      "company": "TechCorp Inc.",
+      "location": "Seattle, WA",
+      "description": "...",
+      "parsed_keywords": ["Python", "FastAPI", "AWS"],
+      "requirements": [...],
+      "benefits": [...],
+      "salary_range": "$120k-$150k",
+      "remote": true,
+      "employment_type": "full_time",
+      "status": "active",
+      "application_status": "applied",
+      "created_at": "2025-11-15T10:30:00Z",
+      "updated_at": "2025-11-15T10:30:00Z"
+    }
+  ],
+  "total": 45,
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 45,
+    "hasMore": true
+  }
+}
+```
+
+---
+
+### 3. Get Specific Job
+
+Retrieve detailed information for a specific job.
+
+**Endpoint**: `GET /api/v1/jobs/{job_id}`
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `job_id` (UUID): Job unique identifier
+
+**Success Response** (200 OK):
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": 1,
+  "source": "text_parsed",
+  "title": "Senior Python Developer",
+  "company": "TechCorp Inc.",
+  "location": "Seattle, WA",
+  "description": "Full job description text...",
+  "raw_text": "Original pasted text...",
+  "parsed_keywords": ["Python", "FastAPI", "Django", "AWS", "Docker"],
+  "requirements": [
+    "5+ years Python experience",
+    "FastAPI and Django expertise",
+    "AWS cloud experience",
+    "Docker and Kubernetes knowledge",
+    "Strong communication skills"
+  ],
+  "benefits": [
+    "Competitive salary $120k-$150k",
+    "Health insurance",
+    "401k matching",
+    "Unlimited PTO",
+    "Remote work options"
+  ],
+  "salary_range": "$120k-$150k",
+  "remote": true,
+  "employment_type": "full_time",
+  "status": "active",
+  "application_status": "applied",
+  "applied_date": "2025-11-10T14:00:00Z",
+  "notes": "Great company culture, aligned with my skills",
+  "created_at": "2025-11-08T10:30:00Z",
+  "updated_at": "2025-11-10T14:00:00Z"
+}
+```
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Job not found"
+}
+```
+
+**403 Forbidden**:
+```json
+{
+  "detail": "You do not have permission to access this job"
+}
+```
+
+---
+
+### 4. Update Job
+
+Update job information (partial updates supported).
+
+**Endpoint**: `PUT /api/v1/jobs/{job_id}`
+
+**Authentication**: Required
+
+**Request Body** (all fields optional):
+```json
+{
+  "title": "Lead Python Developer",
+  "location": "Seattle, WA (Fully Remote)",
+  "status": "active",
+  "application_status": "interviewing",
+  "notes": "Phone interview scheduled for Nov 20th",
+  "applied_date": "2025-11-10T14:00:00Z"
+}
+```
+
+**Updatable Fields**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | string | Job title |
+| `company` | string | Company name |
+| `location` | string | Job location |
+| `description` | string | Job description |
+| `status` | string | Job status (active/archived/draft) |
+| `application_status` | string | Application progress |
+| `applied_date` | string | Date applied (ISO 8601) |
+| `notes` | string | Personal notes about the job |
+| `remote` | boolean | Remote work option |
+| `employment_type` | string | Employment type |
+
+**Success Response** (200 OK): Full updated job object
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Job not found"
+}
+```
+
+**422 Unprocessable Entity** (Invalid status):
+```json
+{
+  "detail": "Invalid application_status. Must be one of: not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn"
+}
+```
+
+---
+
+### 5. Delete Job
+
+Permanently delete a job posting.
+
+**Endpoint**: `DELETE /api/v1/jobs/{job_id}`
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `job_id` (UUID): Job unique identifier
+
+**Success Response** (204 No Content): No body
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Job not found"
+}
+```
+
+**409 Conflict** (Job has generated documents):
+```json
+{
+  "detail": "Cannot delete job with associated generated documents. Delete documents first."
+}
+```
+
+---
+
+## AI Text Parsing
+
+When creating a job from raw text, the system uses AI to intelligently extract:
+
+### Parsed Fields
+- **Title**: Job position name
+- **Company**: Company/organization name
+- **Location**: City, state, country, remote status
+- **Description**: Full job description
+- **Requirements**: Bulleted list of qualifications
+- **Benefits**: Bulleted list of perks and benefits
+- **Salary Range**: Extracted salary information
+- **Keywords**: Technical skills and tools mentioned
+
+### Parsing Examples
+
+**Input Text**:
+```
+Software Engineer III - Acme Corp
+Remote (US Only)
+
+About the Role:
+We're looking for a talented engineer to join our platform team.
+
+Requirements:
+- 5+ years of professional software development
+- Strong experience with React and Node.js
+- Experience with AWS or similar cloud platforms
+
+What We Offer:
+- Salary: $130,000 - $160,000
+- Comprehensive health benefits
+- 401(k) with company match
+```
+
+**Parsed Output**:
+```json
+{
+  "title": "Software Engineer III",
+  "company": "Acme Corp",
+  "location": "Remote (US Only)",
+  "remote": true,
+  "description": "We're looking for a talented engineer to join our platform team.",
+  "requirements": [
+    "5+ years of professional software development",
+    "Strong experience with React and Node.js",
+    "Experience with AWS or similar cloud platforms"
+  ],
+  "benefits": [
+    "Comprehensive health benefits",
+    "401(k) with company match"
+  ],
+  "salary_range": "$130,000 - $160,000",
+  "parsed_keywords": ["React", "Node.js", "AWS"]
+}
+```
+
+---
 
 ## Database Schema
 
-### JobModel (jobs table)
+### jobs Table
 
-**Purpose**: Stores job descriptions from multiple sources with parsed keywords for AI matching
-
-**Fields**:
 ```sql
 CREATE TABLE jobs (
-    id TEXT PRIMARY KEY,  -- UUID
-    user_id INTEGER,      -- Foreign key to users.id (nullable for external jobs)
-    source TEXT NOT NULL, -- 'user_created', 'indeed', 'linkedin', 'mock', etc.
-    title TEXT NOT NULL,
-    company TEXT NOT NULL,
-    location TEXT,        -- City, State or "Remote"
-    description TEXT,     -- Full job description
-    raw_text TEXT,        -- Original pasted text (for user_created)
-    parsed_keywords TEXT, -- JSON array: ["python", "fastapi", "aws"]
-    requirements TEXT,    -- JSON array: ["5+ years Python", "AWS experience"]
-    benefits TEXT,        -- JSON array: ["Health insurance", "Remote work"]
-    salary_range TEXT,    -- "100000-150000" or free text
-    remote BOOLEAN DEFAULT 0,
-    status TEXT DEFAULT 'active',  -- 'active', 'archived', 'draft'
+    id VARCHAR PRIMARY KEY,  -- UUID
+    user_id INTEGER NOT NULL,
+    source VARCHAR NOT NULL DEFAULT 'user_created',
+    title VARCHAR NOT NULL,
+    company VARCHAR NOT NULL,
+    location VARCHAR,
+    description TEXT,
+    raw_text TEXT,
+    parsed_keywords TEXT,  -- JSON array
+    requirements TEXT,  -- JSON array
+    benefits TEXT,  -- JSON array
+    salary_range VARCHAR,
+    remote BOOLEAN DEFAULT FALSE,
+    employment_type VARCHAR DEFAULT 'full_time',
+    status VARCHAR DEFAULT 'active',
+    application_status VARCHAR DEFAULT 'not_applied',
+    applied_date DATETIME,
+    notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Indexes
 CREATE INDEX idx_jobs_user_id ON jobs(user_id);
-CREATE INDEX idx_jobs_source ON jobs(source);
 CREATE INDEX idx_jobs_status ON jobs(status);
-CREATE INDEX idx_jobs_created_at ON jobs(created_at);
-CREATE INDEX idx_jobs_user_status ON jobs(user_id, status);
+CREATE INDEX idx_jobs_application_status ON jobs(application_status);
+CREATE INDEX idx_jobs_source ON jobs(source);
 ```
 
-**Field Descriptions**:
-- `id`: UUID primary key
-- `user_id`: Owner (nullable for external/mock jobs, set for user_created)
-- `source`: Job origin (user_created, indeed, linkedin, mock, imported)
-- `title`: Job position title
-- `company`: Company name
-- `location`: City/State or "Remote"
-- `description`: Full job description text
-- `raw_text`: Original pasted text before parsing
-- `parsed_keywords`: JSON array of technical keywords (["python", "aws"])
-- `requirements`: JSON array of qualification strings
-- `benefits`: JSON array of benefit strings
-- `salary_range`: Salary information (format: "min-max" or free text)
-- `remote`: Boolean flag for remote positions
-- `status`: Job status (active, archived, draft)
-- `application_status`: User's application progress (not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn)
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp (auto-updates)
+---
 
-**Constraints**:
-- `source` required (identifies origin)
-- `title` and `company` required
-- `user_id` nullable (supports external jobs)
-- `status` defaults to 'active'
-- Foreign key cascade delete (when user deleted, user_created jobs deleted)
+## Common Use Cases
 
-## Data Flow
+### Use Case 1: Save Job from Job Board
 
-```
-Create Job (Raw Text):
-1. Client → POST /jobs {raw_text, source: "user_created"}
-2. API validates JWT → get user_id
-3. API invokes text parser (deterministic regex rules)
-4. API extracts: title, company, location, requirements, benefits, keywords
-5. Optional: LLM enhancement for ambiguous fields (rate-limited)
-6. API creates JobModel with user_id and parsed data
-7. API ← Job response (201) with parsed fields
+**Scenario**: User finds a job on LinkedIn and wants to save it for later.
 
-Create Job (Structured):
-1. Client → POST /jobs {title, company, description, source, ...}
-2. API validates JWT → get user_id
-3. API validates structured data (Pydantic)
-4. API extracts keywords from description
-5. API creates JobModel with user_id
-6. API ← Job response (201)
+**Solution**: Copy job description text and paste it.
 
-Browse Mock Jobs:
-1. Client → GET /jobs/browse?query=Python&location=Remote&limit=20
-2. API validates JWT → get user_id
-3. API loads mock jobs from JSON file
-4. API filters by query (title, description, keywords)
-5. API filters by location (city, state, "Remote")
-6. API filters by remote flag
-7. API paginates results
-8. API ← Mock jobs array (200) with pagination
-
-List User Jobs:
-1. Client → GET /jobs?status=active&source=user_created&limit=20
-2. API validates JWT → get user_id
-3. API fetches jobs where user_id = current_user.id
-4. API applies filters (status, source)
-5. API orders by created_at DESC
-6. API paginates results
-7. API ← Job list (200) with pagination
-
-Get Job Detail:
-1. Client → GET /jobs/{id}
-2. API validates JWT → get user_id
-3. API fetches job by id
-4. API verifies ownership (if user_created source)
-5. API ← Full job object (200)
-
-Update Job:
-1. Client → PUT /jobs/{id} {updated_fields}
-2. API validates JWT → get user_id
-3. API fetches job by id
-4. API verifies job.user_id == current_user.id
-5. API validates update data (Pydantic)
-6. API re-extracts keywords if description changed
-7. API updates job record with updated_at timestamp
-8. API ← Updated job (200)
-
-Delete Job:
-1. Client → DELETE /jobs/{id}
-2. API validates JWT → get user_id
-3. API fetches job by id
-4. API verifies ownership (job.user_id == current_user.id)
-5. API hard deletes job record (immediate removal)
-6. API ← 204 No Content
-
-Save Mock Job:
-1. Client browses mock jobs via GET /jobs/browse
-2. User selects a mock job to save
-3. Client → POST /jobs {mock_job_data, source: "user_created"}
-4. API validates JWT → get user_id
-5. API creates job with user_id
-6. API ← Saved job (201)
+```bash
+curl -X POST http://localhost:8000/api/v1/jobs \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "raw_text": "<paste entire job description>"
+  }'
 ```
 
-## API Contract
+AI automatically extracts all relevant fields.
 
-### POST /jobs
+---
 
-**Description**: Create job (raw text or structured)
+### Use Case 2: Track Application Progress
 
-**Headers**: `Authorization: Bearer <token>`
+**Scenario**: User applied to a job and wants to track interview stages.
 
-**Request (Raw Text)**:
-```json
-{
-  "source": "user_created",
-  "raw_text": "Senior Python Developer at Tech Corp\n\nWe are looking for...\n\nRequirements:\n- 5+ years Python\n- FastAPI experience\n\nBenefits:\n- Health insurance\n- Remote work"
-}
+**Solution**: Update application status as progress is made.
+
+```bash
+# Applied
+curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
+  -H "Authorization: Bearer <token>" \
+  -d '{"application_status": "applied", "applied_date": "2025-11-15"}'
+
+# Interview scheduled
+curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
+  -H "Authorization: Bearer <token>" \
+  -d '{"application_status": "interviewing", "notes": "Phone screen on Nov 20"}'
+
+# Offer received
+curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
+  -H "Authorization: Bearer <token>" \
+  -d '{"application_status": "offer_received"}'
 ```
 
-**Request (Structured)**:
-```json
-{
-  "source": "user_created",
-  "title": "Senior Python Developer",
-  "company": "Tech Corp",
-  "location": "Seattle, WA",
-  "description": "We are looking for an experienced Python developer...",
-  "requirements": [
-    "5+ years Python experience",
-    "FastAPI or Django knowledge",
-    "AWS cloud experience"
-  ],
-  "benefits": [
-    "Health insurance",
-    "401k matching",
-    "Remote work"
-  ],
-  "salary_range": "120000-180000",
-  "remote": true,
-  "status": "active"
-}
+---
+
+### Use Case 3: Filter Active Applications
+
+**Scenario**: User wants to see all jobs they've applied to.
+
+**Solution**: Filter by application status.
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/jobs?status=active" \
+  -H "Authorization: Bearer <token>"
 ```
 
-**Response** (201 Created):
-```json
-{
-  "id": "uuid",
-  "user_id": "user-uuid",
-  "source": "user_created",
-  "title": "Senior Python Developer",
-  "company": "Tech Corp",
-  "location": "Seattle, WA",
-  "description": "We are looking for an experienced Python developer...",
-  "raw_text": "Senior Python Developer at Tech Corp...",
-  "parsed_keywords": ["python", "fastapi", "aws", "microservices"],
-  "requirements": [...],
-  "benefits": [...],
-  "salary_range": "120000-180000",
-  "remote": true,
-  "status": "active",
-  "created_at": "2025-10-21T10:00:00Z",
-  "updated_at": "2025-10-21T10:00:00Z"
-}
+---
+
+### Use Case 4: Archive Old Jobs
+
+**Scenario**: User wants to clean up old job postings.
+
+**Solution**: Update status to "archived".
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
+  -H "Authorization: Bearer <token>" \
+  -d '{"status": "archived"}'
 ```
 
-**Errors**:
-- 400: Validation error (missing source, empty raw_text/title)
-- 401: Unauthorized
+Archived jobs don't appear in default list views.
 
-### GET /jobs
+---
 
-**Description**: List user's jobs with filtering
+## Best Practices
 
-**Headers**: `Authorization: Bearer <token>`
+### 1. Text Parsing Quality
 
-**Query Parameters**:
-- `status`: string (active, archived, draft) - filter by status
-- `source`: string (user_created, indeed, linkedin) - filter by source
-- `limit`: integer (1-100, default: 20)
-- `offset`: integer (default: 0)
+For best AI parsing results:
+- ✅ Include complete job description
+- ✅ Include requirements section
+- ✅ Include benefits/compensation
+- ✅ Keep original formatting (bullets, headings)
+- ❌ Don't heavily edit or summarize
 
-**Response** (200 OK):
-```json
-{
-  "jobs": [
-    {
-      "id": "uuid",
-      "source": "user_created",
-      "title": "Senior Python Developer",
-      "company": "Tech Corp",
-      "location": "Seattle, WA",
-      "remote": true,
-      "status": "active",
-      "created_at": "2025-10-21T10:00:00Z"
-    }
-  ],
-  "pagination": {
-    "total": 15,
-    "limit": 20,
-    "offset": 0,
-    "has_next": false,
-    "has_previous": false
-  }
-}
-```
+### 2. Application Tracking
 
-### GET /jobs/browse
+Maintain accurate application status:
+- Update `application_status` at each stage
+- Add `notes` for interview details
+- Set `applied_date` when submitting application
+- Archive jobs after final decision
 
-**Description**: Browse mock/external job listings (for discovery and saving)
+### 3. Job Organization
 
-**Headers**: `Authorization: Bearer <token>`
+Use status field strategically:
+- `active` - Jobs you're pursuing
+- `draft` - Jobs you're considering
+- `archived` - Jobs no longer relevant
 
-**Query Parameters**:
-- `query`: string (search keywords, e.g., "Python Developer")
-- `location`: string (city, state, or "Remote")
-- `remote`: boolean (filter for remote jobs only)
-- `limit`: integer (1-100, default: 20)
-- `offset`: integer (default: 0)
+---
 
-**Note**: This endpoint returns jobs from a **mock JSON dataset** (not saved to user's jobs). Users can browse these jobs and save them via POST /jobs with the job data.
+## Future Enhancements
 
-**Response** (200 OK):
-```json
-{
-  "jobs": [
-    {
-      "source": "mock",
-      "title": "Senior Python Developer",
-      "company": "Tech Innovations Inc",
-      "location": "San Francisco, CA",
-      "description": "We are seeking an experienced Python developer to join our team...\n\nResponsibilities:\n- Design and implement scalable backend services\n- Collaborate with frontend teams\n- Mentor junior developers\n\nQualifications:\n- 5+ years Python experience\n- Strong knowledge of FastAPI or Django\n- Experience with AWS, Docker, Kubernetes",
-      "requirements": [
-        "5+ years Python experience",
-        "FastAPI or Django framework knowledge",
-        "AWS cloud services experience",
-        "Docker and Kubernetes proficiency"
-      ],
-      "benefits": [
-        "Competitive salary $140k-$180k",
-        "Health, dental, vision insurance",
-        "401k matching",
-        "Flexible remote work",
-        "Unlimited PTO"
-      ],
-      "parsed_keywords": ["python", "fastapi", "django", "aws", "docker", "kubernetes"],
-      "salary_range": "140000-180000",
-      "remote": true
-    },
-    {
-      "source": "mock",
-      "title": "Full Stack Engineer",
-      "company": "Startup XYZ",
-      "location": "Remote",
-      "description": "Join our fast-growing startup...",
-      "requirements": [
-        "3+ years full-stack development",
-        "React and Node.js experience"
-      ],
-      "benefits": [
-        "Equity options",
-        "Remote-first culture"
-      ],
-      "parsed_keywords": ["react", "nodejs", "typescript", "mongodb"],
-      "salary_range": "100000-140000",
-      "remote": true
-    }
-  ],
-  "pagination": {
-    "total": 50,
-    "limit": 20,
-    "offset": 0,
-    "has_next": true,
-    "has_previous": false
-  }
-}
-```
+- [ ] URL scraping implementation (currently returns mock data)
+- [ ] Job board API integrations (Indeed, LinkedIn, etc.)
+- [ ] Bulk import from CSV/JSON
+- [ ] Job alerts and notifications
+- [ ] Keyword matching with user profile
+- [ ] Company research integration
+- [ ] Application deadline tracking
+- [ ] Interview preparation materials
 
-**Errors**:
-- 401: Unauthorized
-- 400: Invalid query parameters
+---
 
-### GET /jobs/{id}
-
-**Description**: Get job details
-
-**Headers**: `Authorization: Bearer <token>`
-
-**Response** (200 OK): Full job object (same as POST response)
-
-**Errors**:
-- 404: Job not found
-- 403: Not authorized (not owner for user_created jobs)
-
-### PUT /jobs/{id}
-
-**Description**: Update parsed metadata (keywords, status, application status) - NOT job posting content
-
-**Headers**: `Authorization: Bearer <token>`
-
-**Note**: Job posting content (title, company, description, requirements from source) is READ-ONLY. 
-Only user-controlled fields can be updated:
-- `parsed_keywords`: Array of strings (user can refine AI-extracted keywords)
-- `status`: active, archived, draft (job listing visibility)
-- `application_status`: not_applied, preparing, applied, interviewing, offer_received, rejected, accepted, withdrawn (user's application progress tracking)
-
-**Request**:
-```json
-{
-  "parsed_keywords": ["python", "fastapi", "aws", "docker"],
-  "status": "active",
-  "application_status": "applied"
-}
-```
-
-**Response** (200 OK): Updated job with modified fields only
-
-**Errors**:
-- 400: Validation error (e.g., trying to update read-only fields like title, company)
-- 404: Job not found
-- 403: Not authorized
-
-### DELETE /jobs/{id}
-
-**Description**: Delete job (hard delete)
-
-**Headers**: `Authorization: Bearer <token>`
-
-**Response** (204 No Content)
-
-**Errors**:
-- 404: Job not found
-- 403: Not authorized
-
-## Mobile Integration Notes
-
-### Job Model
-```dart
-class Job {
-  final String id;
-  final String? userId;
-  final String source;
-  final String title;
-  final String company;
-  final String? location;
-  final String description;
-  final String? rawText;
-  final List<String> parsedKeywords;
-  final List<String> requirements;
-  final List<String> benefits;
-  final String? salaryRange;
-  final bool remote;
-  final JobStatus status;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  Job({
-    required this.id,
-    this.userId,
-    required this.source,
-    required this.title,
-    required this.company,
-    this.location,
-    required this.description,
-    this.rawText,
-    this.parsedKeywords = const [],
-    this.requirements = const [],
-    this.benefits = const [],
-    this.salaryRange,
-    this.remote = false,
-    this.status = JobStatus.active,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory Job.fromJson(Map<String, dynamic> json) {
-    return Job(
-      id: json['id'],
-      userId: json['user_id'],
-      source: json['source'],
-      title: json['title'],
-      company: json['company'],
-      location: json['location'],
-      description: json['description'],
-      rawText: json['raw_text'],
-      parsedKeywords: List<String>.from(json['parsed_keywords'] ?? []),
-      requirements: List<String>.from(json['requirements'] ?? []),
-      benefits: List<String>.from(json['benefits'] ?? []),
-      salaryRange: json['salary_range'],
-      remote: json['remote'] ?? false,
-      status: JobStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => JobStatus.active,
-      ),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'source': source,
-    'title': title,
-    'company': company,
-    'location': location,
-    'description': description,
-    'raw_text': rawText,
-    'requirements': requirements,
-    'benefits': benefits,
-    'salary_range': salaryRange,
-    'remote': remote,
-    'status': status.name,
-  };
-}
-
-enum JobStatus { active, archived, draft }
-```
-
-### Job Service
-```dart
-class JobService {
-  final ApiClient _client;
-
-  // Create from raw text (paste)
-  Future<Job> createFromText(String text) async {
-    final response = await _client.post('/jobs', data: {
-      'source': 'user_created',
-      'raw_text': text,
-    });
-    return Job.fromJson(response.data);
-  }
-
-  // Create from structured data (form)
-  Future<Job> createFromForm(Job job) async {
-    final response = await _client.post('/jobs', data: job.toJson());
-    return Job.fromJson(response.data);
-  }
-
-  Future<List<Job>> getJobs({
-    JobStatus? status,
-    String? source,
-    int limit = 20,
-    int offset = 0,
-  }) async {
-    final response = await _client.get('/jobs', queryParameters: {
-      if (status != null) 'status': status.name,
-      if (source != null) 'source': source,
-      'limit': limit,
-      'offset': offset,
-    });
-    return (response.data['jobs'] as List)
-        .map((json) => Job.fromJson(json))
-        .toList();
-  }
-
-  Future<Job> getJob(String id) async {
-    final response = await _client.get('/jobs/$id');
-    return Job.fromJson(response.data);
-  }
-
-  Future<Job> updateJob(String id, Job job) async {
-    final response = await _client.put('/jobs/$id', data: job.toJson());
-    return Job.fromJson(response.data);
-  }
-
-  Future<void> deleteJob(String id) async {
-    await _client.delete('/jobs/$id');
-  }
-
-  Future<void> archiveJob(String id) async {
-    await _client.put('/jobs/$id', data: {'status': 'archived'});
-  }
-}
-```
-
-### UI Patterns
-
-**Create Job - Two Methods**:
-1. Paste text input:
-   - Large text area
-   - "Paste job description" hint
-   - Loading indicator during parsing
-   - Show parsed results for review
-   - Allow editing parsed fields
-
-2. Manual form:
-   - Title, company (required)
-   - Location, remote checkbox
-   - Description text area
-   - Add requirements (list builder)
-   - Add benefits (list builder)
-   - Salary range
-
-**Job List**:
-- Show title, company, location
-- Filter chips: Active, Archived
-- Sort by: Created date, Company name
-- Swipe actions: Archive, Delete
-- Pull to refresh
-
-**Job Detail**:
-- Show all fields
-- Highlight keywords
-- Actions: Edit, Archive, Delete, Generate Resume
-- Show parsed data quality indicator
-
-### Error Handling
-```dart
-try {
-  final job = await jobService.createFromText(pastedText);
-  showSuccess('Job created successfully');
-  return job;
-} on DioError catch (e) {
-  if (e.response?.statusCode == 400) {
-    final errors = e.response?.data['details'];
-    showValidationErrors(errors);
-  } else {
-    showError('Failed to create job');
-  }
-  rethrow;
-}
-```
-
-### Local Storage
-Consider caching jobs:
-- Store recent jobs locally (Hive/SQLite)
-- Sync on network availability
-- Show cached jobs with sync indicator
-- Draft support for offline creation
-
-## LLM-Optimized Data Structure
-
-The job data model is specifically designed for easy LLM/AI processing:
-
-### Key LLM-Friendly Fields
-
-1. **`description`** (string): Full job description text
-   - Used in prompts: "The job description is: {description}"
-   - Raw, unstructured format that LLMs handle well
-
-2. **`parsed_keywords`** (array of strings): Extracted technical keywords
-   - Used in prompts: "Key technologies: {', '.join(parsed_keywords)}"
-   - Example: `["python", "fastapi", "aws", "docker", "kubernetes"]`
-   - Helps LLM focus on relevant skills from profile
-
-3. **`requirements`** (array of strings): Structured list of qualifications
-   - Used in prompts: "Job requirements:\n- {'\n- '.join(requirements)}"
-   - Each item is a complete sentence/phrase
-   - Example: `["5+ years Python experience", "Strong AWS knowledge"]`
-
-4. **`benefits`** (array of strings): Company perks and benefits
-   - Optional in prompts, but useful for cover letter generation
-   - Example: `["Remote work", "Health insurance", "401k matching"]`
-
-5. **`raw_text`** (string): Original pasted text before parsing
-   - Fallback if parsing fails
-   - Used for re-parsing or manual review
-
-### LLM Prompt Template Example
-
-```
-Generate a tailored resume for this candidate:
-
-CANDIDATE PROFILE:
-{profile.professional_summary}
-
-Skills: {', '.join(profile.skills.technical)}
-Experience: {experience_summary}
-
-TARGET JOB:
-Title: {job.title} at {job.company}
-Location: {job.location}
-
-Key Technologies: {', '.join(job.parsed_keywords)}
-
-Job Requirements:
-{'\n'.join(f'- {req}' for req in job.requirements)}
-
-Job Description:
-{job.description}
-
-Please highlight relevant experience and skills that match the job requirements.
-Focus on technologies: {', '.join(job.parsed_keywords)}
-```
-
-### Why This Structure Works for LLMs
-
-- **Hierarchical**: Description → Keywords → Requirements flows from general to specific
-- **Structured Arrays**: Easy to iterate and inject into prompts with proper formatting
-- **Keywords Pre-extracted**: Reduces LLM token usage, faster matching against profile
-- **Requirements as Bullets**: Natural language format that LLMs handle well
-- **Raw Text Preserved**: Allows re-parsing with different strategies
-
-## Mock JSON System Implementation
-
-### Mock Data Structure
-
-Store mock jobs in `backend/data/mock_jobs.json`:
-
-```json
-{
-  "tech_jobs": [
-    {
-      "title": "Senior Python Developer",
-      "company": "Tech Innovations Inc",
-      "location": "San Francisco, CA",
-      "description": "We are seeking an experienced Python developer...\n\n[Full description]",
-      "requirements": [
-        "5+ years Python experience",
-        "FastAPI or Django knowledge",
-        "AWS cloud services"
-      ],
-      "benefits": [
-        "Competitive salary $140k-$180k",
-        "Health insurance",
-        "Remote work"
-      ],
-      "parsed_keywords": ["python", "fastapi", "django", "aws", "docker"],
-      "salary_range": "140000-180000",
-      "remote": true
-    }
-  ],
-  "total_count": 50
-}
-```
-
-### Browse Endpoint Implementation Strategy
-
-```python
-# app/application/services/job_service.py
-
-class JobService:
-    def __init__(self, job_repository, mock_data_loader):
-        self.job_repository = job_repository
-        self.mock_jobs = mock_data_loader.load_jobs()  # Load from JSON
-
-    async def browse_jobs(
-        self,
-        query: str = None,
-        location: str = None,
-        remote: bool = None,
-        limit: int = 20,
-        offset: int = 0
-    ) -> tuple[List[Job], int]:
-        """Browse mock jobs with filtering."""
-        filtered_jobs = self.mock_jobs
-
-        # Simple keyword filtering
-        if query:
-            keywords = query.lower().split()
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if any(kw in job['title'].lower() or
-                      kw in job['description'].lower() or
-                      kw in job['parsed_keywords']
-                      for kw in keywords)
-            ]
-
-        if location:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if location.lower() in job.get('location', '').lower()
-            ]
-
-        if remote is not None:
-            filtered_jobs = [
-                job for job in filtered_jobs
-                if job.get('remote') == remote
-            ]
-
-        total = len(filtered_jobs)
-        paginated = filtered_jobs[offset:offset + limit]
-
-        return paginated, total
-```
-
-### Mock Job Categories
-
-Organize mock data by job categories:
-- **tech_jobs**: Software engineering, DevOps, Data Science
-- **product_jobs**: Product Manager, UX Designer, Project Manager
-- **marketing_jobs**: Marketing Manager, Content Creator, SEO Specialist
-
-Each category should have 15-20 diverse job listings with:
-- Varied skill requirements
-- Different seniority levels (junior, mid, senior)
-- Mix of remote and on-site positions
-- Representative salary ranges
-
-## Implementation Notes
-
-### Repository
-- `app/infrastructure/repositories/job_repository.py`
-- Methods: `create()`, `get_by_id()`, `get_user_jobs()`, `update()`, `delete()`
-
-### Service
-- `app/application/services/job_service.py`
-- Text parsing logic with deterministic rules + LLM fallback
-
-### Text Parser
-Extraction rules (deterministic):
-1. Title: First line or pattern matching (e.g., "Job Title:", "Position:")
-2. Company: Pattern matching (e.g., "at Company Name", "Company:")
-3. Location: City/State patterns, remote keywords
-4. Requirements: Bullet points after "Requirements:", "Qualifications:"
-5. Benefits: Bullet points after "Benefits:", "We offer:"
-
-LLM fallback (rate-limited):
-- Used for ambiguous or complex descriptions
-- Structured prompt for extraction
-- Validated output format
-
-### Database Schema
-Single unified JobModel table:
-- `user_id`: Nullable (null for external API jobs, set for user_created)
-- `source`: String (user_created, indeed, linkedin, static, scraped, imported)
-- `status`: Enum (active, archived, draft, expired)
-- All other fields support both manual and parsed data
-
-### Validation Rules
-- `source` field required (identifies origin)
-- For user_created: either `raw_text` OR structured fields required
-- Title, company, description required
-- Keywords extracted automatically
-- Status defaults to "active"
-
-### Testing
-- Test raw text parsing
-- Test structured creation
-- Test ownership verification
-- Test filtering by status/source
-- Test hard delete behavior
-- Test LLM parsing fallback
+**Last Updated**: November 2025
+**API Version**: 1.0
+**Total Endpoints**: 5
+**Status**: Production Ready (URL scraping planned)

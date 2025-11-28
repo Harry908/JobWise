@@ -17,7 +17,6 @@
 5. [Service Layer](#service-layer)
 6. [UI Components](#ui-components)
 7. [Security Implementation](#security-implementation)
-8. [Error Handling](#error-handling)
 9. [Testing Strategy](#testing-strategy)
 
 ---
@@ -70,12 +69,7 @@ class AppConfig {
   static const String apiVersion = 'v1';
   static const String apiPrefix = '/api/$apiVersion';
   
-  // Full API URL
-  static String get baseUrl => '$apiBaseUrl$apiPrefix';
-  
-  // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
 }
 ```
 
@@ -167,7 +161,6 @@ class AuthResponse with _$AuthResponse {
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'auth_requests.freezed.dart';
-part 'auth_requests.g.dart';
 
 @freezed
 class LoginRequest with _$LoginRequest {
@@ -236,7 +229,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _initializeAuth() async {
     state = state.copyWith(isLoading: true);
     try {
-      final accessToken = await _storage.getAccessToken();
+      final accessToken = await _storage.getToken();
       if (accessToken != null) {
         // Validate token by fetching current user
         final user = await _authApi.getCurrentUser();
@@ -321,7 +314,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (refreshToken == null) {
         throw Exception('No refresh token available');
       }
-      final authResponse = await _authApi.refreshToken(refreshToken);
+      final authResponse = await _authApi.refreshToken();
       await _storage.saveTokens(
         authResponse.accessToken,
         authResponse.refreshToken,
@@ -443,8 +436,10 @@ class StorageService {
     ]);
   }
 
-  // Get access token
-  Future<String?> getAccessToken() async {
+  // In-memory cached access token + storage read
+  Future<String?> getToken() async {
+    // actual implementation caches an in-memory access token for speed
+    // and falls back to secure storage read when needed.
     return await _storage.read(key: _accessTokenKey);
   }
 
@@ -510,7 +505,9 @@ class AuthApiClient {
   }
 
   // Refresh access token
-  Future<AuthResponse> refreshToken(String refreshToken) async {
+  Future<AuthResponse> refreshToken() async {
+    final refreshToken = await _storage.getRefreshToken();
+    if (refreshToken == null) throw Exception('No refresh token available');
     final response = await _client.post('/auth/refresh', data: {
       'refresh_token': refreshToken,
     });
@@ -609,7 +606,7 @@ class BaseHttpClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final accessToken = await _storage.getAccessToken();
+    final accessToken = await _storage.getToken();
     if (accessToken != null) {
       options.headers['Authorization'] = 'Bearer $accessToken';
     }

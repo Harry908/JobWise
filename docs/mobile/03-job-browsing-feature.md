@@ -205,8 +205,12 @@ enum JobSource {
   indeed,
   @JsonValue('linkedin')
   linkedin,
+  @JsonValue('glassdoor')
+  glassdoor,
   @JsonValue('imported')
   imported,
+  @JsonValue('url_import')
+  urlImport,
 }
 
 enum JobStatus {
@@ -561,8 +565,14 @@ class JobsApiClient {
 
   JobsApiClient(this._client);
 
+  // Note: API responses are snake_case; the JobsApiClient maps keys to
+  // camelCase for Dart models before parsing. Also supports URL imports.
+
   // Create job from raw text
-  Future<Job> createFromText(String rawText) async {
+  Future<Job> createFromText({
+    required String rawText,
+    JobSource source = JobSource.userCreated,
+  }) async {
     final response = await _client.post('/jobs', data: {
       'source': 'user_created',
       'raw_text': rawText,
@@ -570,8 +580,33 @@ class JobsApiClient {
     return Job.fromJson(response.data);
   }
 
-  // Create job from structured data
-  Future<Job> createFromData(Map<String, dynamic> data) async {
+  // Create job from URL (scrape & parse)
+  Future<Job> createFromUrl({
+    required String url,
+    JobSource source = JobSource.urlImport,
+  }) async {
+    final response = await _client.post(
+      '/jobs',
+      data: {
+        'source': _sourceToString(source),
+        'url': url,
+      },
+    );
+    return Job.fromJson(response.data);
+  }
+
+  // Create job from structured data (e.g., when saving a browsed job)
+  Future<Job> createJob({
+    required JobSource source,
+    required String title,
+    required String company,
+    String? location,
+    String? description,
+    List<String>? requirements,
+    List<String>? benefits,
+    String? salaryRange,
+    bool? remote,
+  }) async {
     final response = await _client.post('/jobs', data: data);
     return Job.fromJson(response.data);
   }

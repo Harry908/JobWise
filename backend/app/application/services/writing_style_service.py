@@ -1,14 +1,21 @@
 """
-Writing Style Service - In-memory extraction (V3.0).
+Writing Style Service - Separate table storage (V3.0).
 
 Extracts writing style characteristics from sample cover letter text
-without making LLM calls. Uses regex and string analysis.
+and stores results in dedicated writing_styles table.
 """
 
 import logging
 import re
-from typing import Dict, Any
+import json
+import uuid
+from typing import Dict, Any, Optional
+from datetime import datetime
 from collections import Counter
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_
+
+from app.infrastructure.database.models import WritingStyleModel, SampleDocumentModel
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +24,12 @@ class WritingStyleService:
     """
     Service for extracting writing style from sample text.
     
-    Performs in-memory analysis without LLM calls for <1s performance.
+    Stores extracted style in dedicated writing_styles table for normalization and caching.
     """
+    
+    def __init__(self, db: AsyncSession):
+        """Initialize service with database session."""
+        self.db = db
     
     # Common action verbs by strength
     STRONG_ACTION_VERBS = {
@@ -39,295 +50,377 @@ class WritingStyleService:
     # Connector phrases by formality
     FORMAL_CONNECTORS = {
         "furthermore", "moreover", "consequently", "nevertheless", "notwithstanding",
-        "subsequently", "accordingly", "thus", "hence", "therefore"
+        "accordingly", "therefore", "subsequently", "additionally", "alternatively"
     }
     
-    CASUAL_CONNECTORS = {
-        "also", "plus", "but", "so", "and then", "or", "because", "like"
+    INFORMAL_CONNECTORS = {
+        "and", "but", "so", "because", "when", "while", "or", "also"
     }
     
-    def extract_style(self, sample_text: str) -> Dict[str, Any]:
+    TECHNICAL_TERMS = {
+        "API", "REST", "GraphQL", "microservices", "kubernetes", "docker", "AWS", "Azure", "GCP",
+        "React", "Angular", "Vue", "Node.js", "Python", "Java", "C++", "JavaScript", "TypeScript",
+        "SQL", "NoSQL", "MongoDB", "PostgreSQL", "Redis", "Elasticsearch", "Kafka", "Jenkins",
+        "CI/CD", "DevOps", "Agile", "Scrum", "machine learning", "AI", "deep learning", "neural networks"
+    }
+    
+    async def get_or_extract_style(self, user_id: int) -> Dict[str, Any]:
         """
-        Extract writing style from sample text.
+        Get cached writing style for user or extract from cover letter sample.
         
         Args:
-            sample_text: Cover letter or writing sample
+            user_id: User identifier
             
         Returns:
-            Writing style configuration dict
+            Writing style analysis dictionary
+            
+        Raises:
+            ValueError: If no cover letter sample found and no cached style
         """
-        if not sample_text or len(sample_text.strip()) < 50:
-            raise ValueError("Sample text too short for style extraction (minimum 50 characters)")
+        logger.info(f"Getting writing style for user {user_id}")
         
-        # Clean text
-        text = sample_text.strip()
+        # Check if user already has extracted style
+        result = await self.db.execute(
+            select(WritingStyleModel).where(WritingStyleModel.user_id == user_id)
+        )
+        existing_style = result.scalar_one_or_none()
         
-        # Extract components
-        vocabulary = self._analyze_vocabulary(text)
-        sentence_structure = self._analyze_sentences(text)
-        tone = self._analyze_tone(text)
-        language_patterns = self._extract_language_patterns(text)
+        if existing_style and existing_style.extraction_status == "completed":
+            logger.info(f"Using cached writing style for user {user_id}")
+            return json.loads(existing_style.extracted_style)
+        
+        # No cached style, need to extract from cover letter
+        logger.info(f"Extracting writing style for user {user_id}")
+        return await self.extract_and_store_style(user_id)
+    
+    async def extract_and_store_style(self, user_id: int) -> Dict[str, Any]:
+        """
+        Extract writing style from user's cover letter and store in writing_styles table.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Extracted writing style dictionary
+            
+        Raises:
+            ValueError: If no active cover letter sample found
+        """
+        # Find user's active cover letter sample
+        result = await self.db.execute(
+            select(SampleDocumentModel).where(
+                and_(
+                    SampleDocumentModel.user_id == user_id,
+                    SampleDocumentModel.document_type == "cover_letter",
+                    SampleDocumentModel.is_active == True
+                )
+            ).order_by(SampleDocumentModel.created_at.desc())
+        )
+        
+        sample = result.scalar_one_or_none()
+        if not sample:
+            raise ValueError(f"No active cover letter sample found for user {user_id}")
+        
+        # Extract writing style using regex analysis
+        style_data = self._extract_style_from_text(sample.original_text)
+        
+        # Check if user already has a writing style record
+        result = await self.db.execute(
+            select(WritingStyleModel).where(WritingStyleModel.user_id == user_id)
+        )
+        existing_record = result.scalar_one_or_none()
+        
+        now = datetime.utcnow()
+        confidence = self._calculate_confidence(sample.original_text)
+        
+        if existing_record:
+            # Update existing record
+            existing_record.extracted_style = json.dumps(style_data)
+            existing_record.extraction_status = "completed"
+            existing_record.extraction_model = "regex_analysis"
+            existing_record.extraction_timestamp = now
+            existing_record.extraction_confidence = confidence
+            existing_record.source_sample_id = sample.id
+            existing_record.updated_at = now
+            
+            await self.db.commit()
+            await self.db.refresh(existing_record)
+            
+            logger.info(f"Updated writing style for user {user_id} with confidence {confidence}")
+        else:
+            # Create new record
+            writing_style = WritingStyleModel(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                extracted_style=json.dumps(style_data),
+                extraction_status="completed",
+                extraction_model="regex_analysis", 
+                extraction_timestamp=now,
+                extraction_confidence=confidence,
+                source_sample_id=sample.id
+            )
+            
+            self.db.add(writing_style)
+            await self.db.commit()
+            await self.db.refresh(writing_style)
+            
+            logger.info(f"Stored writing style for user {user_id} from sample {sample.id} with confidence {confidence}")
+        
+        return style_data
+    
+    async def force_re_extract_style(self, user_id: int) -> Dict[str, Any]:
+        """
+        Force re-extraction of writing style (ignores cached version).
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Newly extracted writing style dictionary
+        """
+        logger.info(f"Force re-extracting writing style for user {user_id}")
+        return await self.extract_and_store_style(user_id)
+    
+    def _extract_style_from_text(self, text: str) -> Dict[str, Any]:
+        """Extract writing style characteristics from text using regex analysis."""
+        if not text or not text.strip():
+            raise ValueError("Text cannot be empty")
+        
+        # Clean and prepare text
+        cleaned_text = self._clean_text(text)
+        sentences = self._split_sentences(cleaned_text)
+        words = cleaned_text.lower().split()
+        word_count = len(words)
+        
+        if word_count < 10:
+            raise ValueError("Text too short for analysis (minimum 10 words)")
+        
+        # Analyze different aspects
+        vocabulary_analysis = self._analyze_vocabulary(words, text)
+        tone_analysis = self._analyze_tone_and_formality(text, sentences)
+        structure_analysis = self._analyze_sentence_structure(sentences)
+        language_patterns = self._analyze_language_patterns(text, words)
+        content_approach = self._analyze_content_approach(text, sentences)
         
         return {
             "writing_style": {
-                "vocabulary_level": vocabulary["level"],
-                "vocabulary_complexity_score": vocabulary["complexity_score"],
-                "tone": tone["tone"],
-                "formality_level": tone["formality_level"],
-                "sentence_structure": sentence_structure["structure_type"],
-                "avg_sentence_length": sentence_structure["avg_length_category"],
-                "active_voice_ratio": sentence_structure["active_voice_ratio"],
-                "first_person_frequency": sentence_structure["first_person_frequency"]
+                **vocabulary_analysis,
+                **tone_analysis,
+                **structure_analysis
             },
             "language_patterns": language_patterns,
-            "content_approach": {
-                "storytelling_style": self._detect_storytelling_style(text),
-                "evidence_style": self._detect_evidence_style(text),
-                "example_integration": "integrated_naturally",
-                "industry_language_usage": "moderate"
-            }
+            "content_approach": content_approach
         }
     
-    def _analyze_vocabulary(self, text: str) -> Dict[str, Any]:
-        """Analyze vocabulary complexity."""
-        words = re.findall(r'\b\w+\b', text.lower())
-        
-        if not words:
-            return {"level": "professional", "complexity_score": 5}
-        
-        # Average word length as proxy for complexity
-        avg_word_length = sum(len(w) for w in words) / len(words)
-        
-        # Count sophisticated words (>8 letters)
-        sophisticated_words = [w for w in words if len(w) > 8]
-        sophistication_ratio = len(sophisticated_words) / len(words)
-        
-        # Determine complexity score (1-10)
-        if avg_word_length < 4.5:
-            complexity_score = 3
-            level = "conversational"
-        elif avg_word_length < 5.5:
-            complexity_score = 5
-            level = "professional"
-        elif avg_word_length < 6.5:
-            complexity_score = 7
-            level = "professional"
-        else:
-            complexity_score = 9
-            level = "academic"
-        
-        # Adjust by sophistication ratio
-        if sophistication_ratio > 0.15:
-            complexity_score = min(10, complexity_score + 1)
-        
-        return {
-            "level": level,
-            "complexity_score": complexity_score,
-            "avg_word_length": round(avg_word_length, 2),
-            "sophistication_ratio": round(sophistication_ratio, 2)
-        }
+    def _clean_text(self, text: str) -> str:
+        """Clean text for analysis."""
+        # Remove extra whitespace and normalize
+        text = re.sub(r'\\s+', ' ', text.strip())
+        # Remove email signatures and common artifacts
+        text = re.sub(r'(Best regards|Sincerely|Thank you)[^\\n]*$', '', text, flags=re.IGNORECASE)
+        return text
     
-    def _analyze_sentences(self, text: str) -> Dict[str, Any]:
-        """Analyze sentence structure."""
-        # Split into sentences
+    def _split_sentences(self, text: str) -> list:
+        """Split text into sentences."""
         sentences = re.split(r'[.!?]+', text)
-        sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+        return [s.strip() for s in sentences if s.strip()]
+    
+    def _analyze_vocabulary(self, words: list, original_text: str) -> Dict[str, Any]:
+        """Analyze vocabulary complexity and level."""
+        # Count syllables approximation (vowel groups)
+        total_syllables = sum(max(1, len(re.findall(r'[aeiou]+', word.lower()))) for word in words)
+        avg_syllables = total_syllables / len(words)
         
-        if not sentences:
-            return {
-                "structure_type": "varied",
-                "avg_length_category": "medium",
-                "active_voice_ratio": 0.7,
-                "first_person_frequency": "moderate"
-            }
+        # Vocabulary complexity score (1-10)
+        complexity_score = min(10, max(1, int(avg_syllables * 2)))
         
-        # Calculate average sentence length
-        total_words = sum(len(s.split()) for s in sentences)
-        avg_sentence_length = total_words / len(sentences) if sentences else 0
-        
-        # Categorize length
-        if avg_sentence_length < 12:
-            length_category = "short"
-        elif avg_sentence_length < 20:
-            length_category = "medium"
+        # Determine vocabulary level
+        if complexity_score <= 3:
+            vocab_level = "basic"
+        elif complexity_score <= 6:
+            vocab_level = "professional"
         else:
-            length_category = "long"
-        
-        # Detect active voice (simple heuristic: subject before verb)
-        active_voice_count = 0
-        for sentence in sentences:
-            # Active voice often starts with subject (I, we, name, company)
-            if re.match(r'^(I|We|My|Our|The\s+\w+)\s+\w+(ed|s|ing)\b', sentence, re.IGNORECASE):
-                active_voice_count += 1
-        
-        active_voice_ratio = active_voice_count / len(sentences) if sentences else 0.7
-        
-        # Count first-person pronouns
-        first_person_words = re.findall(r'\b(I|me|my|mine|we|us|our|ours)\b', text, re.IGNORECASE)
-        first_person_ratio = len(first_person_words) / len(text.split())
-        
-        if first_person_ratio < 0.02:
-            first_person_frequency = "rare"
-        elif first_person_ratio < 0.05:
-            first_person_frequency = "moderate"
-        else:
-            first_person_frequency = "frequent"
-        
-        # Determine structure type based on variation
-        word_counts = [len(s.split()) for s in sentences]
-        if len(set(word_counts)) > len(sentences) * 0.6:
-            structure_type = "varied"
-        elif avg_sentence_length < 15:
-            structure_type = "simple"
-        else:
-            structure_type = "complex"
+            vocab_level = "advanced"
         
         return {
-            "structure_type": structure_type,
-            "avg_length_category": length_category,
-            "avg_sentence_length": round(avg_sentence_length, 1),
-            "active_voice_ratio": round(active_voice_ratio, 2),
-            "first_person_frequency": first_person_frequency
+            "vocabulary_level": vocab_level,
+            "vocabulary_complexity_score": complexity_score
         }
     
-    def _analyze_tone(self, text: str) -> Dict[str, Any]:
-        """Analyze tone and formality."""
+    def _analyze_tone_and_formality(self, text: str, sentences: list) -> Dict[str, Any]:
+        """Analyze tone and formality level."""
         text_lower = text.lower()
         
-        # Count formal vs casual connectors
-        formal_count = sum(1 for connector in self.FORMAL_CONNECTORS if connector in text_lower)
-        casual_count = sum(1 for connector in self.CASUAL_CONNECTORS if connector in text_lower)
+        # Formality indicators
+        formal_indicators = sum(1 for phrase in self.FORMAL_CONNECTORS if phrase in text_lower)
+        informal_indicators = sum(1 for phrase in self.INFORMAL_CONNECTORS if phrase in text_lower)
         
-        # Detect enthusiasm markers
-        exclamations = text.count('!')
-        enthusiasm_words = len(re.findall(r'\b(excited|thrilled|passionate|eager|enthusiastic)\b', text_lower))
+        # Contractions count (informal indicator)
+        contractions = len(re.findall(r"\\b\\w+'\\w+\\b", text))
         
-        # Determine formality (1-10 scale)
-        if formal_count > casual_count * 2:
-            formality_level = 8
+        # Personal pronouns (first person usage)
+        first_person_count = len(re.findall(r'\\b(I|my|me|myself)\\b', text, re.IGNORECASE))
+        first_person_frequency = "frequent" if first_person_count > 3 else "moderate" if first_person_count > 0 else "rare"
+        
+        # Determine formality level (1-5 scale)
+        formality_score = 3  # Start neutral
+        formality_score += formal_indicators * 0.5
+        formality_score -= informal_indicators * 0.3
+        formality_score -= contractions * 0.2
+        formality_level = max(1, min(5, int(formality_score)))
+        
+        # Determine tone
+        if formality_level >= 4:
             tone = "formal"
-        elif formal_count > casual_count:
-            formality_level = 6
+        elif formality_level >= 3:
             tone = "semi-formal"
         else:
-            formality_level = 4
-            tone = "semi-formal"
-        
-        # Adjust tone based on enthusiasm
-        if enthusiasm_words > 2 or exclamations > 1:
-            tone = "enthusiastic"
-        elif re.search(r'\b(authoritative|expertise|proven|demonstrate)\b', text_lower):
-            tone = "authoritative"
+            tone = "casual"
         
         return {
             "tone": tone,
             "formality_level": formality_level,
-            "formal_connector_count": formal_count,
-            "enthusiasm_markers": enthusiasm_words + exclamations
+            "first_person_frequency": first_person_frequency
         }
     
-    def _extract_language_patterns(self, text: str) -> Dict[str, Any]:
-        """Extract specific language patterns."""
-        text_lower = text.lower()
-        words = re.findall(r'\b\w+\b', text_lower)
+    def _analyze_sentence_structure(self, sentences: list) -> Dict[str, Any]:
+        """Analyze sentence structure patterns."""
+        if not sentences:
+            return {
+                "sentence_structure": "simple",
+                "avg_sentence_length": "short",
+                "active_voice_ratio": 0.0
+            }
         
-        # Extract action verbs
-        action_verbs = []
-        for verb_set, category in [
-            (self.STRONG_ACTION_VERBS, "strong"),
-            (self.MODERATE_ACTION_VERBS, "moderate"),
-            (self.WEAK_ACTION_VERBS, "weak")
-        ]:
-            found = [v for v in verb_set if v in words]
-            action_verbs.extend(found[:5])  # Limit to 5 per category
+        sentence_lengths = [len(sentence.split()) for sentence in sentences]
+        avg_length = sum(sentence_lengths) / len(sentence_lengths)
         
-        # Extract technical terms (words with numbers, capitals, or technical indicators)
-        technical_terms = list(set(
-            re.findall(r'\b(?:[A-Z]{2,}|\w+(?:Script|SQL|API|SDK|ML|AI|Python|Java|React))\b', text)
-        ))[:10]
+        # Categorize average sentence length
+        if avg_length < 10:
+            length_category = "short"
+        elif avg_length < 20:
+            length_category = "medium"
+        else:
+            length_category = "long"
         
-        # Extract connector phrases
-        connector_phrases = []
-        for connector in list(self.FORMAL_CONNECTORS)[:5] + list(self.CASUAL_CONNECTORS)[:5]:
-            if connector in text_lower:
-                connector_phrases.append(connector)
+        # Analyze sentence variety
+        length_variance = len(set(range(min(sentence_lengths)//5, max(sentence_lengths)//5 + 1)))
+        structure = "varied" if length_variance > 2 else "consistent"
         
-        # Extract emphasis words
-        emphasis_words = list(set(
-            re.findall(r'\b(significantly|substantially|dramatically|effectively|successfully|proven|demonstrated)\b', text_lower)
-        ))[:10]
+        # Active vs passive voice (simplified analysis)
+        active_count = sum(1 for sentence in sentences 
+                          if not re.search(r'\\b(was|were|been|being)\\s+\\w+ed\\b', sentence.lower()))
+        active_ratio = active_count / len(sentences) if sentences else 0
         
         return {
-            "action_verbs": action_verbs[:10],
-            "technical_terms": technical_terms,
-            "connector_phrases": connector_phrases[:10],
-            "emphasis_words": emphasis_words,
-            "qualification_language": self._extract_qualification_phrases(text)
+            "sentence_structure": structure,
+            "avg_sentence_length": length_category,
+            "active_voice_ratio": round(active_ratio, 2)
         }
     
-    def _extract_qualification_phrases(self, text: str) -> list:
-        """Extract qualification/credibility phrases."""
-        patterns = [
-            r'proven track record',
-            r'demonstrated ability',
-            r'\d+ years of experience',
-            r'expertise in',
-            r'proficient in',
-            r'skilled in',
-            r'certified',
-            r'award-winning'
-        ]
-        
-        found = []
-        for pattern in patterns:
-            matches = re.findall(pattern, text.lower())
-            found.extend(matches)
-        
-        return list(set(found))[:10]
-    
-    def _detect_storytelling_style(self, text: str) -> str:
-        """Detect storytelling approach."""
+    def _analyze_language_patterns(self, text: str, words: list) -> Dict[str, Any]:
+        """Analyze specific language patterns and word choices."""
         text_lower = text.lower()
         
-        # Achievement-focused: many metrics and results
-        achievement_markers = len(re.findall(r'\b\d+%|\$\d+|increased|improved|reduced|grew\b', text_lower))
+        # Find action verbs
+        action_verbs = []
+        for verb_set, verbs in [
+            ("strong", self.STRONG_ACTION_VERBS),
+            ("moderate", self.MODERATE_ACTION_VERBS), 
+            ("weak", self.WEAK_ACTION_VERBS)
+        ]:
+            found_verbs = [verb for verb in verbs if verb in text_lower]
+            action_verbs.extend(found_verbs)
         
-        # Narrative: temporal markers and story flow
-        narrative_markers = len(re.findall(r'\bwhen|during|after|before|then|first|finally\b', text_lower))
+        # Find technical terms
+        technical_terms = [term for term in self.TECHNICAL_TERMS if term.lower() in text_lower]
         
-        if achievement_markers > narrative_markers * 1.5:
-            return "achievement-focused"
-        elif narrative_markers > achievement_markers:
-            return "narrative-driven"
-        else:
-            return "balanced"
+        # Find connector phrases
+        formal_connectors = [conn for conn in self.FORMAL_CONNECTORS if conn in text_lower]
+        informal_connectors = [conn for conn in self.INFORMAL_CONNECTORS if conn in text_lower]
+        connector_phrases = formal_connectors + informal_connectors
+        
+        # Find emphasis words (very, extremely, highly, etc.)
+        emphasis_words = re.findall(r'\\b(very|extremely|highly|significantly|tremendously|exceptionally)\\b', text_lower)
+        
+        # Find qualification language (maybe, perhaps, might, etc.)
+        qualification_language = re.findall(r'\\b(maybe|perhaps|might|possibly|potentially|somewhat)\\b', text_lower)
+        
+        return {
+            "action_verbs": list(set(action_verbs))[:10],  # Top 10 unique
+            "technical_terms": list(set(technical_terms))[:10],
+            "connector_phrases": list(set(connector_phrases))[:5],
+            "emphasis_words": list(set(emphasis_words)),
+            "qualification_language": list(set(qualification_language))
+        }
     
-    def _detect_evidence_style(self, text: str) -> str:
-        """Detect how evidence is presented."""
+    def _analyze_content_approach(self, text: str, sentences: list) -> Dict[str, Any]:
+        """Analyze how content is structured and presented."""
         text_lower = text.lower()
         
-        # Quantified: numbers and percentages
-        quantified = len(re.findall(r'\b\d+(?:%|\s+percent|K|M|million|thousand)\b', text_lower))
+        # Storytelling style
+        story_indicators = len(re.findall(r'\\b(when|while|during|after|before|then|next|finally)\\b', text_lower))
+        achievement_indicators = len(re.findall(r'\\b(achieved|accomplished|delivered|increased|improved|reduced|saved)\\b', text_lower))
         
-        # Qualitative: descriptive adjectives
-        qualitative = len(re.findall(r'\b(significant|substantial|comprehensive|extensive|notable)\b', text_lower))
-        
-        if quantified > 3:
-            return "quantified_results"
-        elif qualitative > quantified:
-            return "qualitative_descriptors"
+        if achievement_indicators > story_indicators:
+            storytelling_style = "achievement-focused"
+        elif story_indicators > 2:
+            storytelling_style = "narrative"
         else:
-            return "mixed"
-
-
-# FastAPI dependency
-def get_writing_style_service() -> WritingStyleService:
-    """
-    FastAPI dependency for WritingStyleService injection.
+            storytelling_style = "direct"
+        
+        # Evidence style (metrics vs descriptions)
+        metric_indicators = len(re.findall(r'\\b\\d+(%|percent|\\$|k|million|billion|years?|months?)\\b', text))
+        descriptive_indicators = len(re.findall(r'\\b(excellent|great|good|effective|successful|strong)\\b', text_lower))
+        
+        if metric_indicators > descriptive_indicators:
+            evidence_style = "quantitative"
+        elif descriptive_indicators > metric_indicators:
+            evidence_style = "qualitative"
+        else:
+            evidence_style = "mixed"
+        
+        # Example integration
+        example_indicators = len(re.findall(r'\\b(such as|for example|including|like|e\\.g\\.)\\b', text_lower))
+        if example_indicators > 2:
+            example_integration = "example_heavy"
+        elif example_indicators > 0:
+            example_integration = "integrated_naturally"
+        else:
+            example_integration = "minimal_examples"
+        
+        # Industry language usage
+        industry_terms_count = len([term for term in self.TECHNICAL_TERMS if term.lower() in text_lower])
+        if industry_terms_count > 5:
+            industry_usage = "heavy"
+        elif industry_terms_count > 2:
+            industry_usage = "moderate"
+        else:
+            industry_usage = "minimal"
+        
+        return {
+            "storytelling_style": storytelling_style,
+            "evidence_style": evidence_style,
+            "example_integration": example_integration,
+            "industry_language_usage": industry_usage
+        }
     
-    Usage:
-        @app.post("/endpoint")
-        async def endpoint(service: WritingStyleService = Depends(get_writing_style_service)):
-            ...
-    """
-    return WritingStyleService()
+    def _calculate_confidence(self, text: str) -> float:
+        """Calculate confidence score based on text length and quality."""
+        word_count = len(text.split())
+        
+        # Base confidence on text length
+        if word_count < 50:
+            base_confidence = 0.4
+        elif word_count < 150:
+            base_confidence = 0.7
+        elif word_count < 300:
+            base_confidence = 0.8
+        else:
+            base_confidence = 0.9
+        
+        # Adjust for text quality indicators
+        if len(re.findall(r'[.!?]', text)) < 3:  # Very few sentences
+            base_confidence *= 0.8
+        
+        return round(base_confidence, 2)

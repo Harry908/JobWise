@@ -70,7 +70,51 @@ Diagnosed and fixed the job display issue where the mobile app was using mock da
 
 ## Log Entry: 6
 
+## Log Entry: 9
+
 ### User Request
+update these doc based on current code
+
+### Response Summary
+Reviewed the mobile app codebase and updated the mobile design documentation to match the current implementation. Fixed mismatch issues (env config, storage method names, API client methods), marked generation as implemented, adjusted Jobs API doc for new sources and URL import support, and clarified which document features are implemented vs pending. Updated the mobile README to reflect current statuses.
+
+### Actions Taken
+- **File:** `docs/mobile/00-api-configuration.md`
+  - **Change:** Replaced the AppConfig example with the actual dotenv-based implementation; updated Dio client snippets to use `getToken` and refreshed token handling notes.
+  - **Reason:** AppConfig is implemented using `flutter_dotenv` and `API_BASE_URL` in the code; documentation must reflect this.
+
+- **File:** `docs/mobile/01-authentication-feature.md`
+  - **Change:** Updated StorageService snippet to use `getToken` (cached) and `getRefreshToken`; updated AuthApiClient.refreshToken signature to match implementation; updated provider usage to call `getToken` and the correct `refreshToken()` usage.
+  - **Reason:** Code uses `getToken()` and `refreshToken()` (no parameter), and tokens are auto-saved on login/register.
+
+- **File:** `docs/mobile/03-job-browsing-feature.md`
+  - **Change:** Added `glassdoor` and `url_import` to JobSource enum; documented createFromUrl and createJob method signatures; added note on snake_case-to-camelCase mapping performed in JobsApiClient.
+  - **Reason:** Jobs API client has support for URL import and extra sources; the doc now matches the JobsApiClient implementation and response handling.
+
+- **File:** `docs/mobile/04-generation-feature.md`
+  - **Change:** Updated Implementation Status to reflect that generation UI and API clients are implemented; changed pipeline description to ‘multi-stage’ (backend-controlled); marked preference management features as partially implemented (upload screens created, but wizard/UX polish pending).
+  - **Reason:** Generation API client, providers, and screens exist in the code, as do the preference upload screens and API client; docs must reflect actual status and remaining TODOs.
+
+- **File:** `docs/mobile/05-document-feature.md`
+  - **Change:** Marked Document feature as partially implemented (generation result PDF actions and DocumentStorageService exist) and detailed remaining items (Document list/detail screens, DocumentApiClient, in-app viewers).
+  - **Reason:** The app includes PDF caching and generation result actions, but dedicated Document UI and API client are not implemented.
+
+- **File:** `docs/mobile/README.md`
+  - **Change:** Updated file references, statuses (Job, Generation implemented; Document partial), and the global progress note.
+  - **Reason:** Keep the top-level index aligned with code and per-file documentation updates.
+
+### Files Modified
+- `docs/mobile/00-api-configuration.md` — Updated AppConfig and BaseHttpClient snippets
+- `docs/mobile/01-authentication-feature.md` — Updated StorageService and Auth API usage, provider code snippets
+- `docs/mobile/03-job-browsing-feature.md` — Added JobSource updates and createFromUrl API method in the doc
+- `docs/mobile/04-generation-feature.md` — Updated implementation status and pipeline description
+- `docs/mobile/05-document-feature.md` — Marked partial implementation and clarified current progress
+- `docs/mobile/README.md` — Updated feature statuses and file names
+
+### Next Steps
+- Review other docs to ensure parity (document feature and job feature areas)
+- Add TODO tasks to the backlog for remaining UI features (Document tab, DocumentApiClient, wizard polish)
+
 now implement these 2 feature: sample resume upload and sample cover letter upload. use context7
 
 ### Response Summary
