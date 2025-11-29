@@ -168,19 +168,37 @@ class SampleDetailResponse(BaseModel):
 
 @router.post("/samples/upload", response_model=SampleUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_sample_document(
-    document_type: str = Form(),
-    file: UploadFile = File(),
+    document_type: Annotated[str, Form(description="Type of document: 'resume' or 'cover_letter'")],
+    file: Annotated[UploadFile, File(description="Sample document file (.txt format, max 1MB)")],
     current_user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ) -> SampleUploadResponse:
     """
-    Upload a sample resume or cover letter as plain text.
+    Upload a sample resume or cover letter for writing style extraction.
     
     Validates file type (.txt only), calculates word/character count,
-    sets previous samples of same type to inactive, and stores new sample.
+    deactivates previous samples of same type, and stores new sample.
     
-    Rate limit: 10 uploads per user per hour
-    Max size: 1MB
+    **Request Format**: multipart/form-data
+    
+    **File Requirements**:
+    - Format: Plain text (.txt) only
+    - Size: Maximum 1 MB
+    - Encoding: UTF-8
+    - Content: Non-empty text
+    
+    **Business Logic**:
+    1. Validate file extension is .txt
+    2. Read file content as UTF-8 text
+    3. Calculate word_count and character_count
+    4. Set previous samples of same type to is_active=false
+    5. Store new sample with is_active=true
+    
+    Raises:
+    - **400 Bad Request**: Invalid file type or document_type
+    - **413 Payload Too Large**: File exceeds 1MB
+    - **422 Unprocessable Entity**: Empty file or invalid UTF-8
+    - **500 Internal Server Error**: Database or processing error
     """
     try:
         # Validate file extension
@@ -874,15 +892,23 @@ async def generate_cover_letter(
 
 @router.get("/samples", response_model=SampleListResponse)
 async def get_sample_documents(
+    document_type: Annotated[Optional[str], Query(pattern="^(resume|cover_letter|all)$", description="Filter by document type")] = None,
+    active_only: Annotated[bool, Query(description="Show only active samples")] = True,
     current_user_id: int = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session),
-    document_type: Optional[str] = Query(None, regex="^(resume|cover_letter|all)$"),
-    active_only: bool = Query(True)
+    db: AsyncSession = Depends(get_db_session)
 ) -> SampleListResponse:
     """
-    Retrieve user's uploaded sample documents.
+    Retrieve user's uploaded sample documents with filtering.
     
-    Does NOT return full text in list view for performance.
+    **Query Parameters**:
+    - **document_type**: Filter by 'resume', 'cover_letter', or 'all'
+    - **active_only**: Show only active samples (default: true)
+    
+    **Note**: Full text NOT included in list view for performance.
+    Use GET /samples/{sample_id} to retrieve full text.
+    
+    Raises:
+    - **500 Internal Server Error**: Database error
     """
     try:
         from sqlalchemy import select
@@ -927,12 +953,22 @@ async def get_sample_documents(
 
 @router.get("/samples/{sample_id}", response_model=SampleDetailResponse)
 async def get_sample_detail(
-    sample_id: UUID = Path(),
+    sample_id: Annotated[UUID, Path(description="Sample document unique identifier")],
     current_user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ) -> SampleDetailResponse:
     """
     Retrieve specific sample document with full text.
+    
+    Returns complete sample details including original_text for
+    re-analysis or preview purposes.
+    
+    **Security**: Validates user ownership before returning data.
+    
+    Raises:
+    - **404 Not Found**: Sample does not exist
+    - **403 Forbidden**: User does not own this sample
+    - **500 Internal Server Error**: Database error
     """
     try:
         from sqlalchemy import select
@@ -977,12 +1013,21 @@ async def get_sample_detail(
 
 @router.delete("/samples/{sample_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sample_document(
-    sample_id: UUID = Path(),
+    sample_id: Annotated[UUID, Path(description="Sample document unique identifier")],
     current_user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
-):
+) -> None:
     """
-    Delete a sample document.
+    Delete a sample document permanently.
+    
+    **Security**: Validates user ownership before deletion.
+    
+    **Returns**: 204 No Content on success (empty body per REST standards).
+    
+    Raises:
+    - **404 Not Found**: Sample does not exist
+    - **403 Forbidden**: User does not own this sample
+    - **500 Internal Server Error**: Database error
     """
     try:
         from sqlalchemy import select, delete
@@ -1076,7 +1121,7 @@ async def get_job_rankings(
 async def get_generation_history(
     current_user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
-    document_type: Optional[str] = Query(None, regex="^(resume|cover_letter|all)$"),
+    document_type: Optional[str] = Query(None, pattern="^(resume|cover_letter|all)$"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0)
 ):

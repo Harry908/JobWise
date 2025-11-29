@@ -2,7 +2,8 @@
 
 **Backend API**: [V3 Generation API](../api-services/04-v3-generation-api.md)
 **Base Path**: `/api/v1`
-**Status**: ✅ Fully Implemented
+**Status**: ✅ Fully Implemented  
+**Provider Architecture**: Separated into `samples_provider` (uploads) and `generations_provider` (generation logic)
 **Last Updated**: November 2025
 
 ---
@@ -10,6 +11,10 @@
 ## Overview
 
 The Generation feature is the core AI-powered functionality of JobWise. It allows users to generate tailored resumes and cover letters for specific job postings using real Groq LLM integration.
+
+**Architecture Note**: Sample upload handling and document generation logic are now separated into two dedicated providers:
+- **samples_provider.dart**: Manages resume/cover letter sample uploads using V3 Generation API
+- **generations_provider.dart**: Handles document generation, progress tracking, and history
 
 ### User Stories
 
@@ -690,7 +695,129 @@ class RankedItem {
 
 ## State Management
 
-### GenerationsState
+**Architecture**: Separated providers for focused responsibilities
+
+### SamplesProvider (`samples_provider.dart`)
+
+Manages sample document uploads (resumes and cover letters) for teaching AI writing style.
+
+**File**: `lib/providers/samples_provider.dart`
+
+```dart
+class SamplesState {
+  final List<Sample> samples;
+  final bool isLoading;
+  final String? errorMessage;
+
+  // Computed properties
+  Sample? get activeResumeSample;
+  Sample? get activeCoverLetterSample;
+  List<Sample> get resumeSamples;
+  List<Sample> get coverLetterSamples;
+  bool get hasSamples;
+  bool get hasResumeSample;
+  bool get hasCoverLetterSample;
+}
+
+class SamplesNotifier extends StateNotifier<SamplesState> {
+  Future<void> loadSamples();
+  Future<Sample?> uploadSample({required PlatformFile file, required String documentType});
+  Future<bool> deleteSample(String sampleId);
+  void clearError();
+}
+
+final samplesProvider = StateNotifierProvider<SamplesNotifier, SamplesState>();
+```
+
+**Usage in Profile Screen**:
+```dart
+// Watch samples state
+final samplesState = ref.watch(samplesProvider);
+final resumeSample = samplesState.activeResumeSample;
+
+// Upload new sample
+final uploadedSample = await ref.read(samplesProvider.notifier).uploadSample(
+  file: file,
+  documentType: 'resume', // or 'cover_letter'
+);
+
+// Delete sample
+await ref.read(samplesProvider.notifier).deleteSample(sampleId);
+```
+
+---
+
+### GenerationsProvider (`generations_provider.dart`)
+
+Handles document generation requests, progress tracking, and generation history.
+
+**File**: `lib/providers/generations_provider.dart`
+
+```dart
+class GenerationsState {
+  final List<GenerationListItem> history;
+  final Generation? currentGeneration;
+  final bool isGenerating;
+  final double progress; // 0.0 to 1.0
+  final String? currentStage;
+  final String? errorMessage;
+
+  // Computed properties
+  List<GenerationListItem> get resumeHistory;
+  List<GenerationListItem> get coverLetterHistory;
+  bool get hasActiveGeneration;
+}
+
+class GenerationsNotifier extends StateNotifier<GenerationsState> {
+  Future<Generation?> generateResume({
+    required String jobId,
+    int maxExperiences = 5,
+    int maxProjects = 3,
+    bool includeSummary = true,
+  });
+  
+  Future<Generation?> generateCoverLetter({
+    required String jobId,
+    String tone = 'professional',
+    String length = 'medium',
+  });
+  
+  Future<void> fetchHistory({String? documentType, int limit = 20, int offset = 0});
+  void clearError();
+  void reset();
+}
+
+final generationsProvider = StateNotifierProvider<GenerationsNotifier, GenerationsState>();
+```
+
+**Usage in Generation Screens**:
+```dart
+// Watch generation state
+final generationsState = ref.watch(generationsProvider);
+final isGenerating = generationsState.isGenerating;
+final progress = generationsState.progress;
+
+// Generate resume
+final generation = await ref.read(generationsProvider.notifier).generateResume(
+  jobId: jobId,
+  maxExperiences: 5,
+);
+
+// Generate cover letter
+final generation = await ref.read(generationsProvider.notifier).generateCoverLetter(
+  jobId: jobId,
+  tone: 'professional',
+);
+```
+
+---
+
+### Legacy GenerationsState (Deprecated)
+
+**Note**: The following GenerationsState class from the original docs is deprecated. Use the separated providers above.
+
+<details>
+<summary>Click to view deprecated GenerationsState (for reference only)</summary>
 
 **File**: `lib/providers/generations/generations_state.dart`
 

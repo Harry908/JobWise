@@ -183,8 +183,33 @@ Each feature document follows a consistent structure:
 
 ---
 
-### 4. [Generation Feature](04-generation-feature.md)
-**Backend API**: [V3 Generation API](../api-services/04-v3-generation-api.md)
+### 4. Generation Feature (Split into 2 groups)
+
+#### 4a. [Sample Upload Feature](04a-sample-upload-feature.md)
+**Backend API**: [Sample Upload API](../api-services/04a-sample-upload-api.md)
+**Base Path**: `/api/v1/samples`
+**Status**: ✅ Fully Implemented
+
+**Screens** (2):
+- SampleUploadScreen
+- SampleDetailScreen
+
+**Key Features**:
+- Upload sample resumes and cover letters (.txt files)
+- View and manage uploaded samples
+- Active sample tracking per document type
+- Fast CRUD operations (no LLM)
+
+**API Endpoints Used**: 4 endpoints
+
+**State Management**:
+- SamplesNotifier (StateNotifier)
+- SamplesState (samples list, upload status)
+
+---
+
+#### 4b. [AI Generation Feature](04b-ai-generation-feature.md)
+**Backend API**: [AI Generation API](../api-services/04b-ai-generation-api.md)
 **Base Path**: `/api/v1`
 **Status**: ✅ Fully Implemented
 
@@ -195,7 +220,6 @@ Each feature document follows a consistent structure:
 - GenerationHistoryScreen (list all generations)
 
 **Key Features**:
-- Sample document upload (.txt files for writing style extraction)
 - AI-powered profile enhancement using writing style
 - Job-specific content ranking (LLM-powered)
 - Resume generation (pure logic, <1 second)
@@ -204,43 +228,20 @@ Each feature document follows a consistent structure:
 - ATS score display and analysis
 - Generation history with filtering
 
-**API Endpoints Used**: 10 endpoints
-- POST /samples/upload
-- POST /profile/enhance
-- POST /rankings/create
-- POST /generations/resume
-- POST /generations/cover-letter
-- GET /samples
-- GET /samples/{id}
-- DELETE /samples/{id}
-- GET /rankings/job/{job_id}
-- GET /generations/history
+**API Endpoints Used**: 6 endpoints
 
 **LLM Integration**:
 - Groq API with llama-3.3-70b-versatile (cover letters, enhancements)
 - Groq API with llama-3.1-8b-instant (ranking, analysis)
 
-**Data Models**:
-- Sample
-- Generation
-- Ranking
-- RankedItem
-- GenerationsState
-
 **State Management**:
 - GenerationsNotifier (StateNotifier)
-- Manages samples, generations, rankings, progress
+- Manages generations, rankings, progress
 
-**UI Components**:
-- SampleUploadButton (file picker)
-- ATSScoreBadge (color-coded score display)
-- GenerationCard (history item)
-- ProgressIndicator (with stage labels)
+---
 
-**Performance**:
-- Resume generation: <1 second
-- Cover letter generation: 3-5 seconds
-- Ranking caching per job for reuse
+#### [Generation Feature](04-generation-feature.md) (Combined Reference)
+**Note**: This is the combined documentation. Use 04a and 04b for focused agent work.
 
 ---
 

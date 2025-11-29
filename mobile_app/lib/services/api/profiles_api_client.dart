@@ -80,6 +80,21 @@ class ProfilesApiClient {
   }
 
   // Bulk Education Operations
+  Future<List<Education>> getEducation(String profileId, {int? limit, int? offset}) async {
+    final queryParams = <String, dynamic>{};
+    if (limit != null) queryParams['limit'] = limit;
+    if (offset != null) queryParams['offset'] = offset;
+
+    final response = await _client.get(
+      '/profiles/$profileId/education',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+    final data = response.data as Map<String, dynamic>;
+    return (data['education'] as List)
+        .map((json) => Education.fromJson(json))
+        .toList();
+  }
+
   Future<List<Education>> addEducation(String profileId, List<Education> education) async {
     final response = await _client.post(
       '/profiles/$profileId/education',
@@ -103,7 +118,7 @@ class ProfilesApiClient {
   Future<void> deleteEducation(String profileId, List<String> educationIds) async {
     await _client.delete(
       '/profiles/$profileId/education',
-      data: educationIds,
+      data: {'education_ids': educationIds},
     );
   }
 
@@ -131,7 +146,7 @@ class ProfilesApiClient {
   Future<void> deleteProjects(String profileId, List<String> projectIds) async {
     await _client.delete(
       '/profiles/$profileId/projects',
-      data: projectIds,
+      data: {'project_ids': projectIds},
     );
   }
 

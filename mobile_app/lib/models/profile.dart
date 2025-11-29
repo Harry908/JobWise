@@ -5,6 +5,7 @@ class Profile {
     required this.userId,
     required this.personalInfo,
     this.professionalSummary,
+    this.enhancedSummary,
     this.experiences = const [],
     this.education = const [],
     required this.skills,
@@ -18,6 +19,7 @@ class Profile {
   final int userId;
   final PersonalInfo personalInfo;
   final String? professionalSummary;
+  final String? enhancedSummary;
   final List<Experience> experiences;
   final List<Education> education;
   final Skills skills;
@@ -37,6 +39,7 @@ class Profile {
       userId: userId,
       personalInfo: PersonalInfo.fromJson(json['personal_info'] as Map<String, dynamic>),
       professionalSummary: json['professional_summary'] as String?,
+      enhancedSummary: json['enhanced_summary'] as String?,
       experiences: (json['experiences'] as List<dynamic>?)
           ?.map((e) => Experience.fromJson(e as Map<String, dynamic>))
           .toList() ?? const [],
@@ -59,6 +62,7 @@ class Profile {
       'user_id': userId,
       'personal_info': personalInfo.toJson(),
       'professional_summary': professionalSummary,
+      'enhanced_summary': enhancedSummary,
       'experiences': experiences.map((e) => e.toJson()).toList(),
       'education': education.map((e) => e.toJson()).toList(),
       'skills': skills.toJson(),
@@ -74,6 +78,7 @@ class Profile {
     int? userId,
     PersonalInfo? personalInfo,
     String? professionalSummary,
+    String? enhancedSummary,
     List<Experience>? experiences,
     List<Education>? education,
     Skills? skills,
@@ -87,6 +92,7 @@ class Profile {
       userId: userId ?? this.userId,
       personalInfo: personalInfo ?? this.personalInfo,
       professionalSummary: professionalSummary ?? this.professionalSummary,
+      enhancedSummary: enhancedSummary ?? this.enhancedSummary,
       experiences: experiences ?? this.experiences,
       education: education ?? this.education,
       skills: skills ?? this.skills,
@@ -105,6 +111,7 @@ class Profile {
         other.userId == userId &&
         other.personalInfo == personalInfo &&
         other.professionalSummary == professionalSummary &&
+        other.enhancedSummary == enhancedSummary &&
         other.experiences == experiences &&
         other.education == education &&
         other.skills == skills &&
@@ -120,6 +127,7 @@ class Profile {
         userId.hashCode ^
         personalInfo.hashCode ^
         professionalSummary.hashCode ^
+        enhancedSummary.hashCode ^
         experiences.hashCode ^
         education.hashCode ^
         skills.hashCode ^
@@ -228,7 +236,9 @@ class Experience {
     this.endDate,
     this.isCurrent = false,
     this.description,
+    this.enhancedDescription,
     this.achievements = const [],
+    this.technologies = const [],
     this.employmentType,
     this.industry,
   });
@@ -241,7 +251,9 @@ class Experience {
   final String? endDate;
   final bool isCurrent;
   final String? description;
+  final String? enhancedDescription;
   final List<String> achievements;
+  final List<String> technologies;
   final String? employmentType;
   final String? industry;
 
@@ -255,7 +267,9 @@ class Experience {
       endDate: json['end_date'] as String?,
       isCurrent: json['is_current'] as bool? ?? false,
       description: json['description'] as String?,
+      enhancedDescription: json['enhanced_description'] as String?,
       achievements: (json['achievements'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
+      technologies: (json['technologies'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
       employmentType: json['employment_type'] as String?,
       industry: json['industry'] as String?,
     );
@@ -271,7 +285,9 @@ class Experience {
       'end_date': endDate,
       'is_current': isCurrent,
       'description': description,
+      'enhanced_description': enhancedDescription,
       'achievements': achievements,
+      'technologies': technologies,
       'employment_type': employmentType,
       'industry': industry,
     };
@@ -286,7 +302,9 @@ class Experience {
     String? endDate,
     bool? isCurrent,
     String? description,
+    String? enhancedDescription,
     List<String>? achievements,
+    List<String>? technologies,
     String? employmentType,
     String? industry,
   }) {
@@ -299,7 +317,9 @@ class Experience {
       endDate: endDate ?? this.endDate,
       isCurrent: isCurrent ?? this.isCurrent,
       description: description ?? this.description,
+      enhancedDescription: enhancedDescription ?? this.enhancedDescription,
       achievements: achievements ?? this.achievements,
+      technologies: technologies ?? this.technologies,
       employmentType: employmentType ?? this.employmentType,
       industry: industry ?? this.industry,
     );
@@ -317,7 +337,9 @@ class Experience {
         other.endDate == endDate &&
         other.isCurrent == isCurrent &&
         other.description == description &&
+        other.enhancedDescription == enhancedDescription &&
         _listEquals(other.achievements, achievements) &&
+        _listEquals(other.technologies, technologies) &&
         other.employmentType == employmentType &&
         other.industry == industry;
   }
@@ -332,7 +354,9 @@ class Experience {
         endDate.hashCode ^
         isCurrent.hashCode ^
         description.hashCode ^
+        enhancedDescription.hashCode ^
         achievements.hashCode ^
+        technologies.hashCode ^
         employmentType.hashCode ^
         industry.hashCode;
   }
@@ -537,6 +561,7 @@ class Project {
     this.id,
     required this.name,
     required this.description,
+    this.enhancedDescription,
     this.technologies = const [],
     this.url,
     this.repositoryUrl,
@@ -549,6 +574,7 @@ class Project {
   final String? id;
   final String name;
   final String description;
+  final String? enhancedDescription;
   final List<String> technologies;
   final String? url;
   final String? repositoryUrl;
@@ -562,9 +588,10 @@ class Project {
       id: json['id'] as String?,
       name: json['name'] as String,
       description: json['description'] as String,
+      enhancedDescription: json['enhanced_description'] as String?,
       technologies: (json['technologies'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
       url: json['url'] as String?,
-      repositoryUrl: json['repository_url'] as String?,
+      repositoryUrl: json['repository_url'] as String? ?? json['github_url'] as String?,
       startDate: json['start_date'] as String?,
       endDate: json['end_date'] as String?,
       isOngoing: json['is_ongoing'] as bool? ?? false,
@@ -577,9 +604,10 @@ class Project {
       'id': id,
       'name': name,
       'description': description,
+      'enhanced_description': enhancedDescription,
       'technologies': technologies,
       'url': url,
-      'repository_url': repositoryUrl,
+      'github_url': repositoryUrl,
       'start_date': startDate,
       'end_date': endDate,
       'is_ongoing': isOngoing,

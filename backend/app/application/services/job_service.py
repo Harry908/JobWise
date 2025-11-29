@@ -83,6 +83,7 @@ class JobService:
         benefits: Optional[List[str]] = None,
         salary_range: Optional[str] = None,
         remote: bool = False,
+        employment_type: str = "full_time",
         status: str = "active"
     ) -> Job:
         """Create job from structured data (already parsed).
@@ -98,6 +99,7 @@ class JobService:
             benefits: List of benefits
             salary_range: Salary range
             remote: Remote work option
+            employment_type: Employment type
             status: Job status
             
         Returns:
@@ -123,6 +125,7 @@ class JobService:
             "parsed_keywords": keywords,
             "salary_range": salary_range,
             "remote": remote,
+            "employment_type": employment_type,
             "status": status,
             "raw_text": None  # No raw text for structured input
         }

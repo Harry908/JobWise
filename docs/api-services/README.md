@@ -141,13 +141,27 @@ Job posting management with intelligent text parsing.
 
 **Endpoints**: 5 core endpoints with flexible input handling
 
-### 4. [V3 Generation API](04-v3-generation-api.md)
+### 4. Generation APIs (Split into 2 groups)
+
+#### 4a. [Sample Upload API](04a-sample-upload-api.md)
+**Base Path**: `/api/v1/samples`
+
+Sample document upload and management (no LLM required).
+
+**Features**:
+- Sample document upload (.txt files)
+- List, retrieve, and delete samples
+- Active sample tracking per document type
+
+**Endpoints**: 4 CRUD endpoints
+
+#### 4b. [AI Generation API](04b-ai-generation-api.md)
 **Base Path**: `/api/v1`
 
 AI-powered resume and cover letter generation using Groq LLM.
 
 **Features**:
-- Sample document upload and writing style extraction
+- Writing style extraction from samples
 - AI-powered profile enhancement
 - Job-specific content ranking
 - Resume generation (pure logic compilation)
@@ -157,7 +171,10 @@ AI-powered resume and cover letter generation using Groq LLM.
 - `llama-3.3-70b-versatile` - High quality (cover letters, enhancements)
 - `llama-3.1-8b-instant` - Fast speed (ranking, analysis)
 
-**Endpoints**: 10 specialized endpoints
+**Endpoints**: 6 specialized endpoints
+
+#### [V3 Generation API](04-v3-generation-api.md) (Combined Reference)
+**Note**: This is the combined documentation. Use 04a and 04b for focused agent work.
 
 ### 5. [Document Export API](05-document-export-api.md) 🔄 Planned
 **Base Path**: `/api/v1/exports`

@@ -50,7 +50,9 @@ class JobRepository:
             benefits=job_data.get("benefits", []),
             salary_range=job_data.get("salary_range"),
             remote=job_data.get("remote", False),
+            employment_type=job_data.get("employment_type", "full_time"),
             status=job_data.get("status", "active"),
+            application_status=job_data.get("application_status", "not_applied"),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -183,6 +185,7 @@ class JobRepository:
             benefits=model.benefits or [],
             salary_range=model.salary_range,
             remote=model.remote,
+            employment_type=model.employment_type or "full_time",
             status=model.status,
             application_status=model.application_status or "not_applied",
             created_at=model.created_at,

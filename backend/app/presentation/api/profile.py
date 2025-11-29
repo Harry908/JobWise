@@ -975,6 +975,40 @@ async def delete_education_bulk(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.get("/{profile_id}/education")
+async def get_education(
+    profile_id: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Get all education entries for a profile."""
+    try:
+        education = await profile_service.get_education(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            limit=limit,
+            offset=offset
+        )
+        return {
+            "education": [EducationModel(**edu.model_dump()) for edu in education],
+            "pagination": {
+                "total": len(education),
+                "limit": limit,
+                "offset": offset
+            }
+        }
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.post("/{profile_id}/projects", status_code=201)
 async def create_projects_bulk(
     profile_id: str,
@@ -1190,6 +1224,84 @@ async def remove_soft_skills(
             skills=skills["skills"]
         )
         return {"message": f"{len(skills['skills'])} soft skills removed successfully"}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{profile_id}/certifications", status_code=201)
+async def add_certifications(
+    profile_id: str,
+    certifications: List[CertificationModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Add certifications to a profile."""
+    try:
+        certifications_data = [cert.model_dump() for cert in certifications]
+        updated_certifications = await profile_service.add_certifications(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            certifications=certifications_data
+        )
+        return [CertificationModel(**cert) for cert in updated_certifications]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{profile_id}/certifications")
+async def update_certifications(
+    profile_id: str,
+    certifications: List[CertificationModel],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Update certifications for a profile."""
+    try:
+        certifications_data = [cert.model_dump() for cert in certifications]
+        updated_certifications = await profile_service.update_certifications(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            certifications=certifications_data
+        )
+        return [CertificationModel(**cert) for cert in updated_certifications]
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ForbiddenException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValidationException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/{profile_id}/certifications")
+async def delete_certifications(
+    profile_id: str,
+    request: Dict[str, List[str]],
+    current_user_id: int = Depends(get_current_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Delete certifications from a profile."""
+    try:
+        certification_ids = request.get("certification_ids", [])
+        deleted_count = await profile_service.delete_certifications(
+            profile_id=profile_id,
+            user_id=current_user_id,
+            certification_ids=certification_ids
+        )
+        return {"message": f"Deleted {deleted_count} certifications successfully"}
     except NotFoundError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ForbiddenException as e:

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/profile.dart' as model;
 import '../providers/profile_provider.dart';
-import '../providers/preference_provider.dart';
+import '../providers/samples_provider.dart';
 import '../widgets/error_display.dart';
 
 class ProfileViewScreen extends ConsumerWidget {
@@ -596,8 +596,15 @@ class _SampleResumeUploadCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final exampleResumesState = ref.watch(exampleResumesProvider);
+    final samplesState = ref.watch(samplesProvider);
+    final resumeSamples = samplesState.resumeSamples;
     final theme = Theme.of(context);
+
+    // Load samples on first build
+    ref.listen(samplesProvider, (_, __) {});
+    if (samplesState.samples.isEmpty && !samplesState.isLoading) {
+      Future.microtask(() => ref.read(samplesProvider.notifier).loadSamples());
+    }
 
     return Card(
       elevation: 1,
@@ -626,14 +633,15 @@ class _SampleResumeUploadCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            exampleResumesState.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (err, stack) => Column(
+            samplesState.isLoading
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : samplesState.errorMessage != null
+                ? Column(
                 children: [
                   Container(
                     width: double.infinity,
@@ -676,7 +684,7 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              ref.invalidate(exampleResumesProvider);
+                              ref.read(samplesProvider.notifier).loadSamples();
                             },
                             icon: const Icon(Icons.refresh, size: 18),
                             label: const Text('Retry'),
@@ -690,11 +698,11 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                     ),
                   ),
                 ],
-              ),
-              data: (resumes) => Column(
+              )
+                : Column(
                 children: [
-                  if (resumes.isNotEmpty) ...[
-                    ...resumes.map((resume) => ListTile(
+                  if (resumeSamples.isNotEmpty) ...[
+                    ...resumeSamples.map((resume) => ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
                             Icons.file_copy,
@@ -705,7 +713,7 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                             style: theme.textTheme.bodyMedium,
                           ),
                           subtitle: Text(
-                            'Uploaded: ${resume.uploadedAt.toLocal().toString().split(' ')[0]}${resume.isPrimary ? ' (Primary)' : ''}',
+                            'Uploaded: ${resume.createdAt.toLocal().toString().split(' ')[0]} • ${resume.wordCount} words${resume.isActive ? ' (Active)' : ''}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -713,35 +721,30 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                           trailing: PopupMenuButton<String>(
                             onSelected: (value) async {
                               if (value == 'delete') {
-                                await ref
-                                    .read(exampleResumesProvider.notifier)
-                                    .delete(resume.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Resume deleted successfully'),
-                                    ),
-                                  );
-                                }
-                              } else if (value == 'primary') {
-                                await ref
-                                    .read(exampleResumesProvider.notifier)
-                                    .setPrimary(resume.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Set as primary resume'),
-                                    ),
-                                  );
+                                try {
+                                  await ref
+                                      .read(samplesProvider.notifier)
+                                      .deleteSample(resume.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Resume deleted successfully'),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Delete failed: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 }
                               }
                             },
                             itemBuilder: (context) => [
-                              if (!resume.isPrimary)
-                                const PopupMenuItem(
-                                  value: 'primary',
-                                  child: Text('Set as Primary'),
-                                ),
                               const PopupMenuItem(
                                 value: 'delete',
                                 child: Text('Delete'),
@@ -757,13 +760,12 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                       onPressed: () => _uploadSampleResume(ref, context),
                       icon: const Icon(Icons.upload_file),
                       label: Text(
-                        resumes.isEmpty ? 'Upload Resume' : 'Upload Another Resume',
+                        resumeSamples.isEmpty ? 'Upload Resume' : 'Upload Another Resume',
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
           ],
         ),
       ),
@@ -774,75 +776,67 @@ class _SampleResumeUploadCard extends ConsumerWidget {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'docx', 'txt'],
+        allowedExtensions: ['txt'], // Only .txt per Generation API spec
         allowMultiple: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
-        if (file.path != null) {
-          // Validate file size (5MB limit)
-          if (file.size > 5 * 1024 * 1024) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('File size too large. Maximum allowed size is 5 MB.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-            return;
+        
+        // Validate file size (1MB limit for Generation API)
+        if (file.size > 1 * 1024 * 1024) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('File size too large. Maximum allowed size is 1 MB.'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
+          return;
+        }
 
-          await ref.read(exampleResumesProvider.notifier).upload(file.path!);
-          
-          // Check if the upload resulted in an error
-          final newState = ref.read(exampleResumesProvider);
+        try {
+          await ref.read(samplesProvider.notifier).uploadSample(
+            file: file,
+            documentType: 'resume',
+          );
           
           if (context.mounted) {
-            newState.when(
-              data: (resumes) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Resume uploaded successfully! AI preferences have been updated.',
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
-              loading: () {}, // Loading state handled by provider
-              error: (error, stackTrace) {
-                String errorMessage = 'Upload failed: Unknown error';
-                
-                // Handle specific error types
-                if (error.toString().contains('413')) {
-                  errorMessage = 'File size too large. Maximum allowed size is 5 MB.';
-                } else if (error.toString().contains('415')) {
-                  errorMessage = 'Unsupported file type. Please upload PDF, DOCX, or TXT.';
-                } else if (error.toString().contains('404')) {
-                  errorMessage = 'Upload service not available. Please try again later.';
-                } else if (error.toString().contains('DioException')) {
-                  // Extract meaningful error message from DioException
-                  final errorStr = error.toString();
-                  if (errorStr.contains('bad response') && errorStr.contains('null')) {
-                    errorMessage = 'Server connection error. Please check if the backend is running.';
-                  } else {
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                  }
-                } else {
-                  errorMessage = 'Upload failed: ${error.toString()}';
-                }
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(errorMessage),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 5),
-                  ),
-                );
-              },
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Resume uploaded successfully! AI can now learn from your formatting.',
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            String errorMessage = 'Upload failed: Unknown error';
+            
+            // Handle specific error types
+            final errorStr = e.toString();
+            if (errorStr.contains('413')) {
+              errorMessage = 'File size too large. Maximum allowed size is 1 MB.';
+            } else if (errorStr.contains('Only .txt files are supported')) {
+              errorMessage = 'Only .txt files are supported for sample uploads.';
+            } else if (errorStr.contains('404')) {
+              errorMessage = 'Upload service not available. Please try again later.';
+            } else if (errorStr.contains('401')) {
+              errorMessage = 'Please log in again to upload files.';
+            } else {
+              errorMessage = 'Upload failed: $errorStr';
+            }
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
             );
           }
         }
@@ -865,8 +859,14 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coverLettersState = ref.watch(sampleCoverLettersProvider);
+    final samplesState = ref.watch(samplesProvider);
+    final coverLetterSample = samplesState.activeCoverLetterSample;
     final theme = Theme.of(context);
+
+    // Load samples on first build if not already loaded
+    if (samplesState.samples.isEmpty && !samplesState.isLoading) {
+      Future.microtask(() => ref.read(samplesProvider.notifier).loadSamples());
+    }
 
     return Card(
       elevation: 1,
@@ -895,14 +895,15 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            coverLettersState.when(
-              loading: () => const Center(
+            if (samplesState.isLoading)
+              const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: CircularProgressIndicator(),
                 ),
-              ),
-              error: (err, stack) => Column(
+              )
+            else if (samplesState.errorMessage != null)
+              Column(
                 children: [
                   Container(
                     width: double.infinity,
@@ -931,10 +932,7 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Unable to load cover letter preferences. Please check that:\n'
-                          '• Backend server is running on port 8000\n'
-                          '• You are logged in with valid credentials\n'
-                          '• Network connection is stable',
+                          samplesState.errorMessage!,
                           style: TextStyle(
                             color: Colors.red[600],
                             fontSize: 13,
@@ -945,7 +943,7 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              ref.invalidate(sampleCoverLettersProvider);
+                              ref.read(samplesProvider.notifier).loadSamples();
                             },
                             icon: const Icon(Icons.refresh, size: 18),
                             label: const Text('Retry'),
@@ -959,39 +957,40 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                     ),
                   ),
                 ],
-              ),
-              data: (coverLetters) => Column(
+              )
+            else
+              Column(
                 children: [
-                  if (coverLetters.isNotEmpty) ...[
-                    ...coverLetters.map((coverLetter) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.article,
-                            color: Colors.green[700],
-                          ),
-                          title: const Text('Cover Letter Sample'),
-                          subtitle: Text(
-                            'Writing Style: ${coverLetter.tone}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () async {
-                              await ref
-                                  .read(sampleCoverLettersProvider.notifier)
-                                  .delete(coverLetter.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Cover letter sample deleted'),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        )),
+                  if (coverLetterSample != null) ...[
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.article,
+                        color: Colors.green[700],
+                      ),
+                      title: const Text('Cover Letter Sample'),
+                      subtitle: Text(
+                        'Uploaded: ${coverLetterSample.createdAt}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () async {
+                          final success = await ref
+                              .read(samplesProvider.notifier)
+                              .deleteSample(coverLetterSample.id);
+                          if (context.mounted && success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Cover letter sample deleted'),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                     const SizedBox(height: 16),
                   ],
                   SizedBox(
@@ -1000,15 +999,14 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                       onPressed: () => _uploadCoverLetter(ref, context),
                       icon: const Icon(Icons.upload_file),
                       label: Text(
-                        coverLetters.isEmpty 
-                            ? 'Upload Cover Letter' 
+                        coverLetterSample == null
+                            ? 'Upload Cover Letter'
                             : 'Upload Another Sample',
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
           ],
         ),
       ),
@@ -1019,75 +1017,67 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'docx', 'txt'],
+        allowedExtensions: ['txt'],
         allowMultiple: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
-        if (file.path != null) {
-          // Validate file size (5MB limit)
-          if (file.size > 5 * 1024 * 1024) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('File size too large. Maximum allowed size is 5 MB.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-            return;
+        
+        // Validate file size (1MB limit for V3 API)
+        if (file.size > 1 * 1024 * 1024) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('File size too large. Maximum allowed size is 1 MB.'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
+          return;
+        }
 
-          await ref.read(sampleCoverLettersProvider.notifier).upload(file.path!);
-          
-          // Check if the upload resulted in an error
-          final newState = ref.read(sampleCoverLettersProvider);
+        try {
+          await ref.read(samplesProvider.notifier).uploadSample(
+            file: file,
+            documentType: 'cover_letter',
+          );
           
           if (context.mounted) {
-            newState.when(
-              data: (coverLetters) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Cover letter uploaded successfully! AI writing style has been updated.',
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
-              loading: () {}, // Loading state handled by provider
-              error: (error, stackTrace) {
-                String errorMessage = 'Upload failed: Unknown error';
-                
-                // Handle specific error types
-                if (error.toString().contains('413')) {
-                  errorMessage = 'File size too large. Maximum allowed size is 5 MB.';
-                } else if (error.toString().contains('415')) {
-                  errorMessage = 'Unsupported file type. Please upload PDF, DOCX, or TXT.';
-                } else if (error.toString().contains('404')) {
-                  errorMessage = 'Upload service not available. Please try again later.';
-                } else if (error.toString().contains('DioException')) {
-                  // Extract meaningful error message from DioException
-                  final errorStr = error.toString();
-                  if (errorStr.contains('bad response') && errorStr.contains('null')) {
-                    errorMessage = 'Server connection error. Please check if the backend is running.';
-                  } else {
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                  }
-                } else {
-                  errorMessage = 'Upload failed: ${error.toString()}';
-                }
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(errorMessage),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 5),
-                  ),
-                );
-              },
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Cover letter uploaded successfully! AI writing style has been updated.',
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            String errorMessage = 'Upload failed: Unknown error';
+            
+            // Handle specific error types
+            final errorStr = e.toString();
+            if (errorStr.contains('413')) {
+              errorMessage = 'File size too large. Maximum allowed size is 1 MB.';
+            } else if (errorStr.contains('Only .txt files are supported')) {
+              errorMessage = 'Only .txt files are supported for sample uploads.';
+            } else if (errorStr.contains('404')) {
+              errorMessage = 'Upload service not available. Please try again later.';
+            } else if (errorStr.contains('401')) {
+              errorMessage = 'Please log in again to upload files.';
+            } else {
+              errorMessage = 'Upload failed: $errorStr';
+            }
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
             );
           }
         }
