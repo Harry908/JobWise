@@ -1,11 +1,10 @@
 ### Standard Log Template
 
-Add front to `log/agent-log.md` after each interaction:
+Add front to `log/frontend-agent-log.md` after each interaction:
 
 **CRITICAL**: You must first read the log file to find the first entry number and increment it. If the file is empty or no number is found, start with `1`.
 
 ```markdown
----
 
 ## Log Entry: [N]
 
@@ -26,4 +25,5 @@ Add front to `log/agent-log.md` after each interaction:
 [If no files were modified, state: "No files were modified for this request."]
 
 ---
+
 ```

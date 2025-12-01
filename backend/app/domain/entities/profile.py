@@ -151,6 +151,8 @@ class Profile(BaseModel):
     user_id: int
     personal_info: PersonalInfo
     professional_summary: Optional[str] = Field(None, max_length=2000)
+    enhanced_professional_summary: Optional[str] = Field(None, max_length=2000)  # AI-enhanced version
+    enhancement_metadata: Dict[str, Any] = Field(default_factory=dict)
     experiences: List[Experience] = Field(default_factory=list)
     education: List[Education] = Field(default_factory=list)
     skills: Skills

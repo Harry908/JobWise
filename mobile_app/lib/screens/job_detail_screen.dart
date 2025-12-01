@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../models/job.dart';
 import '../providers/job_provider.dart';
 import '../widgets/job_detail_view.dart';
+import '../widgets/job_generation_tab.dart';
 
 /// Screen for displaying full job details
-class JobDetailScreen extends ConsumerWidget {
+class JobDetailScreen extends ConsumerStatefulWidget {
   final String jobId;
 
   const JobDetailScreen({
@@ -14,7 +15,27 @@ class JobDetailScreen extends ConsumerWidget {
     required this.jobId,
   });
 
-  Future<void> _deleteJob(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<JobDetailScreen> createState() => _JobDetailScreenState();
+}
+
+class _JobDetailScreenState extends ConsumerState<JobDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _deleteJob(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -40,7 +61,7 @@ class JobDetailScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      await ref.read(userJobsProvider.notifier).deleteJob(jobId);
+      await ref.read(userJobsProvider.notifier).deleteJob(widget.jobId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Job deleted successfully')),
@@ -60,7 +81,7 @@ class JobDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _updateApplicationStatus(
-      BuildContext context, WidgetRef ref, Job currentJob, ApplicationStatus newStatus) async {
+      BuildContext context, Job currentJob, ApplicationStatus newStatus) async {
     try {
       final updatedJob = currentJob.copyWith(applicationStatus: newStatus);
       await ref.read(userJobsProvider.notifier).updateJob(updatedJob);
@@ -81,20 +102,9 @@ class JobDetailScreen extends ConsumerWidget {
     }
   }
 
-  void _generateResume(BuildContext context, Job job) {
-    context.push('/generations/options', extra: job);
-  }
-
-  void _generateCoverLetter(BuildContext context, Job job) {
-    context.push(
-      '/generations/options?type=cover_letter',
-      extra: job,
-    );
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final jobAsync = ref.watch(selectedJobProvider(jobId));
+  Widget build(BuildContext context) {
+    final jobAsync = ref.watch(selectedJobProvider(widget.jobId));
 
     return Scaffold(
       appBar: AppBar(
@@ -102,32 +112,43 @@ class JobDetailScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: jobAsync.hasValue ? () => _deleteJob(context, ref) : null,
+            onPressed: jobAsync.hasValue ? () => _deleteJob(context) : null,
             tooltip: 'Delete Job',
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Details', icon: Icon(Icons.info_outline)),
+            Tab(text: 'Generate', icon: Icon(Icons.auto_awesome)),
+          ],
+        ),
       ),
       body: jobAsync.when(
         data: (job) {
           if (job == null) {
             return _buildNotFound(context);
           }
-          return JobDetailView(
-            job: job,
-            onApplicationStatusChanged: (newStatus) =>
-                _updateApplicationStatus(context, ref, job, newStatus),
-            onDelete: () => _deleteJob(context, ref),
-            onGenerateResume: () => _generateResume(context, job),
-            onGenerateCoverLetter: () => _generateCoverLetter(context, job),
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              JobDetailView(
+                job: job,
+                onApplicationStatusChanged: (newStatus) =>
+                    _updateApplicationStatus(context, job, newStatus),
+                onDelete: () => _deleteJob(context),
+              ),
+              JobGenerationTab(job: job),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => _buildError(context, ref, err),
+        error: (err, stack) => _buildError(context, err),
       ),
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object err) {
+  Widget _buildError(BuildContext context, Object err) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -152,7 +173,7 @@ class JobDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => ref.invalidate(selectedJobProvider(jobId)),
+              onPressed: () => ref.invalidate(selectedJobProvider(widget.jobId)),
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),

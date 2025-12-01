@@ -14,12 +14,6 @@ import 'screens/job_paste_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/profile_view_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/generation_options_screen.dart';
-import 'screens/generation_progress_screen.dart';
-import 'screens/generation_result_screen.dart';
-import 'screens/generation_history_screen.dart';
-import 'models/job.dart';
-import 'models/generation.dart';
 
 // Placeholder screens for now
 class HomeScreen extends ConsumerWidget {
@@ -137,21 +131,6 @@ class HomeScreen extends ConsumerWidget {
                   icon: const Icon(Icons.search),
                   label: const Text('Browse Jobs'),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.push('/generations');
-                  },
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('Generation History'),
-                  style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
@@ -283,42 +262,20 @@ class _AppState extends ConsumerState<App> {
             return JobDetailScreen(jobId: jobId);
           },
         ),
-        // Generation routes
-        GoRoute(
-          path: '/generations',
-          builder: (context, state) => const GenerationHistoryScreen(),
-        ),
-        GoRoute(
-          path: '/generations/options',
-          builder: (context, state) {
-            final job = state.extra as Job;
-            final documentTypeStr = state.uri.queryParameters['type'];
-            final documentType = documentTypeStr == 'cover_letter'
-                ? DocumentType.coverLetter
-                : DocumentType.resume;
-            return GenerationOptionsScreen(
-              job: job,
-              documentType: documentType,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/generations/:id/progress',
-          builder: (context, state) {
-            final generationId = state.pathParameters['id']!;
-            return GenerationProgressScreen(generationId: generationId);
-          },
-        ),
-        GoRoute(
-          path: '/generations/:id/result',
-          builder: (context, state) {
-            final generationId = state.pathParameters['id']!;
-            return GenerationResultScreen(generationId: generationId);
-          },
-        ),
       ],
       redirect: (context, state) {
         final authState = ref.read(authProvider);
+
+        // If auth is still loading, allow navigation to prevent black screen
+        if (authState.isLoading) {
+          // Default to login while loading
+          final isLoggingIn = state.matchedLocation == '/login';
+          final isRegistering = state.matchedLocation == '/register';
+          if (!isLoggingIn && !isRegistering) {
+            return '/login';
+          }
+          return null;
+        }
 
         final isLoggedIn = authState.value != null;
         final isLoggingIn = state.matchedLocation == '/login';
@@ -355,6 +312,49 @@ class _AppState extends ConsumerState<App> {
         _router.go('/login');
       }
     });
+
+    // Show loading screen while auth is initializing
+    final authState = ref.watch(authProvider);
+    if (authState.isLoading) {
+      return MaterialApp(
+        title: 'JobWise',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primary,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        home: Scaffold(
+          backgroundColor: AppColors.primary,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.work,
+                  size: 80,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'JobWise',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 48),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return MaterialApp.router(
       title: 'JobWise',

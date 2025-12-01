@@ -298,6 +298,8 @@ class ProfileResponse(BaseModel):
     user_id: int
     personal_info: PersonalInfoModel
     professional_summary: Optional[str]
+    enhanced_professional_summary: Optional[str] = None
+    enhancement_metadata: Dict[str, Any] = Field(default_factory=dict)
     skills: SkillsModel
     experiences: List[ExperienceModel] = Field(default_factory=list)
     education: List[EducationModel] = Field(default_factory=list)
@@ -518,6 +520,8 @@ async def create_profile(
             user_id=profile.user_id,
             personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
             professional_summary=profile.professional_summary,
+            enhanced_professional_summary=profile.enhanced_professional_summary,
+            enhancement_metadata=profile.enhancement_metadata,
             skills=SkillsModel(**profile.skills.model_dump()),
             experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
             education=[EducationModel(**edu.model_dump()) for edu in profile.education],
@@ -554,6 +558,8 @@ async def get_user_profiles(
                 user_id=profile.user_id,
                 personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
                 professional_summary=profile.professional_summary,
+                enhanced_professional_summary=profile.enhanced_professional_summary,
+                enhancement_metadata=profile.enhancement_metadata,
                 skills=SkillsModel(**profile.skills.model_dump()),
                 experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
                 education=[EducationModel(**edu.model_dump()) for edu in profile.education],
@@ -599,6 +605,8 @@ async def get_my_profile(
             user_id=profile.user_id,
             personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
             professional_summary=profile.professional_summary,
+            enhanced_professional_summary=profile.enhanced_professional_summary,
+            enhancement_metadata=profile.enhancement_metadata,
             skills=SkillsModel(**profile.skills.model_dump()),
             experiences=experiences_list,
             education=[EducationModel(**edu.model_dump()) for edu in profile.education],
@@ -633,6 +641,8 @@ async def get_profile(
             user_id=profile.user_id,
             personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
             professional_summary=profile.professional_summary,
+            enhanced_professional_summary=profile.enhanced_professional_summary,
+            enhancement_metadata=profile.enhancement_metadata,
             skills=SkillsModel(**profile.skills.model_dump()),
             experiences=[ExperienceModel(**exp.model_dump()) for exp in profile.experiences],
             education=[EducationModel(**edu.model_dump()) for edu in profile.education],
@@ -717,6 +727,8 @@ async def update_profile(
                 user_id=profile.user_id,
                 personal_info=PersonalInfoModel(**profile.personal_info.model_dump()),
                 professional_summary=profile.professional_summary,
+                enhanced_professional_summary=profile.enhanced_professional_summary,
+                enhancement_metadata=profile.enhancement_metadata,
                 skills=SkillsModel(**profile.skills.model_dump()),
                 experiences=experiences_list,
                 education=education_list,

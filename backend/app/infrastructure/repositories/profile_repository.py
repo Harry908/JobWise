@@ -31,6 +31,8 @@ class ProfileRepository:
             user_id=profile.user_id,
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
+            enhanced_professional_summary=profile.enhanced_professional_summary,
+            enhancement_metadata=profile.enhancement_metadata,
             skills=profile.skills.model_dump(),
             custom_fields=profile.custom_fields
         )
@@ -103,7 +105,7 @@ class ProfileRepository:
         )
 
         result = await self.session.execute(stmt)
-        profile_model = result.scalar_one_or_none()
+        profile_model = result.scalar_one_or_none()  # type: ignore[assignment]
 
         if not profile_model:
             return None
@@ -143,6 +145,8 @@ class ProfileRepository:
         ).values(
             personal_info=profile.personal_info.model_dump(),
             professional_summary=profile.professional_summary,
+            enhanced_professional_summary=profile.enhanced_professional_summary,
+            enhancement_metadata=profile.enhancement_metadata,
             skills=profile.skills.model_dump(),
             custom_fields=profile.custom_fields,
             updated_at=profile.updated_at
@@ -172,6 +176,7 @@ class ProfileRepository:
                 end_date=exp.end_date,
                 is_current=exp.is_current,
                 description=exp.description,
+                enhanced_description=exp.enhanced_description,
                 achievements=exp.achievements
             )
             self.session.add(exp_model)
@@ -196,6 +201,7 @@ class ProfileRepository:
                 profile_id=profile.id,
                 name=proj.name,
                 description=proj.description,
+                enhanced_description=proj.enhanced_description,
                 technologies=proj.technologies,
                 url=proj.url,
                 start_date=proj.start_date,
@@ -289,16 +295,16 @@ class ProfileRepository:
         experiences = []
         for exp_model in exp_models:
             experiences.append(Experience(
-                id=exp_model.id,
-                title=exp_model.title,
-                company=exp_model.company,
-                location=exp_model.location,
-                start_date=exp_model.start_date,
-                end_date=exp_model.end_date,
-                is_current=exp_model.is_current,
-                description=exp_model.description,
-                enhanced_description=exp_model.enhanced_description,
-                achievements=exp_model.achievements or []
+                id=exp_model.id,  # type: ignore[arg-type]
+                title=exp_model.title,  # type: ignore[arg-type]
+                company=exp_model.company,  # type: ignore[arg-type]
+                location=exp_model.location,  # type: ignore[arg-type]
+                start_date=exp_model.start_date,  # type: ignore[arg-type]
+                end_date=exp_model.end_date,  # type: ignore[arg-type]
+                is_current=exp_model.is_current,  # type: ignore[arg-type]
+                description=exp_model.description,  # type: ignore[arg-type]
+                enhanced_description=exp_model.enhanced_description,  # type: ignore[arg-type]
+                achievements=exp_model.achievements or []  # type: ignore[arg-type]
             ))
 
         return experiences
@@ -522,15 +528,17 @@ class ProfileRepository:
             ))
 
         return Profile(
-            id=profile_model.id,
-            user_id=profile_model.user_id,
-            personal_info=PersonalInfo(**profile_model.personal_info),
-            professional_summary=profile_model.professional_summary,
+            id=profile_model.id,  # type: ignore[arg-type]
+            user_id=profile_model.user_id,  # type: ignore[arg-type]
+            personal_info=PersonalInfo(**profile_model.personal_info),  # type: ignore[arg-type]
+            professional_summary=profile_model.professional_summary,  # type: ignore[arg-type]
+            enhanced_professional_summary=profile_model.enhanced_professional_summary,  # type: ignore[arg-type]
+            enhancement_metadata=profile_model.enhancement_metadata or {},  # type: ignore[arg-type]
             experiences=experiences,
             education=education,
-            skills=Skills(**profile_model.skills),
+            skills=Skills(**profile_model.skills),  # type: ignore[arg-type]
             projects=projects,
-            custom_fields=profile_model.custom_fields or {},
-            created_at=profile_model.created_at,
-            updated_at=profile_model.updated_at
+            custom_fields=profile_model.custom_fields or {},  # type: ignore[arg-type]
+            created_at=profile_model.created_at,  # type: ignore[arg-type]
+            updated_at=profile_model.updated_at  # type: ignore[arg-type]
         )

@@ -480,3 +480,94 @@ Return ONLY the cover letter text, no additional commentary."""
         )
         
         return result["content"].strip()
+    
+    async def calculate_ats_score(
+        self,
+        document_text: str,
+        job_description: str,
+        job_keywords: list
+    ) -> Dict:
+        """Calculate ATS compatibility score using LLM analysis."""
+        keywords_str = ", ".join(job_keywords[:50])  # Limit to first 50 keywords
+        
+        prompt = f"""Analyze this resume/cover letter for ATS (Applicant Tracking System) compatibility with the job description.
+
+Job Description:
+{job_description[:1500]}
+
+Key Required Skills/Keywords:
+{keywords_str}
+
+Document to Analyze:
+{document_text[:3000]}
+
+Analyze the document and return ONLY a JSON object with this structure:
+{{
+  "score": <number 0-100>,
+  "matched_keywords": ["keyword1", "keyword2", ...],
+  "missing_keywords": ["keyword1", "keyword2", ...],
+  "suggestions": ["suggestion1", "suggestion2", ...],
+  "analysis": "brief explanation of the score"
+}}
+
+Scoring Guidelines:
+- 90-100: Excellent match with most/all required skills and keywords
+- 80-89: Strong match with majority of requirements
+- 70-79: Good match with solid keyword coverage
+- 60-69: Moderate match, missing some key requirements
+- 50-59: Weak match, significant gaps in requirements
+- Below 50: Poor match, major misalignment
+
+Return ONLY valid JSON."""
+
+        result = await self.generate_completion(
+            prompt=prompt,
+            max_tokens=800,
+            temperature=0.3,
+            model=self.fast_model
+        )
+        
+        try:
+            content = result["content"].strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.startswith("```"):
+                content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            ats_data = json.loads(content.strip())
+            
+            return {
+                "score": float(ats_data.get("score", 75.0)),
+                "matched_keywords": ats_data.get("matched_keywords", []),
+                "missing_keywords": ats_data.get("missing_keywords", []),
+                "suggestions": ats_data.get("suggestions", []),
+                "analysis": ats_data.get("analysis", ""),
+                "llm_metadata": {
+                    "model": result["model"],
+                    "tokens": result["tokens"],
+                    "processing_time": result["processing_time"]
+                }
+            }
+        except (json.JSONDecodeError, ValueError, KeyError):
+            # Fallback to simple keyword matching
+            text_lower = document_text.lower()
+            matched = [kw for kw in job_keywords if kw.lower() in text_lower]
+            total = len(job_keywords)
+            score = (len(matched) / total * 100) if total > 0 else 75.0
+            score = min(max(score, 50.0), 95.0)
+            
+            return {
+                "score": score,
+                "matched_keywords": matched[:10],
+                "missing_keywords": [kw for kw in job_keywords if kw.lower() not in text_lower][:10],
+                "suggestions": ["Add more relevant keywords from job description"],
+                "analysis": "Fallback keyword matching used",
+                "llm_metadata": {
+                    "model": result["model"],
+                    "tokens": result["tokens"],
+                    "processing_time": result["processing_time"],
+                    "note": "Used fallback scoring due to parsing error"
+                }
+            }

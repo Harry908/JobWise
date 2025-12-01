@@ -281,8 +281,13 @@ class JobService:
         salary_range = await self._extract_salary(raw_text)
         remote = await self._detect_remote(raw_text)
         
-        # Extract description (everything after line 3)
-        description = '\n'.join(lines[3:]) if len(lines) > 3 else raw_text
+        # Extract description (skip first 2 lines: title and company)
+        # Keep location if it's on line 3, or include from line 3 onwards
+        description_start_idx = 2
+        if len(lines) > 2 and location and lines[2] == location:
+            description_start_idx = 3
+        
+        description = '\n'.join(lines[description_start_idx:]) if len(lines) > description_start_idx else raw_text
         
         return {
             "title": title,
@@ -323,7 +328,7 @@ class JobService:
         }
     
     async def _parse_keywords(self, text: str) -> List[str]:
-        """Extract keywords from job text.
+        """Extract keywords from job text with comprehensive 2024-2025 tech stack coverage.
         
         Args:
             text: Job text
@@ -331,24 +336,215 @@ class JobService:
         Returns:
             List of keywords (lowercase)
         """
-        # Common tech keywords to search for
+        # Comprehensive tech keywords based on 2024-2025 industry trends
         tech_keywords = [
-            "python", "java", "javascript", "typescript", "react", "vue", "angular",
-            "node.js", "fastapi", "django", "flask", "spring", "dotnet",
-            "aws", "azure", "gcp", "docker", "kubernetes", "terraform",
-            "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
-            "git", "ci/cd", "jenkins", "github", "gitlab",
-            "agile", "scrum", "api", "rest", "graphql", "microservices"
+            # Top Programming Languages (2024-2025 most demanded)
+            "javascript", "typescript", "python", "java", "c#", "c++", "php", "ruby", "go", "golang",
+            "rust", "swift", "kotlin", "scala", "r", "perl", "bash", "powershell", "shell",
+            "objective-c", "dart", "lua", "groovy", "elixir", "haskell", "clojure", "f#",
+            # Short codes (need special handling)
+            "js", "ts",
+            
+            # Markup & Data
+            "sql", "nosql", "html", "html5", "css", "css3", "xml", "json", "yaml", "toml", "markdown",
+            
+            # Frontend Frameworks & Libraries (React ecosystem dominant)
+            "react", "react.js", "reactjs", "vue", "vue.js", "vuejs", "angular", "angularjs", 
+            "svelte", "sveltekit", "next.js", "nextjs", "nuxt", "nuxt.js", "gatsby", "remix",
+            "solid.js", "solidjs", "preact", "lit", "web components", "alpine.js",
+            "jquery", "backbone", "ember", "meteor",
+            
+            # CSS Frameworks & Tools
+            "tailwind", "tailwindcss", "bootstrap", "material-ui", "mui", "ant design", "chakra ui",
+            "styled-components", "sass", "scss", "less", "postcss", "emotion",
+            
+            # State Management
+            "redux", "mobx", "zustand", "recoil", "jotai", "pinia", "vuex", "context api", "xstate",
+            
+            # Backend Frameworks (Node.js, Python, Java, .NET)
+            "node.js", "nodejs", "express", "express.js", "nest.js", "nestjs", "koa", "fastify", "hapi",
+            "django", "flask", "fastapi", "pyramid", "tornado", "aiohttp", "quart",
+            "spring", "spring boot", "spring cloud", "micronaut", "quarkus", "play framework",
+            ".net", "dotnet", "asp.net", "asp.net core", "blazor", "entity framework", "ef core",
+            "rails", "ruby on rails", "sinatra", "laravel", "symfony", "codeigniter", "cakephp",
+            "gin", "echo", "fiber", "beego", "actix", "rocket", "axum", "warp",
+            
+            # API Technologies
+            "rest", "restful", "rest api", "graphql", "grpc", "grpc-web", "websocket", "soap",
+            "openapi", "swagger", "postman", "insomnia", "api gateway", "webhooks",
+            
+            # Mobile Development
+            "ios", "android", "react native", "flutter", "xamarin", "ionic", "cordova", "phonegap",
+            "swiftui", "jetpack compose", "mobile development", "native development",
+            
+            # Cloud Platforms (AWS dominance, Azure, GCP)
+            "aws", "amazon web services", "azure", "microsoft azure", "gcp", "google cloud platform",
+            "google cloud", "ibm cloud", "oracle cloud", "digitalocean", "linode", "heroku", "vercel",
+            "netlify", "cloudflare", "firebase", "supabase", "amplify",
+            
+            # AWS Services
+            "ec2", "s3", "lambda", "rds", "dynamodb", "cloudfront", "route 53", "elastic beanstalk",
+            "eks", "ecs", "fargate", "sns", "sqs", "api gateway", "cloudwatch", "iam",
+            
+            # Azure Services
+            "azure functions", "azure devops", "azure sql", "cosmos db", "azure storage",
+            "azure kubernetes service", "aks", "azure active directory", "azure ad",
+            
+            # GCP Services
+            "compute engine", "cloud functions", "cloud run", "cloud storage", "bigquery",
+            "cloud sql", "firestore", "cloud pub/sub", "gke", "google kubernetes engine",
+            
+            # Container & Orchestration
+            "docker", "docker compose", "podman", "kubernetes", "k8s", "helm", "rancher",
+            "openshift", "nomad", "docker swarm", "containerd",
+            
+            # CI/CD & DevOps Tools
+            "jenkins", "github actions", "gitlab ci", "gitlab ci/cd", "circleci", "travis ci",
+            "bamboo", "teamcity", "azure pipelines", "codepipeline", "harness", "spinnaker",
+            "argo cd", "argocd", "flux", "tekton",
+            
+            # Infrastructure as Code
+            "terraform", "terragrunt", "pulumi", "cloudformation", "aws cdk", "bicep", "arm templates",
+            "ansible", "puppet", "chef", "saltstack", "crossplane",
+            
+            # Databases - SQL
+            "postgresql", "postgres", "mysql", "mariadb", "microsoft sql server", "sql server",
+            "mssql", "oracle", "oracle database", "db2", "sqlite", "cockroachdb", "yugabytedb",
+            
+            # Databases - NoSQL
+            "mongodb", "cassandra", "couchbase", "couchdb", "dynamodb", "redis", "memcached",
+            "neo4j", "arangodb", "orientdb", "ravendb", "rethinkdb",
+            
+            # Search & Analytics
+            "elasticsearch", "opensearch", "solr", "algolia", "meilisearch", "typesense",
+            "splunk", "datadog", "new relic", "prometheus", "grafana", "kibana",
+            
+            # Message Queues & Streaming
+            "kafka", "apache kafka", "rabbitmq", "activemq", "zeromq", "nats", "redis streams",
+            "amazon sqs", "amazon sns", "google pub/sub", "azure service bus", "pulsar",
+            
+            # Data Processing & Big Data
+            "spark", "apache spark", "hadoop", "apache hadoop", "flink", "storm", "airflow",
+            "luigi", "prefect", "dagster", "dbt", "snowflake", "databricks", "redshift",
+            "bigquery", "presto", "trino", "hive",
+            
+            # Machine Learning & AI (Rapidly growing 2024-2025)
+            "machine learning", "ml", "deep learning", "ai", "artificial intelligence",
+            "tensorflow", "pytorch", "keras", "scikit-learn", "sklearn", "pandas", "numpy",
+            "opencv", "hugging face", "transformers", "langchain", "llamaindex", "openai",
+            "gpt", "llm", "large language models", "generative ai", "mlops", "mlflow",
+            "kubeflow", "sagemaker", "vertex ai", "azure ml",
+            
+            # Testing Frameworks
+            "jest", "mocha", "chai", "jasmine", "cypress", "playwright", "selenium", "webdriver",
+            "pytest", "unittest", "nose", "junit", "testng", "mockito", "jest", "vitest",
+            "testing library", "enzyme", "karma", "protractor", "puppeteer",
+            
+            # Build Tools & Bundlers
+            "webpack", "vite", "rollup", "parcel", "esbuild", "swc", "turbopack", "gulp",
+            "grunt", "maven", "gradle", "ant", "make", "cmake", "bazel", "nx", "turborepo",
+            
+            # Version Control
+            "git", "github", "gitlab", "bitbucket", "subversion", "svn", "mercurial", "perforce",
+            "git flow", "github flow", "trunk-based development",
+            
+            # Project Management & Collaboration
+            "jira", "confluence", "trello", "asana", "monday.com", "notion", "clickup",
+            "slack", "microsoft teams", "teams", "discord", "zoom", "linear",
+            
+            # IDEs & Editors
+            "vs code", "visual studio code", "visual studio", "intellij", "intellij idea",
+            "pycharm", "webstorm", "phpstorm", "rider", "goland", "eclipse", "netbeans",
+            "sublime text", "atom", "vim", "neovim", "emacs", "jupyter", "jupyter notebook",
+            "colab", "google colab",
+            
+            # Methodologies & Practices (2024-2025 focus)
+            "agile", "scrum", "kanban", "lean", "devops", "devsecops", "sre", "site reliability engineering",
+            "ci/cd", "continuous integration", "continuous deployment", "continuous delivery",
+            "tdd", "test-driven development", "bdd", "behavior-driven development",
+            "pair programming", "mob programming", "code review", "refactoring",
+            
+            # Architecture & Patterns
+            "microservices", "monolith", "serverless", "event-driven", "cqrs", "event sourcing",
+            "domain-driven design", "ddd", "clean architecture", "hexagonal architecture",
+            "mvvm", "mvc", "mvp", "solid", "design patterns", "distributed systems",
+            
+            # Programming Paradigms
+            "oop", "object-oriented programming", "functional programming", "reactive programming",
+            "procedural programming", "declarative programming", "imperative programming",
+            
+            # Security
+            "oauth", "oauth2", "openid connect", "oidc", "jwt", "saml", "ssl", "tls", "https",
+            "encryption", "authentication", "authorization", "rbac", "abac", "zero trust",
+            "penetration testing", "vulnerability assessment", "owasp", "sast", "dast",
+            
+            # Observability & Monitoring
+            "prometheus", "grafana", "datadog", "new relic", "dynatrace", "appdynamics",
+            "splunk", "elastic stack", "elk stack", "jaeger", "zipkin", "opentelemetry",
+            "logging", "monitoring", "tracing", "metrics", "alerting",
+            
+            # Web Servers & Proxies
+            "nginx", "apache", "apache httpd", "tomcat", "iis", "caddy", "traefik", "envoy",
+            "haproxy", "varnish", "squid",
+            
+            # Operating Systems & Platforms
+            "linux", "unix", "ubuntu", "debian", "centos", "rhel", "red hat", "fedora",
+            "arch linux", "windows", "windows server", "macos", "freebsd",
+            
+            # Blockchain & Web3 (Growing 2024-2025)
+            "blockchain", "ethereum", "solidity", "web3", "smart contracts", "bitcoin",
+            "hyperledger", "polygon", "solana", "nft", "defi",
+            
+            # Emerging Technologies
+            "edge computing", "iot", "internet of things", "5g", "quantum computing",
+            "ar", "vr", "augmented reality", "virtual reality", "metaverse",
+            
+            # Data Formats & Protocols
+            "protobuf", "protocol buffers", "avro", "thrift", "messagepack", "cbor",
+            "http", "http/2", "http/3", "tcp", "udp", "mqtt", "amqp",
+            
+            # Analytics & Business Intelligence
+            "analytics", "data analytics", "business intelligence", "bi", "tableau",
+            "power bi", "looker", "metabase", "superset", "qlik", "sisense",
+            "google analytics", "mixpanel", "amplitude", "segment"
         ]
         
         text_lower = text.lower()
-        found_keywords = []
+        found_keywords = set()  # Use set to avoid duplicates
+        
+        # Sort by length (descending) to match longer phrases first (e.g., "spring boot" before "spring")
+        tech_keywords.sort(key=len, reverse=True)
         
         for keyword in tech_keywords:
-            if keyword in text_lower:
-                found_keywords.append(keyword)
+            # Special handling for keywords with special chars
+            if '#' in keyword or '++' in keyword:
+                # For C# and C++, use simpler contains check (case-sensitive for these)
+                if keyword in text or keyword.upper() in text or keyword.lower() in text:
+                    found_keywords.add(keyword)
+            elif keyword in ['r', 'c', 'd', 'f', 'go']:
+                # Single letter languages need exact word boundary + context check
+                # Only match if it appears as a standalone word with likely context
+                pattern = r'\b' + re.escape(keyword) + r'\b'
+                if re.search(pattern, text_lower, re.IGNORECASE):
+                    # Additional context check for single letters to reduce false positives
+                    context_patterns = {
+                        'r': r'\b(r\s+language|r\s+programming|ggplot|dplyr|tidyverse|cran)\b',
+                        'c': r'\b(c\s+language|c\s+programming|ansi\s+c|iso\s+c)\b',
+                        'd': r'\b(d\s+language|d\s+programming|dlang)\b',
+                        'f': r'\b(f#|f\s+sharp)\b',
+                        'go': r'\b(golang|go\s+lang)\b'
+                    }
+                    if keyword in context_patterns and re.search(context_patterns[keyword], text_lower, re.IGNORECASE):
+                        found_keywords.add(keyword)
+                    elif keyword == 'go' and re.search(r'\bgolang\b', text_lower, re.IGNORECASE):
+                        found_keywords.add('go')
+            else:
+                # Use word boundaries for regular keywords
+                pattern = r'\b' + re.escape(keyword) + r'\b'
+                if re.search(pattern, text_lower, re.IGNORECASE):
+                    found_keywords.add(keyword)
         
-        return found_keywords
+        return sorted(list(found_keywords))  # Return sorted list
     
     async def _extract_location(self, text: str) -> Optional[str]:
         """Extract location from text.
@@ -385,28 +581,102 @@ class JobService:
         requirements = []
         lines = text.split('\n')
         
-        # Look for requirements section
+        # Look for requirements section with various heading patterns
         in_requirements = False
-        for line in lines:
-            line_lower = line.lower()
+        requirement_headers = [
+            'requirement', 'qualifications', 'required', 'must have',
+            'what you\'ll need', 'what we\'re looking for', 'you have',
+            'minimum qualifications', 'basic qualifications', 'you should have'
+        ]
+        
+        # Track if we found a requirements section with a header
+        found_header_section = False
+        
+        for i, line in enumerate(lines):
+            line_lower = line.lower().strip()
             
-            if 'requirement' in line_lower or 'qualifications' in line_lower:
+            # Check for requirements section headers
+            if any(header in line_lower for header in requirement_headers):
                 in_requirements = True
+                found_header_section = True
                 continue
             
             if in_requirements:
                 # Stop at next major section
-                if any(keyword in line_lower for keyword in ['benefit', 'salary', 'about', 'responsibilities']):
-                    break
+                stop_keywords = ['benefit', 'perks', 'we offer', 'why join', 'about us', 
+                                'about the company', 'responsibilities', 'what you\'ll do']
+                if any(keyword in line_lower for keyword in stop_keywords):
+                    in_requirements = False
+                    continue
                 
                 # Extract requirement lines
                 if line.strip() and not line.startswith('#'):
                     # Remove bullet points and clean
-                    cleaned = re.sub(r'^[\-\*•]\s*', '', line.strip())
-                    if cleaned:
+                    cleaned = re.sub(r'^[\-\*•\d+\.\)]\s*', '', line.strip())
+                    if cleaned and len(cleaned) > 5:  # Avoid very short lines
                         requirements.append(cleaned)
         
-        return requirements[:10]  # Limit to 10 requirements
+        # If no requirements found with headers, look for unlabeled requirements at the end
+        # These often appear after benefit descriptions or EEO statements
+        if not found_header_section or len(requirements) < 2:
+            requirements = await self._extract_unlabeled_requirements(lines)
+        
+        return requirements[:15]  # Limit to 15 requirements
+    
+    async def _extract_unlabeled_requirements(self, lines: List[str]) -> List[str]:
+        """Extract requirements that don't have a section header.
+        
+        Args:
+            lines: Lines of job text
+            
+        Returns:
+            List of requirement strings
+        """
+        requirements = []
+        
+        # Find where long prose paragraphs end and short requirement lines begin
+        # Typically requirements are at the end and are shorter, more concise lines
+        potential_reqs_start = -1
+        
+        for i in range(len(lines) - 1, max(len(lines) - 15, 0), -1):  # Look at last 15 lines
+            line = lines[i].strip()
+            if not line or len(line) < 10:  # Skip empty or very short lines
+                continue
+            
+            # Strong requirement indicators (things that must be met)
+            strong_requirement_indicators = [
+                'degree', 'bachelor', 'master', 'phd', 'bs/', 'ba/', 'ms/', 'ma/',
+                'years of experience', 'years experience', 'proficient in', 
+                'certification', 'certified', 'eligible to work', 'authorized to work',
+                'vaccination', 'vaccinated', 'must have', 'required:', 'require:',
+                'minimum', 'at least'
+            ]
+            
+            # Words that indicate this is NOT a requirement
+            exclusion_indicators = [
+                'we offer', 'you will receive', 'you\'ll get', 'opportunity to',
+                'work with', 'learn more', 'see our', 'click here', 'apply now',
+                'join our', 'our team', 'we are', 'about us', 'http', '@',
+                'write software', 'build', 'create', 'develop'  # These are responsibilities
+            ]
+            
+            line_lower = line.lower()
+            
+            # Skip lines with exclusion indicators
+            if any(indicator in line_lower for indicator in exclusion_indicators):
+                continue
+            
+            # Check if line has strong requirement indicators
+            has_strong_req = any(indicator in line_lower for indicator in strong_requirement_indicators)
+            
+            # If line has strong requirement indicators and isn't too long, likely a requirement
+            if len(line) < 300 and has_strong_req:
+                # Clean and add
+                cleaned = re.sub(r'^[\-\*•\d+\.\)]\s*', '', line)
+                if cleaned and cleaned not in requirements:
+                    requirements.insert(0, cleaned)  # Insert at beginning to maintain order
+        
+        return requirements
     
     async def _extract_benefits(self, text: str) -> List[str]:
         """Extract job benefits from text.
@@ -420,28 +690,58 @@ class JobService:
         benefits = []
         lines = text.split('\n')
         
-        # Look for benefits section
+        # Look for benefits section with various heading patterns
         in_benefits = False
+        benefit_headers = [
+            'benefit', 'perks', 'we offer', 'what we offer', 'why join',
+            'what you\'ll get', 'compensation and benefits', 'rewards',
+            'what you get'
+        ]
+        
+        lines_after_benefits_header = 0
+        
         for line in lines:
-            line_lower = line.lower()
+            line_lower = line.lower().strip()
             
-            if 'benefit' in line_lower or 'perks' in line_lower:
+            # Check for benefits section headers
+            if any(header in line_lower for header in benefit_headers):
                 in_benefits = True
+                lines_after_benefits_header = 0
                 continue
             
             if in_benefits:
-                # Stop at next major section
-                if any(keyword in line_lower for keyword in ['requirement', 'salary', 'about', 'responsibilities']):
-                    break
+                lines_after_benefits_header += 1
                 
-                # Extract benefit lines
-                if line.strip() and not line.startswith('#'):
+                # Stop at next major section or when we hit requirements-like content
+                stop_keywords = ['requirement', 'qualifications', 'responsibilities', 
+                                'about the role', 'what you\'ll do', 'equal opportunity',
+                                'you should', 'you must', 'you have', 'relocation']
+                
+                # Strong requirement indicators that should stop benefits extraction
+                requirement_indicators = [
+                    'bs/', 'ba/', 'ms/', 'ma/', 'bachelor', 'master', 'phd',
+                    'years of experience', 'years experience',
+                    'certified', 'certification required', 'eligible to work',
+                    'authorized to work', 'must have', 'vaccination', 'visa sponsorship'
+                ]
+                
+                # Stop if we see requirement indicators OR if we've gone 10+ lines past header
+                # (to avoid pulling in unrelated content)
+                has_req_indicator = any(indicator in line_lower for indicator in requirement_indicators)
+                has_stop_keyword = any(keyword in line_lower for keyword in stop_keywords)
+                
+                if has_req_indicator or has_stop_keyword or lines_after_benefits_header > 10:
+                    in_benefits = False
+                    continue
+                
+                # Extract benefit lines - must be substantial text
+                if line.strip() and not line.startswith('#') and len(line.strip()) > 20:
                     # Remove bullet points and clean
-                    cleaned = re.sub(r'^[\-\*•]\s*', '', line.strip())
-                    if cleaned:
+                    cleaned = re.sub(r'^[\-\*•\d+\.\)]\s*', '', line.strip())
+                    if cleaned and 'http' not in cleaned.lower():
                         benefits.append(cleaned)
         
-        return benefits[:10]  # Limit to 10 benefits
+        return benefits[:15]  # Limit to 15 benefits
     
     async def _extract_salary(self, text: str) -> Optional[str]:
         """Extract salary range from text.

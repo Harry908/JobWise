@@ -15,6 +15,7 @@ class JobPasteScreen extends ConsumerStatefulWidget {
 class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
   final _textController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isProcessing = false;
 
   @override
   void dispose() {
@@ -24,6 +25,8 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
 
   Future<void> _parseAndSave() async {
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isProcessing = true);
 
     final jobToCreate = Job(
       id: '', // Handled by backend
@@ -48,6 +51,7 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isProcessing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save job: ${e.toString()}'),
@@ -60,9 +64,6 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Listen to the provider state for loading/error feedback
-    final userJobsState = ref.watch(userJobsProvider);
-    final isProcessing = userJobsState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -165,15 +166,15 @@ class _JobPasteScreenState extends ConsumerState<JobPasteScreen> {
               padding: const EdgeInsets.all(16),
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: isProcessing ? null : _parseAndSave,
-                icon: isProcessing
+                onPressed: _isProcessing ? null : _parseAndSave,
+                icon: _isProcessing
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save),
-                label: Text(isProcessing ? 'Saving...' : 'Save Job'),
+                label: Text(_isProcessing ? 'Saving...' : 'Save Job'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

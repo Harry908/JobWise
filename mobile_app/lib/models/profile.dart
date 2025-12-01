@@ -39,7 +39,7 @@ class Profile {
       userId: userId,
       personalInfo: PersonalInfo.fromJson(json['personal_info'] as Map<String, dynamic>),
       professionalSummary: json['professional_summary'] as String?,
-      enhancedSummary: json['enhanced_summary'] as String?,
+      enhancedSummary: json['enhanced_professional_summary'] as String?,
       experiences: (json['experiences'] as List<dynamic>?)
           ?.map((e) => Experience.fromJson(e as Map<String, dynamic>))
           .toList() ?? const [],

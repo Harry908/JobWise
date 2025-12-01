@@ -1,7 +1,8 @@
 """Generation service for resumes and cover letters."""
 
 from uuid import UUID, uuid4
-from typing import Optional, List
+from typing import Optional, List, Dict
+from datetime import datetime
 import logging
 
 from app.infrastructure.adapters.llm.groq_adapter import GroqAdapter
@@ -157,8 +158,8 @@ class GenerationService:
         
         resume_text = "\n".join(resume_parts)
         
-        # Calculate simple ATS score (keyword matching)
-        ats_score = self._calculate_ats_score(resume_text, job)
+        # Calculate ATS score using LLM
+        ats_result = await self._calculate_ats_score(resume_text, job)
         
         # Create generation entity
         generation = Generation(
@@ -169,9 +170,9 @@ class GenerationService:
             document_type=DocumentType.RESUME,
             content_text=resume_text,
             status=GenerationStatus.COMPLETED,
-            ats_score=ats_score,
-            ats_feedback=f"Resume contains {len(ranked_exps)} experiences and {len(ranked_projs)} projects.",
-            llm_metadata='{"note": "Pure logic compilation, no LLM used"}'
+            ats_score=ats_result["score"],
+            ats_feedback=ats_result.get("analysis", ""),
+            llm_metadata=str(ats_result.get("llm_metadata", {}))
         )
         
         # Save generation
@@ -250,8 +251,8 @@ class GenerationService:
             max_paragraphs=max_paragraphs
         )
         
-        # Calculate ATS score
-        ats_score = self._calculate_ats_score(cover_letter_text, job)
+        # Calculate ATS score using LLM
+        ats_result = await self._calculate_ats_score(cover_letter_text, job)
         
         # Create generation entity
         generation = Generation(
@@ -262,9 +263,9 @@ class GenerationService:
             document_type=DocumentType.COVER_LETTER,
             content_text=cover_letter_text,
             status=GenerationStatus.COMPLETED,
-            ats_score=ats_score,
-            ats_feedback=f"Cover letter generated with {len(cover_letter_text.split())} words.",
-            llm_metadata='{"model": "llama-3.3-70b-versatile"}'
+            ats_score=ats_result["score"],
+            ats_feedback=ats_result.get("analysis", ""),
+            llm_metadata=str(ats_result.get("llm_metadata", {}))
         )
         
         # Save generation
@@ -289,17 +290,23 @@ class GenerationService:
             offset=offset
         )
     
-    def _calculate_ats_score(self, text: str, job) -> float:
-        """Calculate simple ATS score based on keyword matching."""
+    async def _calculate_ats_score(self, text: str, job) -> Dict:
+        """Calculate ATS score using LLM analysis."""
         if not job or not job.parsed_keywords:
-            return 75.0  # Default score
+            return {
+                "score": 75.0,
+                "matched_keywords": [],
+                "missing_keywords": [],
+                "suggestions": [],
+                "analysis": "Default score - no job keywords available",
+                "llm_metadata": {}
+            }
         
-        text_lower = text.lower()
-        matched_keywords = sum(1 for keyword in job.parsed_keywords if keyword.lower() in text_lower)
-        total_keywords = len(job.parsed_keywords)
+        job_description = job.description or f"{job.title} at {job.company}"
         
-        if total_keywords == 0:
-            return 75.0
-        
-        score = (matched_keywords / total_keywords) * 100
-        return min(max(score, 50.0), 95.0)  # Clamp between 50-95
+        # Use LLM to calculate ATS score
+        return await self.llm.calculate_ats_score(
+            document_text=text,
+            job_description=job_description,
+            job_keywords=job.parsed_keywords
+        )

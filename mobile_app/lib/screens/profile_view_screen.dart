@@ -1,3 +1,4 @@
+import 'dart:io' show File;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,13 +6,119 @@ import 'package:file_picker/file_picker.dart';
 import '../models/profile.dart' as model;
 import '../providers/profile_provider.dart';
 import '../providers/samples_provider.dart';
+import '../providers/generations_provider.dart';
 import '../widgets/error_display.dart';
 
-class ProfileViewScreen extends ConsumerWidget {
+class ProfileViewScreen extends ConsumerStatefulWidget {
   const ProfileViewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileViewScreen> createState() => _ProfileViewScreenState();
+}
+
+class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    // Load samples once when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(samplesProvider.notifier).loadSamples();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enhanceProfile(BuildContext context, model.Profile profile) async {
+    final generationsState = ref.read(generationsProvider);
+    
+    if (generationsState.isEnhancing) {
+      return; // Already enhancing
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('AI Profile Enhancement'),
+        content: const Text(
+          'This will use AI to enhance your profile descriptions based on your writing style from uploaded samples.\n\n'
+          'Make sure you have uploaded a cover letter sample for best results.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Enhance'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Enhancing profile with AI...'),
+          ],
+        ),
+      ),
+    );
+
+    // Call enhancement API
+    final success = await ref.read(generationsProvider.notifier).enhanceProfile(
+      profileId: profile.id,
+    );
+
+    if (!context.mounted) return;
+    
+    // Close progress dialog
+    Navigator.pop(context);
+
+    if (success) {
+      // Refresh profile to show enhanced descriptions
+      ref.invalidate(profileProvider);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✨ Profile enhanced successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      final error = ref.read(generationsProvider).errorMessage;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error ?? 'Failed to enhance profile'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
@@ -29,6 +136,13 @@ class ProfileViewScreen extends ConsumerWidget {
               : [],
           orElse: () => [],
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.person), text: 'Profile'),
+            Tab(icon: Icon(Icons.auto_awesome), text: 'AI Preferences'),
+          ],
+        ),
       ),
       body: profileAsync.when(
         data: (profile) {
@@ -39,36 +153,71 @@ class ProfileViewScreen extends ConsumerWidget {
               retryText: 'Create Profile',
             );
           }
-          return RefreshIndicator(
-            onRefresh: () => ref.refresh(profileProvider.future),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPersonalInfoSection(context, profile),
-                  const SizedBox(height: 24),
-                  if (profile.professionalSummary != null &&
-                      profile.professionalSummary!.isNotEmpty)
-                    _buildProfessionalSummarySection(
-                        context, profile.professionalSummary!),
-                  if (profile.professionalSummary != null &&
-                      profile.professionalSummary!.isNotEmpty)
-                    const SizedBox(height: 24),
-                  _buildExperiencesSection(context, profile.experiences),
-                  const SizedBox(height: 24),
-                  _buildEducationSection(context, profile.education),
-                  const SizedBox(height: 24),
-                  _buildSkillsSection(context, profile.skills),
-                  const SizedBox(height: 24),
-                  _buildProjectsSection(context, profile.projects),
-                  const SizedBox(height: 24),
-                  _buildAIGenerationPreferencesSection(context),
-                  const SizedBox(height: 32),
-                ],
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              // Profile Tab
+              RefreshIndicator(
+                onRefresh: () => ref.refresh(profileProvider.future),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // AI Enhancement Button
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _enhanceProfile(context, profile),
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text('AI Enhance Profile'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildPersonalInfoSection(context, profile),
+                      const SizedBox(height: 24),
+                      if (profile.professionalSummary != null &&
+                          profile.professionalSummary!.isNotEmpty)
+                        _buildProfessionalSummarySection(context, profile),
+                      if (profile.professionalSummary != null &&
+                          profile.professionalSummary!.isNotEmpty)
+                        const SizedBox(height: 24),
+                      _buildExperiencesSection(context, profile.experiences),
+                      const SizedBox(height: 24),
+                      _buildEducationSection(context, profile.education),
+                      const SizedBox(height: 24),
+                      _buildSkillsSection(context, profile.skills),
+                      const SizedBox(height: 24),
+                      _buildProjectsSection(context, profile.projects),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              // AI Preferences Tab
+              RefreshIndicator(
+                onRefresh: () async {
+                  await ref.read(samplesProvider.notifier).loadSamples();
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAIGenerationPreferencesSection(context),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -89,6 +238,18 @@ class ProfileViewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => context.push('/profile/edit'),
+                  tooltip: 'Edit Contact Info',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
             Row(
               children: [
                 CircleAvatar(
@@ -176,18 +337,36 @@ class ProfileViewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context)
-          .textTheme
-          .headlineSmall
-          ?.copyWith(fontWeight: FontWeight.bold),
+  Widget _buildSectionHeader(BuildContext context, String title, {VoidCallback? onAdd}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ),
+        if (onAdd != null)
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: onAdd,
+            tooltip: 'Add $title',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+      ],
     );
   }
 
   Widget _buildProfessionalSummarySection(
-      BuildContext context, String summary) {
+      BuildContext context, model.Profile profile) {
+    final theme = Theme.of(context);
+    final hasEnhanced = profile.enhancedSummary != null && 
+                       profile.enhancedSummary!.isNotEmpty;
+    final displaySummary = profile.professionalSummary ?? '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -197,9 +376,103 @@ class ProfileViewScreen extends ConsumerWidget {
           elevation: 1,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              summary,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: () => context.push('/profile/edit'),
+                      tooltip: 'Edit Summary',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                if (hasEnhanced) ...[
+                  Text(
+                    'AI Enhanced Summary',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withAlpha(26),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withAlpha(51)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.auto_awesome, size: 16, color: Colors.green[700]),
+                            const SizedBox(width: 4),
+                            Text(
+                              'AI Enhanced',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          profile.enhancedSummary!,
+                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Original Summary',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(
+                      'View Original',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          displaySummary,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.4,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Text(
+                    displaySummary,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -212,7 +485,11 @@ class ProfileViewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Work Experience'),
+        _buildSectionHeader(
+          context,
+          'Work Experience',
+          onAdd: () => context.push('/profile/edit'),
+        ),
         const SizedBox(height: 8),
         if (experiences.isEmpty)
           _buildEmptySectionCard(context, 'No work experience added yet.')
@@ -224,6 +501,9 @@ class ProfileViewScreen extends ConsumerWidget {
 
   Widget _buildExperienceCard(BuildContext context, model.Experience experience) {
     final theme = Theme.of(context);
+    final hasEnhanced = experience.enhancedDescription != null && 
+                        experience.enhancedDescription!.isNotEmpty;
+    
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
@@ -232,10 +512,23 @@ class ProfileViewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              experience.title,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    experience.title,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => context.push('/profile/edit'),
+                  tooltip: 'Edit Experience',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -256,10 +549,87 @@ class ProfileViewScreen extends ConsumerWidget {
             if (experience.description != null &&
                 experience.description!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
-                experience.description!,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-              ),
+              if (hasEnhanced) ...[
+                Text(
+                  'AI Enhanced Description',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withAlpha(26),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withAlpha(51)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome, size: 16, color: Colors.green[700]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'AI Enhanced',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        experience.enhancedDescription!,
+                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Original Description',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text(
+                    'View Original',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        experience.description!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.4,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Text(
+                  experience.description!,
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                ),
+              ],
             ],
             if (experience.achievements.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -277,7 +647,11 @@ class ProfileViewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Education'),
+        _buildSectionHeader(
+          context,
+          'Education',
+          onAdd: () => context.push('/profile/edit'),
+        ),
         const SizedBox(height: 8),
         if (education.isEmpty)
           _buildEmptySectionCard(context, 'No education added yet.')
@@ -337,7 +711,11 @@ class ProfileViewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Skills'),
+        _buildSectionHeader(
+          context,
+          'Skills',
+          onAdd: () => context.push('/profile/edit'),
+        ),
         const SizedBox(height: 8),
         Card(
           elevation: 1,
@@ -411,7 +789,11 @@ class ProfileViewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Projects'),
+        _buildSectionHeader(
+          context,
+          'Projects',
+          onAdd: () => context.push('/profile/edit'),
+        ),
         const SizedBox(height: 8),
         if (projects.isEmpty)
           _buildEmptySectionCard(context, 'No projects added yet.')
@@ -423,6 +805,9 @@ class ProfileViewScreen extends ConsumerWidget {
 
   Widget _buildProjectCard(BuildContext context, model.Project project) {
     final theme = Theme.of(context);
+    final hasEnhanced = project.enhancedDescription != null && 
+                        project.enhancedDescription!.isNotEmpty;
+    
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
@@ -431,10 +816,23 @@ class ProfileViewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              project.name,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    project.name,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => context.push('/profile/edit'),
+                  tooltip: 'Edit Project',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
             if (project.url != null) ...[
               const SizedBox(height: 4),
@@ -463,10 +861,87 @@ class ProfileViewScreen extends ConsumerWidget {
                   _formatStringDateRange(project.startDate, project.endDate)),
             ],
             const SizedBox(height: 12),
-            Text(
-              project.description,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-            ),
+            if (hasEnhanced) ...[
+              Text(
+                'AI Enhanced Description',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withAlpha(26),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withAlpha(51)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.auto_awesome, size: 16, color: Colors.green[700]),
+                        const SizedBox(width: 4),
+                        Text(
+                          'AI Enhanced',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      project.enhancedDescription!,
+                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Original Description',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(
+                  'View Original',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      project.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        height: 1.4,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Text(
+                project.description,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+              ),
+            ],
             if (project.technologies.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -591,6 +1066,68 @@ class ProfileViewScreen extends ConsumerWidget {
   }
 }
 
+/// View sample document text in a dialog
+Future<void> _viewSampleText(WidgetRef ref, BuildContext context, String sampleId, String fileName) async {
+  try {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Fetch sample details
+    final apiClient = ref.read(samplesApiClientProvider);
+    final sample = await apiClient.getSample(sampleId);
+
+    // Close loading dialog
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Show text dialog
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sample Content'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Text(
+                sample.fullText ?? 'No text available',
+                style: const TextStyle(fontFamily: 'monospace'),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+  } catch (e) {
+    // Close loading dialog if still open
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+    
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load sample: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
 class _SampleResumeUploadCard extends ConsumerWidget {
   const _SampleResumeUploadCard();
 
@@ -599,12 +1136,6 @@ class _SampleResumeUploadCard extends ConsumerWidget {
     final samplesState = ref.watch(samplesProvider);
     final resumeSamples = samplesState.resumeSamples;
     final theme = Theme.of(context);
-
-    // Load samples on first build
-    ref.listen(samplesProvider, (_, __) {});
-    if (samplesState.samples.isEmpty && !samplesState.isLoading) {
-      Future.microtask(() => ref.read(samplesProvider.notifier).loadSamples());
-    }
 
     return Card(
       elevation: 1,
@@ -659,25 +1190,16 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                           children: [
                             Icon(Icons.error, color: Colors.red[700], size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              'Connection Error',
-                              style: TextStyle(
-                                color: Colors.red[700],
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Text(
+                                samplesState.errorMessage ?? 'Unknown error',
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Unable to load resume preferences. Please check that:\n'
-                          '• Backend server is running on port 8000\n'
-                          '• You are logged in with valid credentials\n'
-                          '• Network connection is stable',
-                          style: TextStyle(
-                            color: Colors.red[600],
-                            fontSize: 13,
-                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -709,48 +1231,36 @@ class _SampleResumeUploadCard extends ConsumerWidget {
                             color: theme.colorScheme.primary,
                           ),
                           title: Text(
-                            resume.originalFilename,
+                            'Uploaded: ${resume.createdAt.toLocal().toString().split(' ')[0]} • ${resume.wordCount} words${resume.isActive ? ' (Active)' : ''}',
                             style: theme.textTheme.bodyMedium,
                           ),
-                          subtitle: Text(
-                            'Uploaded: ${resume.createdAt.toLocal().toString().split(' ')[0]} • ${resume.wordCount} words${resume.isActive ? ' (Active)' : ''}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (value) async {
-                              if (value == 'delete') {
-                                try {
-                                  await ref
-                                      .read(samplesProvider.notifier)
-                                      .deleteSample(resume.id);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Resume deleted successfully'),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Delete failed: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () async {
+                              try {
+                                await ref
+                                    .read(samplesProvider.notifier)
+                                    .deleteSample(resume.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Resume deleted successfully'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Delete failed: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
                                 }
                               }
                             },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete'),
-                              ),
-                            ],
                           ),
+                          onTap: () => _viewSampleText(ref, context, resume.id, resume.fileName),
                         )),
                     const SizedBox(height: 16),
                   ],
@@ -796,10 +1306,29 @@ class _SampleResumeUploadCard extends ConsumerWidget {
           return;
         }
 
+        // Read file bytes - use bytes if available, otherwise read from path
+        List<int> fileBytes;
+        if (file.bytes != null) {
+          fileBytes = file.bytes!;
+        } else if (file.path != null) {
+          fileBytes = await File(file.path!).readAsBytes();
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Unable to read file. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
         try {
           await ref.read(samplesProvider.notifier).uploadSample(
-            file: file,
             documentType: 'resume',
+            fileName: file.name,
+            fileBytes: fileBytes,
           );
           
           if (context.mounted) {
@@ -863,11 +1392,6 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
     final coverLetterSample = samplesState.activeCoverLetterSample;
     final theme = Theme.of(context);
 
-    // Load samples on first build if not already loaded
-    if (samplesState.samples.isEmpty && !samplesState.isLoading) {
-      Future.microtask(() => ref.read(samplesProvider.notifier).loadSamples());
-    }
-
     return Card(
       elevation: 1,
       child: Padding(
@@ -921,22 +1445,16 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                           children: [
                             Icon(Icons.error, color: Colors.red[700], size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              'Connection Error',
-                              style: TextStyle(
-                                color: Colors.red[700],
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Text(
+                                samplesState.errorMessage!,
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          samplesState.errorMessage!,
-                          style: TextStyle(
-                            color: Colors.red[600],
-                            fontSize: 13,
-                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -968,28 +1486,37 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
                         Icons.article,
                         color: Colors.green[700],
                       ),
-                      title: const Text('Cover Letter Sample'),
-                      subtitle: Text(
-                        'Uploaded: ${coverLetterSample.createdAt}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                      title: Text(
+                        'Uploaded: ${coverLetterSample.createdAt.toLocal().toString().split(' ')[0]} • ${coverLetterSample.wordCount} words${coverLetterSample.isActive ? ' (Active)' : ''}',
+                        style: theme.textTheme.bodyMedium,
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () async {
-                          final success = await ref
-                              .read(samplesProvider.notifier)
-                              .deleteSample(coverLetterSample.id);
-                          if (context.mounted && success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Cover letter sample deleted'),
-                              ),
-                            );
+                          try {
+                            await ref
+                                .read(samplesProvider.notifier)
+                                .deleteSample(coverLetterSample.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Cover letter sample deleted'),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                       ),
+                      onTap: () => _viewSampleText(ref, context, coverLetterSample.id, coverLetterSample.fileName),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -1037,10 +1564,29 @@ class _SampleCoverLetterUploadCard extends ConsumerWidget {
           return;
         }
 
+        // Read file bytes - use bytes if available, otherwise read from path
+        List<int> fileBytes;
+        if (file.bytes != null) {
+          fileBytes = file.bytes!;
+        } else if (file.path != null) {
+          fileBytes = await File(file.path!).readAsBytes();
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Unable to read file. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
         try {
           await ref.read(samplesProvider.notifier).uploadSample(
-            file: file,
             documentType: 'cover_letter',
+            fileName: file.name,
+            fileBytes: fileBytes,
           );
           
           if (context.mounted) {

@@ -50,7 +50,7 @@ class GenerateResumeRequest(BaseModel):
     """Request to generate resume."""
     job_id: UUID
     max_experiences: int = Field(default=5, ge=1, le=10)
-    max_projects: int = Field(default=3, ge=0, le=5)
+    max_projects: int = Field(default=3, ge=0)
     include_summary: bool = True
     custom_prompt: Optional[str] = Field(None, max_length=500)
 

@@ -445,19 +445,19 @@ class JobDetailView extends StatelessWidget {
       case ApplicationStatus.notApplied:
         return Colors.grey;
       case ApplicationStatus.preparing:
-        return Colors.amber;
-      case ApplicationStatus.applied:
         return Colors.blue;
+      case ApplicationStatus.applied:
+        return Colors.orange;
       case ApplicationStatus.interviewing:
-        return Colors.green;
-      case ApplicationStatus.offerReceived:
         return Colors.purple;
+      case ApplicationStatus.offerReceived:
+        return Colors.green;
       case ApplicationStatus.rejected:
         return Colors.red;
       case ApplicationStatus.accepted:
         return Colors.teal;
       case ApplicationStatus.withdrawn:
-        return Colors.orange;
+        return Colors.blueGrey;
     }
   }
 

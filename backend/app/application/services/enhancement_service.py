@@ -2,10 +2,14 @@
 
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
+
+from sqlalchemy import update as sql_update
 
 from app.infrastructure.adapters.llm.groq_adapter import GroqAdapter
 from app.infrastructure.repositories.profile_repository import ProfileRepository
 from app.application.services.style_extraction_service import StyleExtractionService
+from app.infrastructure.database.models import MasterProfileModel
 
 
 class EnhancementService:
@@ -73,33 +77,52 @@ class EnhancementService:
         # Update professional summary
         if "summary" in enhancements:
             enhanced_summary = enhancements["summary"]["enhanced_text"]
-            # TODO: Add method to update professional summary if needed
+            metadata = {
+                "model": result["llm_metadata"].get("model", "unknown"),
+                "timestamp": datetime.utcnow().isoformat(),
+                "sections_enhanced": result["llm_metadata"].get("sections_enhanced", 0)
+            }
+            # Update enhanced professional summary field, preserving the original
+            stmt = sql_update(MasterProfileModel).where(
+                MasterProfileModel.id == str(profile_id)
+            ).values(
+                enhanced_professional_summary=enhanced_summary,
+                enhancement_metadata=metadata
+            )
+            await self.profile_repo.session.execute(stmt)
+            await self.profile_repo.session.commit()
         
-        # Update experiences with enhanced descriptions
+        # Prepare experiences with enhanced descriptions for bulk update
+        experiences_to_update = []
         for exp in experiences:
             if exp.id in enhancements and enhancements[exp.id]["type"] == "experience":
                 enhanced_text = enhancements[exp.id]["enhanced_text"]
-                # Update experience in database
                 exp.enhanced_description = enhanced_text
-                await self.profile_repo.update_experience(
-                    profile_id=str(profile_id),
-                    experience_id=exp.id,
-                    enhanced_description=enhanced_text
-                )
+                experiences_to_update.append(exp)
                 experiences_enhanced += 1
         
-        # Update projects with enhanced descriptions
+        # Bulk update all experiences at once
+        if experiences_to_update:
+            await self.profile_repo.update_experiences_bulk(
+                profile_id=str(profile_id),
+                experiences=experiences_to_update
+            )
+        
+        # Prepare projects with enhanced descriptions for bulk update
+        projects_to_update = []
         for proj in profile.projects:
             if proj.id in enhancements and enhancements[proj.id]["type"] == "project":
                 enhanced_text = enhancements[proj.id]["enhanced_text"]
-                # Update project in database
                 proj.enhanced_description = enhanced_text
-                await self.profile_repo.update_project(
-                    profile_id=str(profile_id),
-                    project_id=proj.id,
-                    enhanced_description=enhanced_text
-                )
+                projects_to_update.append(proj)
                 projects_enhanced += 1
+        
+        # Bulk update all projects at once
+        if projects_to_update:
+            await self.profile_repo.update_projects_bulk(
+                profile_id=str(profile_id),
+                projects=projects_to_update
+            )
         
         return {
             "profile_id": str(profile_id),

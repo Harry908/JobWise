@@ -59,3 +59,23 @@ class LLMInterface(ABC):
     ) -> str:
         """Generate personalized cover letter."""
         pass
+    
+    @abstractmethod
+    async def calculate_ats_score(
+        self,
+        document_text: str,
+        job_description: str,
+        job_keywords: list
+    ) -> Dict:
+        """
+        Calculate ATS compatibility score using LLM analysis.
+        
+        Args:
+            document_text: The resume or cover letter text
+            job_description: The job description
+            job_keywords: Parsed keywords from job description
+            
+        Returns:
+            Dict with 'score', 'matched_keywords', 'missing_keywords', 'suggestions'
+        """
+        pass

@@ -18,9 +18,17 @@ class UserJobs extends _$UserJobs {
   }
 
   Future<void> addJob(Job job) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final newJob = await _jobsApi.createJob(
+    // If job has raw text, use the text parsing endpoint
+    // Otherwise use the structured data endpoint
+    final Job newJob;
+    
+    if (job.rawText != null && job.rawText!.isNotEmpty) {
+      newJob = await _jobsApi.createFromText(
+        rawText: job.rawText!,
+        source: job.source,
+      );
+    } else {
+      newJob = await _jobsApi.createJob(
         source: job.source,
         title: job.title,
         company: job.company,
@@ -31,35 +39,69 @@ class UserJobs extends _$UserJobs {
         salaryRange: job.salaryRange,
         remote: job.remote,
       );
-      final previousState = await future;
-      return [...previousState, newJob];
+    }
+    
+    // Update the state with the new job
+    state.whenData((jobs) {
+      state = AsyncValue.data([...jobs, newJob]);
     });
   }
 
   Future<void> updateJob(Job job) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // Optimistically update the UI without showing loading
+    final previousState = state;
+    
+    // Update state optimistically
+    state.whenData((jobs) {
+      state = AsyncValue.data([
+        for (final j in jobs)
+          if (j.id == job.id) job else j
+      ]);
+    });
+
+    // Perform the API call and handle errors
+    try {
       final updatedJob = await _jobsApi.updateJob(
         jobId: job.id,
         parsedKeywords: job.parsedKeywords,
         status: job.status,
         applicationStatus: job.applicationStatus,
       );
-      final previousState = await future;
-      return [
-        for (final j in previousState)
-          if (j.id == updatedJob.id) updatedJob else j
-      ];
-    });
+      
+      // Update with the server response
+      state.whenData((jobs) {
+        state = AsyncValue.data([
+          for (final j in jobs)
+            if (j.id == updatedJob.id) updatedJob else j
+        ]);
+      });
+      
+      // Invalidate the selected job to refresh the detail view
+      ref.invalidate(selectedJobProvider(job.id));
+    } catch (e) {
+      // Revert to previous state on error
+      state = previousState;
+      rethrow;
+    }
   }
 
   Future<void> deleteJob(String jobId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      await _jobsApi.deleteJob(jobId);
-      final previousState = await future;
-      return previousState.where((j) => j.id != jobId).toList();
+    // Store previous state for rollback
+    final previousState = state;
+    
+    // Optimistically remove the job from the list
+    state.whenData((jobs) {
+      state = AsyncValue.data(jobs.where((j) => j.id != jobId).toList());
     });
+
+    // Perform the API call
+    try {
+      await _jobsApi.deleteJob(jobId);
+    } catch (e) {
+      // Revert to previous state on error
+      state = previousState;
+      rethrow;
+    }
   }
 }
 
@@ -71,23 +113,20 @@ class JobActions extends _$JobActions {
   }
 
   Future<void> saveBrowseJob(BrowseJob browseJob) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final jobsApi = ref.read(jobsApiClientProvider);
-      await jobsApi.createJob(
-        source: browseJob.source,
-        title: browseJob.title,
-        company: browseJob.company,
-        location: browseJob.location,
-        description: browseJob.description,
-        requirements: browseJob.requirements,
-        benefits: browseJob.benefits,
-        salaryRange: browseJob.salaryRange,
-        remote: browseJob.remote,
-      );
-      // Refresh the user jobs list
-      ref.invalidate(userJobsProvider);
-    });
+    final jobsApi = ref.read(jobsApiClientProvider);
+    await jobsApi.createJob(
+      source: browseJob.source,
+      title: browseJob.title,
+      company: browseJob.company,
+      location: browseJob.location,
+      description: browseJob.description,
+      requirements: browseJob.requirements,
+      benefits: browseJob.benefits,
+      salaryRange: browseJob.salaryRange,
+      remote: browseJob.remote,
+    );
+    // Refresh the user jobs list
+    ref.invalidate(userJobsProvider);
   }
 }
 

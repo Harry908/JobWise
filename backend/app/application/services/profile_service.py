@@ -46,8 +46,8 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(experiences)} experiences")
                 for i, exp_data in enumerate(experiences):
                     print(f"DEBUG: Processing experience {i}: {exp_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in exp_data and exp_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in exp_data and (exp_data['id'] is None or exp_data['id'] == ''):
                         del exp_data['id']
                     experiences_list.append(Experience(**exp_data))
                 print(f"DEBUG: Successfully created {len(experiences_list)} experiences")
@@ -59,8 +59,8 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(education)} education entries")
                 for i, edu_data in enumerate(education):
                     print(f"DEBUG: Processing education {i}: {edu_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in edu_data and edu_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in edu_data and (edu_data['id'] is None or edu_data['id'] == ''):
                         del edu_data['id']
                     education_list.append(Education(**edu_data))
                 print(f"DEBUG: Successfully created {len(education_list)} education entries")
@@ -72,8 +72,8 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(projects)} projects")
                 for i, proj_data in enumerate(projects):
                     print(f"DEBUG: Processing project {i}: {proj_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in proj_data and proj_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in proj_data and (proj_data['id'] is None or proj_data['id'] == ''):
                         del proj_data['id']
                     projects_list.append(Project(**proj_data))
                 print(f"DEBUG: Successfully created {len(projects_list)} projects")
@@ -179,8 +179,8 @@ class ProfileService:
                 
                 for i, exp_data in enumerate(experiences):
                     print(f"DEBUG: Processing experience {i}: {exp_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in exp_data and exp_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in exp_data and (exp_data['id'] is None or exp_data['id'] == ''):
                         del exp_data['id']
                     experiences_list.append(Experience(**exp_data))
                 existing_profile.experiences = experiences_list
@@ -199,8 +199,8 @@ class ProfileService:
                 
                 for i, edu_data in enumerate(education):
                     print(f"DEBUG: Processing education {i}: {edu_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in edu_data and edu_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in edu_data and (edu_data['id'] is None or edu_data['id'] == ''):
                         del edu_data['id']
                     education_list.append(Education(**edu_data))
                 existing_profile.education = education_list
@@ -219,8 +219,8 @@ class ProfileService:
                 
                 for i, proj_data in enumerate(projects):
                     print(f"DEBUG: Processing project {i}: {proj_data}")
-                    # Remove None id to let default_factory generate UUID
-                    if 'id' in proj_data and proj_data['id'] is None:
+                    # Remove None or empty string id to let default_factory generate UUID
+                    if 'id' in proj_data and (proj_data['id'] is None or proj_data['id'] == ''):
                         del proj_data['id']
                     projects_list.append(Project(**proj_data))
                 existing_profile.projects = projects_list

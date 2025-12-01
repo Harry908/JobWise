@@ -28,6 +28,7 @@ class JobCard extends StatelessWidget {
     final remote = job?.remote ?? browseJob?.remote ?? false;
     final keywords = job?.parsedKeywords ?? browseJob?.parsedKeywords ?? [];
     final salaryRange = job?.salaryRange ?? browseJob?.salaryRange;
+    final applicationStatus = job?.applicationStatus;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -40,6 +41,12 @@ class JobCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Application Status Badge (if applicable)
+              if (applicationStatus != null) ...[
+                _buildStatusBadge(theme, applicationStatus),
+                const SizedBox(height: 12),
+              ],
+
               // Title and Save Button Row
               Row(
                 children: [
@@ -170,6 +177,93 @@ class JobCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildStatusBadge(ThemeData theme, ApplicationStatus status) {
+    final statusInfo = _getStatusInfo(status);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: statusInfo.color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: statusInfo.color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            statusInfo.icon,
+            size: 16,
+            color: statusInfo.color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            statusInfo.label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: statusInfo.color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ({Color color, IconData icon, String label}) _getStatusInfo(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.notApplied:
+        return (
+          color: Colors.grey,
+          icon: Icons.circle_outlined,
+          label: 'Not Applied',
+        );
+      case ApplicationStatus.preparing:
+        return (
+          color: Colors.blue,
+          icon: Icons.edit_note,
+          label: 'Preparing',
+        );
+      case ApplicationStatus.applied:
+        return (
+          color: Colors.orange,
+          icon: Icons.send,
+          label: 'Applied',
+        );
+      case ApplicationStatus.interviewing:
+        return (
+          color: Colors.purple,
+          icon: Icons.person_search,
+          label: 'Interviewing',
+        );
+      case ApplicationStatus.offerReceived:
+        return (
+          color: Colors.green,
+          icon: Icons.card_giftcard,
+          label: 'Offer Received',
+        );
+      case ApplicationStatus.accepted:
+        return (
+          color: Colors.teal,
+          icon: Icons.check_circle,
+          label: 'Accepted',
+        );
+      case ApplicationStatus.rejected:
+        return (
+          color: Colors.red,
+          icon: Icons.cancel,
+          label: 'Rejected',
+        );
+      case ApplicationStatus.withdrawn:
+        return (
+          color: Colors.blueGrey,
+          icon: Icons.undo,
+          label: 'Withdrawn',
+        );
+    }
   }
 
   String _formatSalaryRange(String range) {
