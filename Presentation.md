@@ -1,3 +1,27 @@
+# Current App Overview
+
+## Feature Outline
+
+### JobWise - AI-Powered Job Application Assistant
+**Status**: Sprints 1-5 Complete | **Platform**: Flutter Mobile + FastAPI Backend
+
+**Core Capabilities**:
+- **Authentication & User Management**: JWT-based auth, secure password hashing, token refresh
+- **Profile Management**: Master resume CRUD with AI enhancement, comprehensive fields (personal info, experiences, education, skills, projects)
+- **Job Management**: Save jobs from text input, browse mock jobs, track application status (8-status pipeline)
+- **AI Generation**: Profile enhancement, content ranking, resume/cover letter generation using Groq LLM
+- **Sample Management**: Upload resume/cover letter samples for writing style extraction
+
+**Technical Highlights**:
+- **AI Integration**: Live Groq LLM (llama-3.3-70b-versatile) for profile enhancement and generation
+- **Performance**: Resume generation <3s, Cover letter 5-8s, ATS scoring 70-95%
+- **Architecture**: Clean domain-driven design, async FastAPI, Riverpod state management
+- **Testing**: 77+ backend tests passing, comprehensive end-to-end validation
+
+**Current Status**: Production-ready for core job application workflow | **Next**: Sprint 6 Document Export & S3 Storage
+
+---
+
 # AI workflow
 
 #### Agent 1: Business Analyst Agent (ChatGPT-5)
