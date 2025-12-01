@@ -665,6 +665,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> with Sing
             ],
             if (experience.achievements.isNotEmpty) ...[
               const SizedBox(height: 12),
+              Text(
+                'Key Achievements:',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
               ...experience.achievements
                   .map((a) => _buildBulletPoint(theme, a)),
             ],
@@ -2198,6 +2205,7 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
   late TextEditingController _locationController;
   late TextEditingController _descriptionController;
   late TextEditingController _enhancedDescriptionController;
+  late TextEditingController _achievementsController;
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
 
@@ -2209,6 +2217,7 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
     _locationController = TextEditingController(text: widget.experience.location);
     _descriptionController = TextEditingController(text: widget.experience.description);
     _enhancedDescriptionController = TextEditingController(text: widget.experience.enhancedDescription ?? '');
+    _achievementsController = TextEditingController(text: widget.experience.achievements.join('\n'));
     _startDateController = TextEditingController(text: widget.experience.startDate);
     _endDateController = TextEditingController(text: widget.experience.endDate);
   }
@@ -2220,6 +2229,7 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
     _locationController.dispose();
     _descriptionController.dispose();
     _enhancedDescriptionController.dispose();
+    _achievementsController.dispose();
     _startDateController.dispose();
     _endDateController.dispose();
     super.dispose();
@@ -2274,6 +2284,17 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
               minLines: 3,
               maxLines: 10,
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _achievementsController,
+              decoration: const InputDecoration(
+                labelText: 'Key Achievements',
+                border: OutlineInputBorder(),
+                helperText: 'One achievement per line',
+              ),
+              minLines: 3,
+              maxLines: 10,
+            ),
           ],
         ),
       ),
@@ -2290,6 +2311,9 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
               location: _locationController.text,
               description: _descriptionController.text,
               enhancedDescription: _enhancedDescriptionController.text.isEmpty ? null : _enhancedDescriptionController.text,
+              achievements: _achievementsController.text.isEmpty 
+                  ? [] 
+                  : _achievementsController.text.split('\n').where((line) => line.trim().isNotEmpty).toList(),
               startDate: _startDateController.text,
               endDate: _endDateController.text,
             ));
