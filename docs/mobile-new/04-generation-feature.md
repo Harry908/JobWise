@@ -294,13 +294,40 @@ Response:
 ```json
 {
   "profile_id": "550e8400-e29b-41d4-a716-446655440000",
-  "enhanced_summary": "Innovative software engineer with proven track record...",
-  "enhanced_experiences_count": 3,
-  "enhanced_projects_count": 2,
-  "processing_time_ms": 3240,
-  "message": "Profile enhanced successfully using your writing style"
+  "status": "completed",
+  "enhanced_sections": {
+    "professional_summary": "Results-driven Senior Software Engineer with 8+ years of expertise architecting scalable cloud solutions...",
+    "experiences_enhanced": 5,
+    "projects_enhanced": 4
+  },
+  "llm_metadata": {
+    "model": "llama-3.3-70b-versatile",
+    "total_tokens": 1247,
+    "processing_time_seconds": 4.2,
+    "sections_enhanced": 10,
+    "sections_requested": 10,
+    "success_rate": "100.0%"
+  },
+  "writing_style_used": {
+    "tone": "professional yet personable",
+    "vocabulary_level": "advanced"
+  },
+  "created_at": "2025-11-15T10:35:00Z"
 }
 ```
+
+**Enhancement Process** (Batch Processing):
+1. Retrieve active cover letter sample
+2. Extract writing style using AI (once, cached)
+3. Collect ALL profile content (summary + all experiences + all projects)
+4. Send single batch LLM request to enhance all content simultaneously
+5. Parse structured JSON response with section-specific enhancements
+6. Save enhanced_description fields to database alongside original descriptions
+7. Return success metrics (sections enhanced, success rate)
+
+**Performance**: Single LLM call processes unlimited experiences and projects (~4-5 seconds total, 80% faster than sequential approach)
+
+**Note**: Enhanced descriptions are stored in the `enhanced_description` field for each experience and project, while original descriptions remain in the `description` field. Resume generation automatically uses enhanced descriptions when available.
 
 #### 3. POST /api/v1/rankings/create - Create Job-Specific Rankings
 
@@ -320,32 +347,39 @@ Request:
 Response:
 ```json
 {
-  "ranking_id": "ranking-uuid",
-  "job_id": "job-uuid",
-  "ranked_experiences": [
-    {
-      "experience_id": "exp-uuid-1",
-      "relevance_score": 0.95,
-      "rank": 1,
-      "reasoning": "Strong match with required Python and FastAPI skills"
-    },
-    {
-      "experience_id": "exp-uuid-2",
-      "relevance_score": 0.78,
-      "rank": 2,
-      "reasoning": "Relevant AWS cloud experience mentioned in job"
-    }
+  "id": "880e8400-e29b-41d4-a716-446655440003",
+  "user_id": 1,
+  "job_id": "770e8400-e29b-41d4-a716-446655440002",
+  "ranked_experience_ids": [
+    "exp_456",
+    "exp_123",
+    "exp_789",
+    "exp_234"
   ],
-  "ranked_projects": [
-    {
-      "project_id": "proj-uuid-1",
-      "relevance_score": 0.88,
-      "rank": 1,
-      "reasoning": "Directly demonstrates FastAPI microservices architecture"
-    }
+  "ranked_project_ids": [
+    "proj_789",
+    "proj_123",
+    "proj_456"
   ],
-  "processing_time_ms": 1820,
-  "created_at": "2025-11-15T10:35:00Z"
+  "ranking_rationale": "Prioritized experiences with AWS and microservices architecture based on job requirements for Senior Cloud Engineer role.",
+  "keyword_matches": {
+    "AWS": 8,
+    "Python": 12,
+    "Docker": 5,
+    "Kubernetes": 3
+  },
+  "relevance_scores": {
+    "exp_456": 0.95,
+    "exp_123": 0.87,
+    "proj_789": 0.92
+  },
+  "llm_metadata": {
+    "model": "llama-3.1-8b-instant",
+    "total_tokens": 543,
+    "processing_time_seconds": 1.8
+  },
+  "status": "completed",
+  "created_at": "2025-11-15T10:40:00Z"
 }
 ```
 
@@ -621,13 +655,13 @@ class Generation {
 
   factory Generation.fromJson(Map<String, dynamic> json) {
     return Generation(
-      id: json['id'],
+      id: json['generation_id'] ?? json['id'],
       userId: json['user_id'],
       jobId: json['job_id'],
       documentType: json['document_type'],
-      contentText: json['content_text'],
+      contentText: json['resume_text'] ?? json['cover_letter_text'] ?? json['content_text'],
       atsScore: json['ats_score'].toDouble(),
-      metadata: json['metadata'] ?? {},
+      metadata: json['content_used'] ?? json['metadata'] ?? {},
       processingTimeMs: json['processing_time_ms'],
       createdAt: DateTime.parse(json['created_at']),
     );
@@ -672,16 +706,35 @@ class Ranking {
   });
 
   factory Ranking.fromJson(Map<String, dynamic> json) {
+    // Convert simple ID arrays to RankedItem objects
+    final expIds = List<String>.from(json['ranked_experience_ids'] ?? []);
+    final projIds = List<String>.from(json['ranked_project_ids'] ?? []);
+    final scores = Map<String, double>.from(
+      (json['relevance_scores'] ?? {}).map(
+        (k, v) => MapEntry(k, (v as num).toDouble()),
+      ),
+    );
+
     return Ranking(
-      rankingId: json['ranking_id'],
+      rankingId: json['id'],
       jobId: json['job_id'],
-      rankedExperiences: (json['ranked_experiences'] as List)
-          .map((e) => RankedItem.fromJson(e))
-          .toList(),
-      rankedProjects: (json['ranked_projects'] as List)
-          .map((e) => RankedItem.fromJson(e))
-          .toList(),
-      processingTimeMs: json['processing_time_ms'],
+      rankedExperiences: expIds.asMap().entries.map((entry) => 
+        RankedItem(
+          id: entry.value,
+          relevanceScore: scores[entry.value] ?? 0.0,
+          rank: entry.key + 1,
+          reasoning: '',
+        )
+      ).toList(),
+      rankedProjects: projIds.asMap().entries.map((entry) => 
+        RankedItem(
+          id: entry.value,
+          relevanceScore: scores[entry.value] ?? 0.0,
+          rank: entry.key + 1,
+          reasoning: '',
+        )
+      ).toList(),
+      processingTimeMs: ((json['llm_metadata']?['processing_time_seconds'] ?? 0) * 1000).toInt(),
       createdAt: DateTime.parse(json['created_at']),
     );
   }

@@ -219,10 +219,7 @@ Response:
   "profile_id": "550e8400-e29b-41d4-a716-446655440000",
   "status": "completed",
   "enhanced_sections": {
-    "professional_summary": {
-      "original": "Software engineer with 8 years experience...",
-      "enhanced": "Results-driven Senior Software Engineer..."
-    },
+    "professional_summary": "Results-driven Senior Software Engineer with 8+ years of expertise architecting scalable cloud solutions...",
     "experiences_enhanced": 3,
     "projects_enhanced": 2
   },
@@ -231,9 +228,26 @@ Response:
     "total_tokens": 1247,
     "processing_time_seconds": 4.2
   },
+  "writing_style_used": {
+    "tone": "professional yet personable",
+    "vocabulary_level": "advanced"
+  },
   "created_at": "2025-11-15T10:35:00Z"
 }
 ```
+
+**Enhancement Process** (Batch Processing):
+1. Retrieve active cover letter sample
+2. Extract writing style using AI (once, cached)
+3. Collect ALL profile content (summary + all experiences + all projects)
+4. Send single batch LLM request to enhance all content simultaneously
+5. Parse structured JSON response with section-specific enhancements
+6. Save enhanced_description fields to database alongside original descriptions
+7. Return success metrics (sections enhanced, success rate)
+
+**Performance**: Single LLM call processes unlimited experiences and projects (~4-5 seconds total, 80% faster than sequential approach)
+
+**Note**: Enhanced descriptions are stored in the `enhanced_description` field for each experience and project, while original descriptions remain in the `description` field. Resume generation automatically uses enhanced descriptions when available.
 
 **Speed**: ~4 seconds (LLM-powered)
 

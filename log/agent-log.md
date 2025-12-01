@@ -2,6 +2,65 @@
 
 ---
 
+## Log Entry: 8
+
+### User Request
+now based on my api-services and backend document. update my frontend document to be consistence with the backend
+
+### Response Summary
+Updated mobile frontend documentation to ensure consistency with backend API specifications. Synchronized mobile-new documentation files (02-profile-management-feature.md, 04-generation-feature.md, 04b-ai-generation-feature.md) with their corresponding backend API specifications (02-profile-api.md, 04-v3-generation-api.md, 04b-ai-generation-api.md). Key updates include: (1) Updated Experience model to use 'achievements' field instead of non-existent 'technologies' field to match backend implementation; (2) Added explicit notes about ID auto-generation for POST requests - clients should never include 'id' fields when creating new resources; (3) Updated enhance profile response format to show batch processing results with professional_summary returning enhanced text directly, experiences_enhanced/projects_enhanced counts, and performance metrics; (4) Updated Generation model fromJson to handle multiple possible field names (resume_text, cover_letter_text, content_text) from different backend endpoints; (5) Updated Ranking model to parse simple ID arrays (ranked_experience_ids, ranked_project_ids) rather than complex nested objects; (6) Updated ExperienceCard widget to display achievements list instead of technology chips; (7) Added performance notes about batch processing (80% faster, single LLM call for all content). All frontend models and API client code now accurately reflect backend response structures.
+
+### Actions Taken
+- **File:** `docs/mobile-new/02-profile-management-feature.md`
+  - **Changes:** 
+    1. Removed 'technologies' field from Experience model, replaced with 'achievements' field
+    2. Updated Experience.fromJson() and toJson() methods to use achievements array
+    3. Updated ExperienceCard widget to display achievements as bullet list instead of technology chips
+    4. Added note about ID auto-generation for POST requests (experiences, education, projects)
+    5. Updated request examples to show correct field usage without 'id' in POST requests
+  - **Reason:** Backend Experience entity does not have a 'technologies' field; uses 'achievements' instead. IDs are auto-generated as UUIDs by backend.
+
+- **File:** `docs/mobile-new/04-generation-feature.md`
+  - **Changes:**
+    1. Updated enhance profile response to show batch processing format with professional_summary as direct string
+    2. Added enhancement process documentation showing single LLM call for all experiences/projects
+    3. Updated Generation.fromJson() to handle multiple content field names (resume_text, cover_letter_text, content_text)
+    4. Updated Ranking model to parse simple ID arrays and convert to RankedItem objects in Dart
+    5. Updated ranking response examples to match backend structure with ranked_experience_ids/ranked_project_ids arrays
+  - **Reason:** Frontend was expecting old response format; updated to match current batch processing implementation and actual backend response structures.
+
+- **File:** `docs/mobile-new/04b-ai-generation-feature.md`
+  - **Changes:**
+    1. Updated enhance profile response example to match batch processing format
+    2. Added enhancement process notes about batch processing and performance (80% faster)
+    3. Added note about enhanced_description storage (stored alongside original descriptions, not replacing them)
+  - **Reason:** Ensure AI generation feature documentation accurately reflects backend batch enhancement implementation and performance characteristics.
+
+---
+
+## Log Entry: 7
+
+### User Request
+update these document with the latest code update and data format
+
+### Response Summary
+Updated API documentation to accurately reflect the current implementation of enhanced descriptions and batch processing features. Made corrections to Profile API (02-profile-api.md), AI Generation API (04b-ai-generation-api.md), and V3 Generation API (04-v3-generation-api.md) documentation. Key updates include: (1) Clarified that Experience and Project entities have optional enhanced_description fields (2000 and 1000 char limits respectively) stored alongside original descriptions; (2) Updated profile enhancement endpoint documentation to show batch processing implementation that processes ALL experiences and projects in a single LLM call rather than limiting to top 3+2; (3) Corrected response format to match actual implementation where professional_summary returns enhanced text directly and counts reflect all items enhanced; (4) Added performance notes about 80% speed improvement and single LLM call architecture; (5) Removed references to non-existent fields like 'technologies' in Experience entity and 'display_order'; (6) Verified database schema documentation (06-database-schema.md) already accurately documents enhanced_description fields. All documentation now matches the production code implementation.
+
+### Actions Taken
+- **File:** `docs/api-services/02-profile-api.md`
+  - **Change:** Updated Profile structure diagram to show enhanced_description as optional AI-generated fields with accurate character limits (2000 for Experience, 1000 for Project), removed non-existent 'technologies' field from Experience
+  - **Reason:** Ensure documentation accurately reflects domain entity structure and field constraints
+
+- **File:** `docs/api-services/04b-ai-generation-api.md`
+  - **Change:** Updated Enhancement Process section to document batch processing implementation - single LLM call processes ALL experiences and projects (no limits), added performance metrics (80% faster), updated response format to show professional_summary returns enhanced text directly with success rate metrics
+  - **Reason:** Documentation was showing old sequential enhancement approach limiting to top 3 experiences + 2 projects; updated to reflect current batch processing that handles unlimited content
+
+- **File:** `docs/api-services/04-v3-generation-api.md`
+  - **Change:** Updated enhancement response example to show actual response structure with professional_summary as direct string (not original/enhanced object), updated counts to realistic numbers (5 experiences, 4 projects), added llm_metadata fields for success_rate tracking, added comprehensive note about batch processing and performance
+  - **Reason:** Response format in docs didn't match actual implementation; corrected to show how API actually behaves in production
+
+---
+
 ## Log Entry: 6
 
 ### User Request

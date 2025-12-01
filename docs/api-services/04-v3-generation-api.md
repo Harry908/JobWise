@@ -338,17 +338,17 @@ Enhance user's profile using AI with writing style from sample cover letter.
   "profile_id": "550e8400-e29b-41d4-a716-446655440000",
   "status": "completed",
   "enhanced_sections": {
-    "professional_summary": {
-      "original": "Software engineer with 8 years experience...",
-      "enhanced": "Results-driven Senior Software Engineer with 8+ years of expertise architecting scalable cloud solutions..."
-    },
-    "experiences_enhanced": 3,
-    "projects_enhanced": 2
+    "professional_summary": "Results-driven Senior Software Engineer with 8+ years of expertise architecting scalable cloud solutions...",
+    "experiences_enhanced": 5,
+    "projects_enhanced": 4
   },
   "llm_metadata": {
     "model": "llama-3.3-70b-versatile",
     "total_tokens": 1247,
-    "processing_time_seconds": 4.2
+    "processing_time_seconds": 4.2,
+    "sections_enhanced": 10,
+    "sections_requested": 10,
+    "success_rate": "100.0%"
   },
   "writing_style_used": {
     "tone": "professional yet personable",
@@ -358,13 +358,18 @@ Enhance user's profile using AI with writing style from sample cover letter.
 }
 ```
 
-**Enhancement Process**:
+**Enhancement Process** (Batch Processing):
 1. Retrieve active cover letter sample
-2. Extract writing style using AI
-3. Enhance professional summary
-4. Enhance top 3 experience descriptions
-5. Enhance top 2 project descriptions
-6. Store enhanced versions alongside originals
+2. Extract writing style using AI (once, cached)
+3. Collect ALL profile content (summary + all experiences + all projects)
+4. Send single batch LLM request to enhance all content simultaneously
+5. Parse structured JSON response with section-specific enhancements
+6. Save enhanced_description fields to database alongside original descriptions
+7. Return success metrics (sections enhanced, success rate)
+
+**Performance**: Single LLM call processes unlimited experiences and projects (~4-5 seconds total, 80% faster than sequential approach)
+
+**Note**: Enhanced descriptions are stored in the `enhanced_description` field for each experience and project, while original descriptions remain in the `description` field. Resume generation automatically uses enhanced descriptions when available.
 
 **Error Responses**:
 

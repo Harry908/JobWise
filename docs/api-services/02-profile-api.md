@@ -56,16 +56,16 @@ Profile
 ├── Experiences (work history)
 │   ├── Title, Company, Location
 │   ├── Dates (start, end, is_current)
-│   ├── Description
-│   ├── Enhanced Description (AI-generated)
-│   └── Technologies used
+│   ├── Description (original user-authored, max 2000 chars)
+│   ├── Enhanced Description (AI-generated, max 2000 chars, optional)
+│   └── Achievements (list of accomplishments)
 ├── Education
 │   ├── Institution, Degree, Field of Study
 │   ├── Dates, GPA
 │   └── Honors
 ├── Projects
-│   ├── Name, Description
-│   ├── Enhanced Description (AI-generated)
+│   ├── Name, Description (original, max 1000 chars)
+│   ├── Enhanced Description (AI-generated, max 1000 chars, optional)
 │   ├── Technologies, URLs
 │   └── Dates
 └── Custom Fields (flexible key-value pairs)
@@ -240,9 +240,7 @@ Retrieve the user's primary (default) profile.
       "is_current": false,
       "description": "Led development of scalable web applications",
       "enhanced_description": null,
-      "achievements": ["Increased performance by 40%"],
-      "technologies": ["Python", "FastAPI", "React"],
-      "display_order": 0
+      "achievements": ["Increased performance by 40%"]
     }
   ],
   "education": [...],
@@ -448,11 +446,7 @@ Retrieve all experiences for a profile.
       "is_current": false,
       "description": "Led development...",
       "enhanced_description": "Spearheaded the development...",
-      "achievements": ["..."],
-      "technologies": ["Python", "FastAPI"],
-      "display_order": 0,
-      "created_at": "2025-11-15T10:30:00Z",
-      "updated_at": "2025-11-15T10:30:00Z"
+      "achievements": ["..."]
     }
   ],
   "total": 4

@@ -232,17 +232,18 @@ The backend may add additional analytics fields over time (for example, new coun
 Request (Single):
 ```json
 {
-  "experience": {
-    "title": "Senior Software Engineer",
-    "company": "TechCorp",
-    "location": "Seattle, WA",
-    "start_date": "2020-01-15",
-    "end_date": null,
-    "is_current": true,
-    "description": "Led development of microservices architecture...",
-    "technologies": ["Python", "FastAPI", "Docker", "AWS"]
-  }
+  "title": "Senior Software Engineer",
+  "company": "TechCorp",
+  "location": "Seattle, WA",
+  "start_date": "2020-01-15",
+  "end_date": null,
+  "is_current": true,
+  "description": "Led development of microservices architecture...",
+  "achievements": ["Improved system performance by 40%", "Led team of 4 developers"]
 }
+```
+
+**Note**: Do NOT include an `id` field in POST requests. IDs are automatically generated as UUIDs by the backend.
 ```
 
 Request (Bulk):
@@ -252,12 +253,18 @@ Request (Bulk):
     {
       "title": "Senior Software Engineer",
       "company": "TechCorp",
-      ...
+      "location": "Seattle, WA",
+      "start_date": "2020-01-15",
+      "is_current": true,
+      "description": "Led development...",
+      "achievements": ["40% performance improvement"]
     },
     {
       "title": "Software Engineer",
       "company": "StartupInc",
-      ...
+      "start_date": "2018-01-01",
+      "end_date": "2019-12-31",
+      "description": "Full-stack development..."
     }
   ]
 }
@@ -539,7 +546,7 @@ class Experience {
   final bool isCurrent;
   final String description;
   final String? enhancedDescription;
-  final List<String> technologies;
+  final List<String> achievements;
 
   Experience({
     this.id,
@@ -551,7 +558,7 @@ class Experience {
     this.isCurrent = false,
     required this.description,
     this.enhancedDescription,
-    this.technologies = const [],
+    this.achievements = const [],
   });
 
   factory Experience.fromJson(Map<String, dynamic> json) {
@@ -565,7 +572,7 @@ class Experience {
       isCurrent: json['is_current'] ?? false,
       description: json['description'],
       enhancedDescription: json['enhanced_description'],
-      technologies: List<String>.from(json['technologies'] ?? []),
+      achievements: List<String>.from(json['achievements'] ?? []),
     );
   }
 
@@ -580,7 +587,7 @@ class Experience {
       'is_current': isCurrent,
       'description': description,
       'enhanced_description': enhancedDescription,
-      'technologies': technologies,
+      'achievements': achievements,
     };
   }
 }
@@ -1126,13 +1133,16 @@ class ExperienceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(experience.description),
-                SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: experience.technologies
-                      .map((tech) => Chip(label: Text(tech)))
-                      .toList(),
-                ),
+                if (experience.achievements.isNotEmpty) ..[
+                  SizedBox(height: 8),
+                  Text('Achievements:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...experience.achievements.map((achievement) => 
+                    Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text('• $achievement'),
+                    ),
+                  ),
+                ],
                 if (onEdit != null || onDelete != null)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
