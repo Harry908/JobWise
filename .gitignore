@@ -42,3 +42,4 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+backend/data/test_profile_create.json
