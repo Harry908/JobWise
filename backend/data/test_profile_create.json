@@ -11,21 +11,51 @@
   "professional_summary": "Experienced software engineer with 5+ years in full-stack development",
   "skills": {
     "technical": ["Python", "JavaScript", "SQL", "AWS"],
-    "soft": ["Teamwork", "Critical Thinking", "Adaptability"]
+    "soft": ["Teamwork", "Critical Thinking", "Adaptability"],
+    "languages": [],
+    "certifications": []
   },
-  "experiences": [{
-    "title": "Senior Software Engineer",
-    "company": "Tech Corp",
-    "location": "Seattle, WA",
-    "start_date": "2021-01-15",
-    "end_date": null,
-    "is_current": true,
-    "description": "Lead development of microservices architecture",
-    "achievements": [
-      "Improved system performance by 40%",
-      "Led team of 4 developers"
-    ]
-  }],
+  "experiences": [
+    {
+      "title": "Senior Software Engineer",
+      "company": "Tech Corp",
+      "location": "Seattle, WA",
+      "start_date": "2021-01-15",
+      "end_date": null,
+      "is_current": true,
+      "description": "Lead development of microservices architecture",
+      "achievements": [
+        "Improved system performance by 40%",
+        "Led team of 4 developers"
+      ]
+    },
+    {
+      "title": "Software Engineer",
+      "company": "Startup Inc",
+      "location": "San Francisco, CA",
+      "start_date": "2019-01-01",
+      "end_date": "2020-12-31",
+      "is_current": false,
+      "description": "Full-stack development using React and Node.js",
+      "achievements": [
+        "Built user-facing features",
+        "Improved application performance by 30%"
+      ]
+    },
+    {
+      "title": "Junior Developer",
+      "company": "Digital Solutions",
+      "location": "Portland, OR",
+      "start_date": "2017-06-01",
+      "end_date": "2018-12-31",
+      "is_current": false,
+      "description": "Frontend development and UI/UX implementation",
+      "achievements": [
+        "Developed responsive web applications",
+        "Collaborated with design team on 5+ projects"
+      ]
+    }
+  ],
   "education": [{
     "institution": "University of Washington",
     "degree": "Bachelor of Science",
@@ -35,14 +65,40 @@
     "gpa": 3.8,
     "honors": ["Dean's List", "Summa Cum Laude"]
   }],
-  "projects": [{
-    "name": "E-commerce Platform",
-    "description": "Built scalable e-commerce solution with React and Node.js",
-    "technologies": ["React", "Node.js", "PostgreSQL", "AWS"],
-    "url": "https://github.com/testuser/ecommerce",
-    "start_date": "2020-01-15",
-    "end_date": "2020-12-31"
-  }],
+  "projects": [
+    {
+      "name": "E-commerce Platform",
+      "description": "Built scalable e-commerce solution with React and Node.js",
+      "technologies": ["React", "Node.js", "PostgreSQL", "AWS"],
+      "url": "https://github.com/testuser/ecommerce",
+      "start_date": "2020-01-15",
+      "end_date": "2020-12-31"
+    },
+    {
+      "name": "AI Chat Application",
+      "description": "Real-time chat application with AI-powered responses",
+      "technologies": ["Python", "FastAPI", "WebSocket", "OpenAI API"],
+      "url": "https://github.com/testuser/ai-chat",
+      "start_date": "2021-03-01",
+      "end_date": "2021-08-01"
+    },
+    {
+      "name": "Mobile Fitness Tracker",
+      "description": "Cross-platform mobile app for fitness tracking",
+      "technologies": ["Flutter", "Firebase", "Dart"],
+      "url": "https://github.com/testuser/fitness-tracker",
+      "start_date": "2022-01-01",
+      "end_date": "2022-06-01"
+    },
+    {
+      "name": "Task Management System",
+      "description": "Collaborative task management with real-time updates",
+      "technologies": ["Vue.js", "Express", "MongoDB", "Socket.io"],
+      "url": "https://github.com/testuser/taskmanager",
+      "start_date": "2023-01-01",
+      "end_date": "2023-05-01"
+    }
+  ],
   "custom_fields": {
     "achievements": ["Led team of 10 developers", "Increased performance by 40%"],
     "hobbies": ["Photography", "Hiking", "Reading"]
