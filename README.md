@@ -388,16 +388,10 @@ flutter analyze
 ### Architecture Diagram
 See `docs/architecture-diagram.md` for complete system architecture with development/production environment mappings.
 
-**AI Generation Pipeline (5 Stages)**:
+**AI Generation Pipeline**:
 ```
-Job Analyzer → Profile Compiler → Document Generator → Quality Validator → PDF Exporter
+Writing style → Profile enhancement → Job Analyzer → Profile component ranking → Profile compiler → PDF Exporter
 ```
-
-**Context Management**: Sliding window approach (8000 token windows, 500 token overlap)
-- Profile extraction: 2000 tokens
-- Job analysis: 1500 tokens
-- Resume generation: 3000 tokens
-- Optimization pass: 1500 tokens
 
 ---
 

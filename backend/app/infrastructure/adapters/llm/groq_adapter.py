@@ -289,23 +289,30 @@ Return ONLY valid JSON, no other text."""
         experiences: list,
         projects: list
     ) -> Dict:
-        """Rank content by relevance to job."""
+        """Rank content by relevance to job.
+        
+        Note: experiences and projects should have integer 'id' fields (1, 2, 3, etc.)
+        for optimal LLM performance. The service layer handles UUID mapping.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Format experiences
         exp_text = "\n\n".join([
-            f"ID: {exp['id']}\nTitle: {exp['title']}\nCompany: {exp['company']}\nDescription: {exp.get('description', '')[:500]}"
+            f"ID: {exp['id']}\nTitle: {exp['title']}\nCompany: {exp['company']}\nDescription: {exp.get('description', '')}"
             for exp in experiences
         ])
         
         # Format projects
         proj_text = "\n\n".join([
-            f"ID: {proj['id']}\nName: {proj['name']}\nDescription: {proj.get('description', '')[:300]}\nTech: {', '.join(proj.get('technologies', [])[:5])}"
+            f"ID: {proj['id']}\nName: {proj['name']}\nDescription: {proj.get('description', '')}\nTech: {', '.join(proj.get('technologies', []))}"
             for proj in projects
         ])
         
-        prompt = f"""Analyze this job description and rank the experiences and projects by relevance.
+        prompt = f"""Analyze this job description and rank ALL experiences and ALL projects by relevance.
 
 Job Description:
-{job_description[:1500]}
+{job_description}
 
 EXPERIENCES:
 {exp_text}
@@ -313,16 +320,30 @@ EXPERIENCES:
 PROJECTS:
 {proj_text}
 
-Return ONLY a JSON object with this structure:
+CRITICAL RANKING RULES:
+1. You MUST include EVERY SINGLE experience ID in ranked_experience_ids
+2. You MUST include EVERY SINGLE project ID in ranked_project_ids  
+3. DO NOT omit any IDs - include them all, even completely irrelevant ones
+4. Rank from MOST relevant (first) to LEAST relevant (last)
+5. Non-technical experiences (retail, food service, etc.) go LAST
+6. Your ranked_experience_ids array MUST have exactly {len(experiences)} items
+7. Your ranked_project_ids array MUST have exactly {len(projects)} items
+
+Example for 4 experiences where 3,4 are relevant and 1,2 are not:
+{{"ranked_experience_ids": [3, 4, 1, 2]}}  ← ALL 4 IDs included, relevant first
+
+Return ONLY a JSON object:
 {{
-  "ranked_experience_ids": ["id1", "id2", ...],
-  "ranked_project_ids": ["id1", "id2", ...],
+  "ranked_experience_ids": [ALL experience IDs from most to least relevant],
+  "ranked_project_ids": [ALL project IDs from most to least relevant],
   "keyword_matches": {{"keyword": count, ...}},
   "ranking_rationale": "brief explanation"
 }}
 
-Return ONLY valid JSON."""
+Return ONLY valid JSON. No markdown, no extra text."""
 
+        logger.info(f"FULL PROMPT TO LLM:\n{prompt[:1000]}...")
+        
         result = await self.generate_completion(
             prompt=prompt,
             max_tokens=1500,
@@ -330,8 +351,12 @@ Return ONLY valid JSON."""
             model=self.fast_model
         )
         
+        logger.info(f"RAW LLM RESPONSE: {result['content'][:500]}...")
+        
         try:
             content = result["content"].strip()
+            
+            # Remove markdown code blocks
             if content.startswith("```json"):
                 content = content[7:]
             if content.startswith("```"):
@@ -339,7 +364,34 @@ Return ONLY valid JSON."""
             if content.endswith("```"):
                 content = content[:-3]
             
+            content = content.strip()
+            
+            # Remove JSON comments (// ...) which are not valid JSON
+            import re
+            content = re.sub(r'//.*?(?=\n|$)', '', content)
+            
+            # Extract JSON if there's extra text after it
+            # Look for the closing brace of the main JSON object
+            if content.startswith("{"):
+                # Find the matching closing brace
+                brace_count = 0
+                json_end = -1
+                for i, char in enumerate(content):
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_end = i + 1
+                            break
+                
+                if json_end > 0:
+                    content = content[:json_end]
+            
+            logger.info(f"CLEANED JSON for parsing: {content[:300]}...")
             ranking = json.loads(content.strip())
+            
+            logger.info(f"✓ Successfully parsed ranking JSON")
             
             return {
                 "ranked_experience_ids": ranking.get("ranked_experience_ids", [exp["id"] for exp in experiences]),
@@ -352,8 +404,10 @@ Return ONLY valid JSON."""
                     "processing_time": result["processing_time"]
                 }
             }
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # Fallback: return original order
+            logger.error(f"JSON parsing failed: {e}")
+            logger.error(f"Failed content: {content[:500] if 'content' in locals() else 'N/A'}")
             return {
                 "ranked_experience_ids": [exp["id"] for exp in experiences],
                 "ranked_project_ids": [proj["id"] for proj in projects],
