@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
@@ -10,7 +11,7 @@ class AppConfig {
       await dotenv.load(fileName: '.env');
     } catch (e) {
       // .env file not found, using default values
-      print('Warning: .env file not found, using default configuration');
+      debugPrint('Warning: .env file not found, using default configuration');
     }
   }
 }

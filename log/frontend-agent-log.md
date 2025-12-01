@@ -4,6 +4,109 @@ This log tracks all frontend development interactions and changes.
 
 ---
 
+## Log Entry: 11
+
+### User Request
+in my generate tab in job detail screen. I need be able to delete generations.
+
+### Response Summary
+Implemented complete deletion functionality for generated resumes and cover letters in the job detail screen's generate tab. Added a DELETE endpoint to the backend API, created the corresponding API client method, added a provider method for state management, and integrated a delete button with confirmation dialog in the UI. Users can now delete unwanted generations with a single click, complete with visual feedback and automatic list updates.
+
+### Actions Taken
+- **File:** `backend/app/presentation/api/generation.py`
+  - **Change:** Added DELETE endpoint for generations
+  - **Details:**
+    * Added `@router.delete("/generations/{generation_id}", status_code=204)` endpoint
+    * Validates that generation exists and belongs to the current user (403 if unauthorized)
+    * Returns 404 if generation not found, 500 if deletion fails
+    * Calls `generation_repo.delete(generation_id)` to remove from database
+    * Returns 204 No Content on success (per REST standards)
+  - **Reason:** Backend needed an endpoint to allow users to delete their own generations
+
+- **File:** `mobile_app/lib/services/api/generations_api_client.dart`
+  - **Change:** Added `deleteGeneration()` method to API client
+  - **Details:**
+    * Method signature: `Future<void> deleteGeneration(String generationId)`
+    * Makes DELETE request to `/generations/{generationId}`
+    * Includes proper error handling via `_handleError()`
+  - **Reason:** Mobile app needs to communicate with the backend DELETE endpoint
+
+- **File:** `mobile_app/lib/providers/generations_provider.dart`
+  - **Change:** Added `deleteGeneration()` method to state notifier
+  - **Details:**
+    * Method signature: `Future<bool> deleteGeneration(String generationId)`
+    * Calls `_apiClient.deleteGeneration(generationId)`
+    * Automatically updates local state by removing deleted item from history list
+    * Returns `true` on success, `false` on error
+    * Sets error message in state if deletion fails
+  - **Reason:** Provides state management for deletion with automatic UI updates
+
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Added delete button and confirmation dialog to generation history cards
+  - **Details:**
+    * **UI Changes:**
+      - Replaced chevron_right icon with delete_outline IconButton
+      - Delete button styled with error color for visual warning
+      - Button positioned at end of card row after ATS score badge
+    * **Deletion Flow:**
+      - Shows confirmation AlertDialog when delete button tapped
+      - Dialog displays generation type (resume/cover letter) in message
+      - "Delete" button styled with error background color
+      - Calls `generationsProvider.notifier.deleteGeneration(generationId)` on confirmation
+    * **User Feedback:**
+      - Success: Shows green SnackBar "Generation deleted successfully"
+      - Error: Shows error SnackBar with specific error message
+      - UI automatically updates as card is removed from list via provider state change
+    * **Added helper method:** `_deleteGeneration(String? generationId, String? documentType)`
+      - Handles null checks, confirmation dialog, API call, and feedback display
+  - **Reason:** Users need an intuitive way to delete unwanted generations with clear confirmation and feedback
+
+### Technical Details
+
+**API Endpoint:**
+```
+DELETE /api/v1/generations/{generation_id}
+Authorization: Bearer <token>
+Response: 204 No Content (success)
+Errors: 404 (not found), 403 (unauthorized), 500 (server error)
+```
+
+**State Management Flow:**
+1. User taps delete icon on generation card
+2. Confirmation dialog shows: "Are you sure you want to delete this [resume/cover letter]?"
+3. On confirm: Provider calls API client's `deleteGeneration()`
+4. Backend validates ownership and deletes from database
+5. Provider removes item from `state.history` list
+6. UI automatically rebuilds without deleted card (Riverpod reactivity)
+7. SnackBar shows success/error message
+
+**UI/UX Design:**
+- Delete icon: `Icons.delete_outline` in error color (red)
+- Placement: Right side of card, after ATS badge
+- Confirmation required to prevent accidental deletion
+- Clear messaging: Warns action "cannot be undone"
+- Destructive action button: Red background on "Delete" button
+- Immediate feedback via SnackBar
+- Optimistic UI: Card disappears immediately on successful deletion
+
+### User Experience Improvements
+- ✅ Quick deletion: Single tap on trash icon
+- ✅ Safety: Confirmation dialog prevents accidents
+- ✅ Clarity: Dialog shows exactly what will be deleted (resume/cover letter)
+- ✅ Feedback: Clear success/error messages
+- ✅ Consistency: Follows Material Design patterns for destructive actions
+- ✅ Automatic refresh: No need to manually reload history after deletion
+
+### Status
+✅ Backend DELETE endpoint implemented with authorization checks
+✅ API client method added with error handling
+✅ Provider state management with automatic list updates
+✅ UI delete button with confirmation dialog
+✅ Complete user feedback system (success/error messages)
+✅ Feature ready for testing and production use
+
+---
+
 ## Log Entry: 9
 
 ### User Request
@@ -619,6 +722,36 @@ Updated sample upload cards to use consistent trash can delete icons (removed Po
 - ✅ Better discoverability: Files are now obviously interactive (tappable)
 - ✅ Quick preview: Users can verify uploaded content without re-downloading
 - ✅ Clean interface: Removed unnecessary popup menu complexity
+
+---
+
+## Log Entry: 10
+
+### User Request
+"Continue: "Continue to iterate?"" (Implicitly: Fix all flutter analysis issues)
+
+### Response Summary
+Resolved 156 Flutter analysis issues to ensure a clean, compiling codebase. Key fixes included deleting a duplicate file (`profile_view_screen_dialogs.dart`) that caused over 100 errors, updating deprecated widgets (`Radio` to `RadioListTile`), replacing `print` with `debugPrint`, and enforcing `const` correctness while removing redundant `const` keywords. The codebase now passes `flutter analyze` with zero issues.
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/profile_view_screen_dialogs.dart`
+  - **Change:** Deleted file.
+  - **Reason:** Contained duplicate class definitions that conflicted with `profile_view_screen.dart`, causing massive analysis errors.
+- **File:** `mobile_app/lib/screens/settings_screen.dart`
+  - **Change:** Replaced deprecated `Radio` widgets with `RadioListTile`.
+  - **Reason:** Fixed deprecation warnings and improved touch target accessibility.
+- **File:** `mobile_app/lib/config/app_config.dart`
+  - **Change:** Replaced `print` with `debugPrint`.
+  - **Reason:** Complied with `avoid_print` lint rule for production-ready logging.
+- **File:** `mobile_app/lib/screens/profile_view_screen_v2.dart`
+  - **Change:** Added `context.mounted` checks before async gaps.
+  - **Reason:** Fixed `use_build_context_synchronously` warnings to prevent crashes if widget is unmounted.
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Added `const` constructors.
+  - **Reason:** Improved performance and fixed `prefer_const_constructors` lints.
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change:** Added `const` to constructors where applicable, then removed redundant `const` keywords from child widgets.
+  - **Reason:** Resolved `prefer_const_constructors` and subsequent `unnecessary_const` warnings to achieve a clean analysis report.
 
 ---
 

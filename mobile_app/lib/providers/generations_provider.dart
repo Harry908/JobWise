@@ -204,6 +204,24 @@ class GenerationsNotifier extends StateNotifier<GenerationsState> {
     }
   }
 
+  /// Delete a generation
+  Future<bool> deleteGeneration(String generationId) async {
+    try {
+      await _apiClient.deleteGeneration(generationId);
+      
+      // Remove from history (check both 'generation_id' and 'id' fields)
+      final updatedHistory = state.history
+          .where((gen) => gen['generation_id'] != generationId && gen['id'] != generationId)
+          .toList();
+      
+      state = state.copyWith(history: updatedHistory);
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return false;
+    }
+  }
+
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }

@@ -273,6 +273,7 @@ class UpdateProfileRequest(BaseModel):
     """Profile update request."""
     personal_info: Optional[PersonalInfoModel] = None
     professional_summary: Optional[str] = Field(None, min_length=10, description="Professional summary")
+    enhanced_professional_summary: Optional[str] = Field(None, description="AI-enhanced professional summary")
     skills: Optional[SkillsModel] = None
     experiences: Optional[List[ExperienceModel]] = None
     education: Optional[List[EducationModel]] = None
@@ -678,6 +679,8 @@ async def update_profile(
             update_data["personal_info"] = request.personal_info.model_dump()
         if request.professional_summary is not None:
             update_data["professional_summary"] = request.professional_summary
+        if request.enhanced_professional_summary is not None:
+            update_data["enhanced_professional_summary"] = request.enhanced_professional_summary
         if request.skills:
             update_data["skills"] = request.skills.model_dump()
         if request.experiences is not None:

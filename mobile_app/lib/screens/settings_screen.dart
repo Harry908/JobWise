@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
@@ -83,41 +84,32 @@ class _DateFormatRadioList extends ConsumerWidget {
 
     return Column(
       children: [
-        ListTile(
+        RadioListTile<String>(
           title: const Text('US Format'),
           subtitle: Text(
             'MM/dd/yyyy - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatUS)}',
           ),
-          leading: Radio<String>(
-            value: SettingsService.dateFormatUS,
-            groupValue: selectedDateFormat,
-            onChanged: (value) => _updateDateFormat(ref, context, value),
-          ),
-          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatUS),
+          value: SettingsService.dateFormatUS,
+          groupValue: selectedDateFormat,
+          onChanged: (value) => _updateDateFormat(ref, context, value),
         ),
-        ListTile(
+        RadioListTile<String>(
           title: const Text('European Format'),
           subtitle: Text(
             'dd/MM/yyyy - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatEU)}',
           ),
-          leading: Radio<String>(
-            value: SettingsService.dateFormatEU,
-            groupValue: selectedDateFormat,
-            onChanged: (value) => _updateDateFormat(ref, context, value),
-          ),
-          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatEU),
+          value: SettingsService.dateFormatEU,
+          groupValue: selectedDateFormat,
+          onChanged: (value) => _updateDateFormat(ref, context, value),
         ),
-        ListTile(
+        RadioListTile<String>(
           title: const Text('ISO Format'),
           subtitle: Text(
             'yyyy-MM-dd - Example: ${settingsService.getDateFormatHint(SettingsService.dateFormatISO)}',
           ),
-          leading: Radio<String>(
-            value: SettingsService.dateFormatISO,
-            groupValue: selectedDateFormat,
-            onChanged: (value) => _updateDateFormat(ref, context, value),
-          ),
-          onTap: () => _updateDateFormat(ref, context, SettingsService.dateFormatISO),
+          value: SettingsService.dateFormatISO,
+          groupValue: selectedDateFormat,
+          onChanged: (value) => _updateDateFormat(ref, context, value),
         ),
       ],
     );

@@ -88,10 +88,20 @@ class GenerationService:
         resume_parts.append("")
         
         # Professional Summary
-        if include_summary and profile.professional_summary:
-            resume_parts.append("PROFESSIONAL SUMMARY")
-            resume_parts.append(profile.professional_summary)
-            resume_parts.append("")
+        if include_summary:
+            # Use enhanced summary if available and not empty, otherwise use original
+            summary = None
+            if profile.enhanced_professional_summary and profile.enhanced_professional_summary.strip():
+                summary = profile.enhanced_professional_summary
+                logger.info("Using ENHANCED professional summary")
+            elif profile.professional_summary and profile.professional_summary.strip():
+                summary = profile.professional_summary
+                logger.info("Using ORIGINAL professional summary")
+            
+            if summary:
+                resume_parts.append("PROFESSIONAL SUMMARY")
+                resume_parts.append(summary)
+                resume_parts.append("")
         
         # Technical Skills
         if profile.skills and profile.skills.technical:
@@ -106,15 +116,18 @@ class GenerationService:
             for exp in ranked_exps:
                 resume_parts.append(f"{exp.title} | {exp.company} | {exp.location or ''}")
                 resume_parts.append(f"{exp.start_date} - {exp.end_date or 'Present'}")
-                # Use enhanced description if available, fallback to original
-                description = exp.enhanced_description or exp.description
-                if exp.enhanced_description:
+                # Use enhanced description if available and not empty, fallback to original
+                description = None
+                if exp.enhanced_description and exp.enhanced_description.strip():
+                    description = exp.enhanced_description
                     logger.info(f"Using ENHANCED description for experience: {exp.title} at {exp.company}")
                     logger.debug(f"Enhanced description length: {len(exp.enhanced_description)} chars")
-                elif exp.description:
+                elif exp.description and exp.description.strip():
+                    description = exp.description
                     logger.info(f"Using ORIGINAL description for experience: {exp.title} at {exp.company}")
                 else:
                     logger.warning(f"No description available for experience: {exp.title} at {exp.company}")
+                
                 if description:
                     resume_parts.append(description)
                 if exp.achievements:
@@ -128,15 +141,18 @@ class GenerationService:
             resume_parts.append("")
             for proj in ranked_projs:
                 resume_parts.append(f"{proj.name}")
-                # Use enhanced description if available, fallback to original
-                description = proj.enhanced_description or proj.description
-                if proj.enhanced_description:
+                # Use enhanced description if available and not empty, fallback to original
+                description = None
+                if proj.enhanced_description and proj.enhanced_description.strip():
+                    description = proj.enhanced_description
                     logger.info(f"Using ENHANCED description for project: {proj.name}")
                     logger.debug(f"Enhanced description length: {len(proj.enhanced_description)} chars")
-                elif proj.description:
+                elif proj.description and proj.description.strip():
+                    description = proj.description
                     logger.info(f"Using ORIGINAL description for project: {proj.name}")
                 else:
                     logger.warning(f"No description available for project: {proj.name}")
+                
                 if description:
                     resume_parts.append(description)
                 if proj.technologies:
@@ -215,7 +231,12 @@ class GenerationService:
             {
                 "title": exp_dict[exp_id].title,
                 "company": exp_dict[exp_id].company,
-                "description": exp_dict[exp_id].description or ""
+                # Use enhanced description if available and not empty, otherwise use original
+                "description": (
+                    exp_dict[exp_id].enhanced_description 
+                    if exp_dict[exp_id].enhanced_description and exp_dict[exp_id].enhanced_description.strip()
+                    else exp_dict[exp_id].description or ""
+                )
             }
             for exp_id in ranking.ranked_experience_ids[:3]
             if exp_id in exp_dict
@@ -225,7 +246,12 @@ class GenerationService:
         ranked_projs = [
             {
                 "name": proj_dict[proj_id].name,
-                "description": proj_dict[proj_id].description or "",
+                # Use enhanced description if available and not empty, otherwise use original
+                "description": (
+                    proj_dict[proj_id].enhanced_description
+                    if proj_dict[proj_id].enhanced_description and proj_dict[proj_id].enhanced_description.strip()
+                    else proj_dict[proj_id].description or ""
+                ),
                 "technologies": proj_dict[proj_id].technologies or []
             }
             for proj_id in ranking.ranked_project_ids[:2]
@@ -233,9 +259,16 @@ class GenerationService:
         ]
         
         # Prepare profile data for LLM
+        # Use enhanced summary if available and not empty, otherwise use original
+        summary = (
+            profile.enhanced_professional_summary
+            if profile.enhanced_professional_summary and profile.enhanced_professional_summary.strip()
+            else profile.professional_summary or ""
+        )
+        
         profile_data = {
             "full_name": profile.personal_info.full_name,
-            "professional_summary": profile.professional_summary or "",
+            "professional_summary": summary,
             "experiences": ranked_exps,
             "projects": ranked_projs
         }

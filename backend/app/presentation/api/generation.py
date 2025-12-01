@@ -294,3 +294,28 @@ async def get_generation_history(
         limit=limit,
         offset=offset
     )
+
+
+@router.delete("/generations/{generation_id}", status_code=204)
+async def delete_generation(
+    generation_id: UUID,
+    current_user: int = Depends(get_current_user),
+    session = Depends(get_db_session)
+):
+    """Delete a generation."""
+    generation_repo = GenerationRepository(session)
+    
+    # First check if the generation exists and belongs to the user
+    generation = await generation_repo.get_by_id(generation_id)
+    if not generation:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    
+    if generation.user_id != current_user:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this generation")
+    
+    # Delete the generation
+    success = await generation_repo.delete(generation_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete generation")
+    
+    return None

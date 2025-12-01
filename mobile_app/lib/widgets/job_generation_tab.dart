@@ -311,7 +311,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                   Text(
                     'Generate a tailored resume based on this job posting and your profile.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -412,7 +412,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                   Text(
                     'Generate a personalized cover letter for this position.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -514,20 +514,20 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                     Icon(
                       Icons.inbox_outlined,
                       size: 48,
-                      color: theme.colorScheme.onSurface.withOpacity(0.3),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'No generations yet',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Generate a resume or cover letter to get started',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -546,7 +546,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
     final documentType = generation['document_type'] as String?;
     final createdAt = generation['created_at'] as String?;
     final atsScore = generation['ats_score'] as num?;
-    final generationId = generation['id'];
+    final generationId = generation['generation_id'] as String?;
 
     final isResume = documentType == 'resume';
     final timestamp = createdAt != null ? DateTime.tryParse(createdAt) : null;
@@ -590,7 +590,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                     Text(
                       timestamp != null ? _formatTimestamp(timestamp) : 'Unknown date',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -600,7 +600,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getATSScoreColor(atsScore.toDouble()).withOpacity(0.2),
+                    color: _getATSScoreColor(atsScore.toDouble()).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _getATSScoreColor(atsScore.toDouble()),
@@ -616,15 +616,64 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                   ),
                 ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurface.withOpacity(0.3),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _deleteGeneration(generationId, documentType),
+                color: theme.colorScheme.error,
+                tooltip: 'Delete',
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _deleteGeneration(String? generationId, String? documentType) async {
+    if (generationId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Generation'),
+        content: Text(
+          'Are you sure you want to delete this ${documentType == 'resume' ? 'resume' : 'cover letter'}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final success = await ref.read(generationsProvider.notifier).deleteGeneration(generationId);
+      
+      if (!mounted) return;
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Generation deleted successfully')),
+        );
+      } else {
+        final state = ref.read(generationsProvider);
+        _showErrorSnackBar(state.errorMessage ?? 'Failed to delete generation');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnackBar(e.toString());
+    }
   }
 
   String _formatTimestamp(DateTime timestamp) {

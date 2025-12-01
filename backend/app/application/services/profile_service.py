@@ -136,6 +136,7 @@ class ProfileService:
         user_id: int,
         personal_info: Optional[Dict[str, Any]] = None,
         professional_summary: Optional[str] = None,
+        enhanced_professional_summary: Optional[str] = None,
         experiences: Optional[List[Dict[str, Any]]] = None,
         education: Optional[List[Dict[str, Any]]] = None,
         skills: Optional[Dict[str, Any]] = None,
@@ -159,6 +160,10 @@ class ProfileService:
         if professional_summary is not None:
             print(f"DEBUG: ProfileService updating professional summary (length: {len(professional_summary) if professional_summary else 0})")
             existing_profile.professional_summary = professional_summary
+
+        if enhanced_professional_summary is not None:
+            print(f"DEBUG: ProfileService updating enhanced professional summary (length: {len(enhanced_professional_summary) if enhanced_professional_summary else 0})")
+            existing_profile.enhanced_professional_summary = enhanced_professional_summary
 
         if skills:
             try:

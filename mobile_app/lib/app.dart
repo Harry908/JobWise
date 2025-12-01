@@ -325,19 +325,19 @@ class _AppState extends ConsumerState<App> {
           ),
           useMaterial3: true,
         ),
-        home: Scaffold(
+        home: const Scaffold(
           backgroundColor: AppColors.primary,
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.work,
                   size: 80,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 24),
-                const Text(
+                SizedBox(height: 24),
+                Text(
                   'JobWise',
                   style: TextStyle(
                     fontSize: 32,
@@ -345,8 +345,8 @@ class _AppState extends ConsumerState<App> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 48),
-                const CircularProgressIndicator(
+                SizedBox(height: 48),
+                CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ],

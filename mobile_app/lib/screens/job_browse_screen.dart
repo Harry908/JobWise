@@ -19,7 +19,6 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
   final _scrollController = ScrollController();
   bool _remoteOnly = false;
   bool _showFilters = false;
-  String? _savingJobId; // Track which job is being saved
 
   @override
   void initState() {
@@ -63,14 +62,10 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
   }
 
   Future<void> _saveJob(BrowseJob browseJob) async {
-    setState(() => _savingJobId = browseJob.id);
-    
     try {
       await ref.read(jobActionsProvider.notifier).saveBrowseJob(browseJob);
       if (!mounted) return;
 
-      setState(() => _savingJobId = null);
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Saved "${browseJob.title}"'),
@@ -87,7 +82,6 @@ class _JobBrowseScreenState extends ConsumerState<JobBrowseScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _savingJobId = null);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save job: ${e.toString()}'),

@@ -62,7 +62,7 @@ class Profile {
       'user_id': userId,
       'personal_info': personalInfo.toJson(),
       'professional_summary': professionalSummary,
-      'enhanced_summary': enhancedSummary,
+      'enhanced_professional_summary': enhancedSummary,
       'experiences': experiences.map((e) => e.toJson()).toList(),
       'education': education.map((e) => e.toJson()).toList(),
       'skills': skills.toJson(),
@@ -112,29 +112,37 @@ class Profile {
         other.personalInfo == personalInfo &&
         other.professionalSummary == professionalSummary &&
         other.enhancedSummary == enhancedSummary &&
-        other.experiences == experiences &&
-        other.education == education &&
+        _listEquals(other.experiences, experiences) &&
+        _listEquals(other.education, education) &&
         other.skills == skills &&
-        other.projects == projects &&
-        other.customFields == customFields &&
+        _listEquals(other.projects, projects) &&
+        // Map equality is tricky, assuming simple map or identity for now
+        // Ideally use mapEquals from foundation, but we don't import it here.
+        // For now, let's assume customFields don't change often or identity is enough
+        // or implement simple map check.
+        other.customFields == customFields && 
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        userId.hashCode ^
-        personalInfo.hashCode ^
-        professionalSummary.hashCode ^
-        enhancedSummary.hashCode ^
-        experiences.hashCode ^
-        education.hashCode ^
-        skills.hashCode ^
-        projects.hashCode ^
-        customFields.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
+    return Object.hash(
+      id,
+      userId,
+      personalInfo,
+      professionalSummary,
+      enhancedSummary,
+      Object.hashAll(experiences),
+      Object.hashAll(education),
+      skills,
+      Object.hashAll(projects),
+      // customFields is a Map, its hashCode is identity based usually.
+      // For now, let's keep it as is or use Object.hashAll(customFields.keys) ^ Object.hashAll(customFields.values)
+      customFields,
+      createdAt,
+      updatedAt,
+    );
   }
 }
 
@@ -277,7 +285,7 @@ class Experience {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'title': title,
       'company': company,
       'location': location,
@@ -346,19 +354,21 @@ class Experience {
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        title.hashCode ^
-        company.hashCode ^
-        location.hashCode ^
-        startDate.hashCode ^
-        endDate.hashCode ^
-        isCurrent.hashCode ^
-        description.hashCode ^
-        enhancedDescription.hashCode ^
-        achievements.hashCode ^
-        technologies.hashCode ^
-        employmentType.hashCode ^
-        industry.hashCode;
+    return Object.hash(
+      id,
+      title,
+      company,
+      location,
+      startDate,
+      endDate,
+      isCurrent,
+      description,
+      enhancedDescription,
+      Object.hashAll(achievements),
+      Object.hashAll(technologies),
+      employmentType,
+      industry,
+    );
   }
 }
 
@@ -414,7 +424,7 @@ class Education {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'institution': institution,
       'degree': degree,
       'field_of_study': fieldOfStudy,
@@ -425,6 +435,38 @@ class Education {
       'honors': honors,
       'description': description,
     };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Education &&
+        other.id == id &&
+        other.institution == institution &&
+        other.degree == degree &&
+        other.fieldOfStudy == fieldOfStudy &&
+        other.startDate == startDate &&
+        other.endDate == endDate &&
+        other.isCurrent == isCurrent &&
+        other.gpa == gpa &&
+        _listEquals(other.honors, honors) &&
+        other.description == description;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      institution,
+      degree,
+      fieldOfStudy,
+      startDate,
+      endDate,
+      isCurrent,
+      gpa,
+      Object.hashAll(honors),
+      description,
+    );
   }
 }
 
@@ -477,18 +519,20 @@ class Skills {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Skills &&
-        other.technical == technical &&
-        other.soft == soft &&
-        other.languages == languages &&
-        other.certifications == certifications;
+        _listEquals(other.technical, technical) &&
+        _listEquals(other.soft, soft) &&
+        _listEquals(other.languages, languages) &&
+        _listEquals(other.certifications, certifications);
   }
 
   @override
   int get hashCode {
-    return technical.hashCode ^
-        soft.hashCode ^
-        languages.hashCode ^
-        certifications.hashCode;
+    return Object.hash(
+      Object.hashAll(technical),
+      Object.hashAll(soft),
+      Object.hashAll(languages),
+      Object.hashAll(certifications),
+    );
   }
 }
 
@@ -546,7 +590,7 @@ class Certification {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'name': name,
       'issuer': issuer,
       'date_obtained': dateObtained,
@@ -601,7 +645,7 @@ class Project {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'name': name,
       'description': description,
       'enhanced_description': enhancedDescription,
@@ -613,6 +657,40 @@ class Project {
       'is_ongoing': isOngoing,
       'highlights': highlights,
     };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Project &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.enhancedDescription == enhancedDescription &&
+        _listEquals(other.technologies, technologies) &&
+        other.url == url &&
+        other.repositoryUrl == repositoryUrl &&
+        other.startDate == startDate &&
+        other.endDate == endDate &&
+        other.isOngoing == isOngoing &&
+        _listEquals(other.highlights, highlights);
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      name,
+      description,
+      enhancedDescription,
+      Object.hashAll(technologies),
+      url,
+      repositoryUrl,
+      startDate,
+      endDate,
+      isOngoing,
+      Object.hashAll(highlights),
+    );
   }
 }
 

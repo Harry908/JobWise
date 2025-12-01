@@ -1,6 +1,30 @@
 
 ---
 
+## Log Entry: 5
+
+### User Request
+ok there is another issue. when i update the enhance_profile_summary is not update in the database.
+
+### Response Summary
+Fixed bug where `enhanced_professional_summary` was not being saved during profile updates. The issue was that the `UpdateProfileRequest` Pydantic schema didn't include the `enhanced_professional_summary` field, and the endpoint handler wasn't extracting it from requests. Additionally, the `profile_service.update_profile()` method wasn't processing this field even if it was provided. Updated the API schema, endpoint handler, and service layer to properly handle enhanced professional summary updates.
+
+### Actions Taken
+- **File:** `backend/app/presentation/api/profile.py`
+  - **Change:** Added `enhanced_professional_summary: Optional[str] = Field(None, description="AI-enhanced professional summary")` to UpdateProfileRequest schema (line 275)
+  - **Reason:** Frontend was sending enhanced_professional_summary in PUT requests, but backend API schema didn't accept it
+- **File:** `backend/app/presentation/api/profile.py`
+  - **Change:** Added extraction of `enhanced_professional_summary` in update_profile endpoint handler: `if request.enhanced_professional_summary is not None: update_data["enhanced_professional_summary"] = request.enhanced_professional_summary`
+  - **Reason:** Endpoint handler needed to extract the field from request and pass it to the service layer
+- **File:** `backend/app/application/services/profile_service.py`
+  - **Change:** Added `enhanced_professional_summary: Optional[str] = None` parameter to update_profile method signature
+  - **Reason:** Service method needed to accept the enhanced summary as a parameter for updates
+- **File:** `backend/app/application/services/profile_service.py`
+  - **Change:** Added processing logic: `if enhanced_professional_summary is not None: existing_profile.enhanced_professional_summary = enhanced_professional_summary` with debug logging
+  - **Reason:** Service layer needed to actually update the enhanced_professional_summary field on the profile entity before saving to database
+
+---
+
 ## Log Entry: 4
 
 ### User Request

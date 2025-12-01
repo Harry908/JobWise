@@ -138,6 +138,16 @@ class GenerationsApiClient {
     }
   }
 
+  /// Delete a generation
+  /// DELETE /generations/{generation_id}
+  Future<void> deleteGeneration(String generationId) async {
+    try {
+      await _client.delete('/generations/$generationId');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException error) {
     if (error.response != null) {
       final data = error.response?.data;
