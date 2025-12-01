@@ -62,20 +62,56 @@ class GenerationService:
         
         # Get ranked experiences
         experiences = await self.profile_repo.get_experiences_by_profile_id(profile.id)
-        exp_dict = {exp.id: exp for exp in experiences}
-        ranked_exps = [
-            exp_dict[exp_id] 
-            for exp_id in ranking.ranked_experience_ids[:max_experiences]
-            if exp_id in exp_dict
-        ]
+        exp_dict = {str(exp.id): exp for exp in experiences}  # Direct UUID matching
+        
+        # Debug logging
+        logger.info(f"Total experiences available: {len(experiences)}")
+        logger.info(f"Experience UUIDs in profile: {[str(exp.id) for exp in experiences]}")
+        logger.info(f"Ranked experience UUIDs from ranking: {ranking.ranked_experience_ids[:max_experiences]}")
+        
+        # Match experiences with UUIDs (no normalization needed with integer mapping)
+        ranked_exps = []
+        for exp_uuid in ranking.ranked_experience_ids[:max_experiences]:
+            if exp_uuid in exp_dict:
+                ranked_exps.append(exp_dict[exp_uuid])
+            else:
+                logger.warning(f"Could not find experience with UUID: {exp_uuid}")
+        
+        # Fallback: if no ranked experiences matched, use all experiences in original order
+        if not ranked_exps and experiences:
+            logger.warning("No ranked experiences matched! Using all experiences in original order as fallback")
+            ranked_exps = experiences[:max_experiences]
+        
+        logger.info(f"Successfully matched {len(ranked_exps)} out of {min(max_experiences, len(ranking.ranked_experience_ids))} ranked experiences")
+        if len(ranked_exps) < min(max_experiences, len(ranking.ranked_experience_ids)):
+            missing_ids = [exp_id for exp_id in ranking.ranked_experience_ids[:max_experiences] if exp_id not in exp_dict]
+            logger.warning(f"Missing experience UUIDs: {missing_ids}")
         
         # Get ranked projects
-        proj_dict = {proj.id: proj for proj in profile.projects}
-        ranked_projs = [
-            proj_dict[proj_id]
-            for proj_id in ranking.ranked_project_ids[:max_projects]
-            if proj_id in proj_dict
-        ]
+        proj_dict = {str(proj.id): proj for proj in profile.projects}  # Direct UUID matching
+        
+        # Debug logging
+        logger.info(f"Total projects available: {len(profile.projects)}")
+        logger.info(f"Project UUIDs in profile: {[str(proj.id) for proj in profile.projects]}")
+        logger.info(f"Ranked project UUIDs from ranking: {ranking.ranked_project_ids[:max_projects]}")
+        
+        # Match projects with UUIDs (no normalization needed with integer mapping)
+        ranked_projs = []
+        for proj_uuid in ranking.ranked_project_ids[:max_projects]:
+            if proj_uuid in proj_dict:
+                ranked_projs.append(proj_dict[proj_uuid])
+            else:
+                logger.warning(f"Could not find project with UUID: {proj_uuid})")
+        
+        # Fallback: if no ranked projects matched, use all projects in original order
+        if not ranked_projs and profile.projects:
+            logger.warning("No ranked projects matched! Using all projects in original order as fallback")
+            ranked_projs = profile.projects[:max_projects]
+        
+        logger.info(f"Successfully matched {len(ranked_projs)} out of {min(max_projects, len(ranking.ranked_project_ids))} ranked projects")
+        if len(ranked_projs) < min(max_projects, len(ranking.ranked_project_ids)):
+            missing_ids = [proj_id for proj_id in ranking.ranked_project_ids[:max_projects] if proj_id not in proj_dict]
+            logger.warning(f"Missing project UUIDs: {missing_ids}")
         
         # Build resume text (pure logic, no LLM)
         resume_parts = []
@@ -224,39 +260,69 @@ class GenerationService:
         # Get writing style
         style = await self.style_service.get_user_style(user_id)
         
-        # Get ranked experiences and projects
+        # Get ranked experiences and projects with UUID matching
         experiences = await self.profile_repo.get_experiences_by_profile_id(profile.id)
-        exp_dict = {exp.id: exp for exp in experiences}
-        ranked_exps = [
-            {
-                "title": exp_dict[exp_id].title,
-                "company": exp_dict[exp_id].company,
-                # Use enhanced description if available and not empty, otherwise use original
-                "description": (
-                    exp_dict[exp_id].enhanced_description 
-                    if exp_dict[exp_id].enhanced_description and exp_dict[exp_id].enhanced_description.strip()
-                    else exp_dict[exp_id].description or ""
-                )
-            }
-            for exp_id in ranking.ranked_experience_ids[:3]
-            if exp_id in exp_dict
-        ]
+        exp_dict = {str(exp.id): exp for exp in experiences}  # Direct UUID matching
         
-        proj_dict = {proj.id: proj for proj in profile.projects}
-        ranked_projs = [
-            {
-                "name": proj_dict[proj_id].name,
-                # Use enhanced description if available and not empty, otherwise use original
-                "description": (
-                    proj_dict[proj_id].enhanced_description
-                    if proj_dict[proj_id].enhanced_description and proj_dict[proj_id].enhanced_description.strip()
-                    else proj_dict[proj_id].description or ""
-                ),
-                "technologies": proj_dict[proj_id].technologies or []
-            }
-            for proj_id in ranking.ranked_project_ids[:2]
-            if proj_id in proj_dict
-        ]
+        ranked_exps = []
+        for exp_uuid in ranking.ranked_experience_ids[:3]:
+            if exp_uuid in exp_dict:
+                exp = exp_dict[exp_uuid]
+                ranked_exps.append({
+                    "title": exp.title,
+                    "company": exp.company,
+                    # Use enhanced description if available and not empty, otherwise use original
+                    "description": (
+                        exp.enhanced_description 
+                        if exp.enhanced_description and exp.enhanced_description.strip()
+                        else exp.description or ""
+                    )
+                })
+        
+        # Fallback: if no experiences matched, use all experiences
+        if not ranked_exps and experiences:
+            logger.warning("No experiences matched for cover letter! Using first 3 experiences as fallback")
+            for exp in experiences[:3]:
+                ranked_exps.append({
+                    "title": exp.title,
+                    "company": exp.company,
+                    "description": (
+                        exp.enhanced_description 
+                        if exp.enhanced_description and exp.enhanced_description.strip()
+                        else exp.description or ""
+                    )
+                })
+        
+        proj_dict = {str(proj.id): proj for proj in profile.projects}  # Direct UUID matching
+        
+        ranked_projs = []
+        for proj_uuid in ranking.ranked_project_ids[:2]:
+            if proj_uuid in proj_dict:
+                proj = proj_dict[proj_uuid]
+                ranked_projs.append({
+                    "name": proj.name,
+                    # Use enhanced description if available and not empty, otherwise use original
+                    "description": (
+                        proj.enhanced_description
+                        if proj.enhanced_description and proj.enhanced_description.strip()
+                        else proj.description or ""
+                    ),
+                    "technologies": proj.technologies or []
+                })
+        
+        # Fallback: if no projects matched, use all projects
+        if not ranked_projs and profile.projects:
+            logger.warning("No projects matched for cover letter! Using first 2 projects as fallback")
+            for proj in profile.projects[:2]:
+                ranked_projs.append({
+                    "name": proj.name,
+                    "description": (
+                        proj.enhanced_description
+                        if proj.enhanced_description and proj.enhanced_description.strip()
+                        else proj.description or ""
+                    ),
+                    "technologies": proj.technologies or []
+                })
         
         # Prepare profile data for LLM
         # Use enhanced summary if available and not empty, otherwise use original

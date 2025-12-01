@@ -22,6 +22,11 @@ class JobListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Go Back',
+          onPressed: () => context.pop(),
+        ),
         title: const Text('My Jobs'),
         actions: [
           IconButton(

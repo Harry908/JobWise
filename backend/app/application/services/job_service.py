@@ -104,7 +104,14 @@ class JobService:
             
         Returns:
             Created Job entity
+            
+        Raises:
+            ValueError: If source is 'mock' (mock jobs should not be saved to database)
         """
+        # Prevent mock jobs from being saved to database
+        if source == "mock":
+            raise ValueError("Mock jobs cannot be saved to database. Use browse_jobs() to access mock data.")
+        
         # Parse keywords from description and title
         text_for_keywords = f"{title} {company}"
         if description:

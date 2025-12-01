@@ -160,7 +160,7 @@ async def create_job(
 @router.get("", response_model=JobListResponse)
 async def get_user_jobs(
     status_filter: Annotated[Optional[str], Query(alias="status", pattern="^(active|archived|draft)$", description="Filter by job status")] = None,
-    source: Annotated[Optional[str], Query(max_length=50, description="Filter by job source")] = None,
+    source: Annotated[Optional[str], Query(pattern="^(user_created|indeed|linkedin|glassdoor|imported|url_import)$", description="Filter by job source")] = None,
     employment_type: Annotated[Optional[str], Query(pattern="^(full_time|part_time|contract|temporary|internship)$", description="Filter by employment type")] = None,
     remote: Annotated[Optional[bool], Query(description="Filter remote jobs only")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum results per page")] = 20,
@@ -171,15 +171,19 @@ async def get_user_jobs(
     """
     Get list of user's saved jobs with filtering and pagination.
     
+    **Important:** This endpoint returns ONLY jobs that the user has saved.
+    Mock jobs are NOT stored in the database and will NOT appear here.
+    Use `/browse` endpoint to view mock job listings.
+    
     Query parameters:
     - **status**: Filter by status (active, archived, draft)
-    - **source**: Filter by source (user_created, text_parsed, url_scraped)
+    - **source**: Filter by source (user_created, imported, url_import, etc.)
     - **employment_type**: Filter by type (full_time, part_time, contract, etc.)
     - **remote**: Filter remote jobs only
     - **limit**: Max results (1-100, default 20)
     - **offset**: Pagination offset (default 0)
     
-    Returns paginated list of jobs with metadata.
+    Returns paginated list of user's saved jobs with metadata.
     """
     jobs = await service.get_user_jobs(
         user_id=user_id,
