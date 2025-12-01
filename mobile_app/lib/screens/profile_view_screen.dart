@@ -2209,6 +2209,20 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
 
+  Future<void> _pickDate(TextEditingController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2255,13 +2269,29 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
               controller: _locationController,
               decoration: const InputDecoration(labelText: 'Location'),
             ),
-            TextField(
-              controller: _startDateController,
-              decoration: const InputDecoration(labelText: 'Start Date'),
+            GestureDetector(
+              onTap: () => _pickDate(_startDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Start Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
             ),
-            TextField(
-              controller: _endDateController,
-              decoration: const InputDecoration(labelText: 'End Date'),
+            GestureDetector(
+              onTap: () => _pickDate(_endDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'End Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -2340,6 +2370,8 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
   late TextEditingController _enhancedDescriptionController;
   late TextEditingController _technologiesController;
   late TextEditingController _urlController;
+  late TextEditingController _startDateController;
+  late TextEditingController _endDateController;
 
   @override
   void initState() {
@@ -2349,6 +2381,8 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
     _enhancedDescriptionController = TextEditingController(text: widget.project.enhancedDescription ?? '');
     _technologiesController = TextEditingController(text: widget.project.technologies.join(', '));
     _urlController = TextEditingController(text: widget.project.url ?? '');
+    _startDateController = TextEditingController(text: widget.project.startDate ?? '');
+    _endDateController = TextEditingController(text: widget.project.endDate ?? '');
   }
 
   @override
@@ -2358,7 +2392,23 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
     _enhancedDescriptionController.dispose();
     _technologiesController.dispose();
     _urlController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate(TextEditingController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
+    }
   }
 
   @override
@@ -2402,6 +2452,31 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => _pickDate(_startDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Start Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _pickDate(_endDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'End Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
+            ),
             TextField(
               controller: _urlController,
               decoration: const InputDecoration(labelText: 'URL (Optional)'),
@@ -2431,8 +2506,8 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
               technologies: techs,
               url: _urlController.text.isEmpty ? null : _urlController.text,
               repositoryUrl: widget.project.repositoryUrl,
-              startDate: widget.project.startDate,
-              endDate: widget.project.endDate,
+              startDate: _startDateController.text.isEmpty ? null : _startDateController.text,
+              endDate: _endDateController.text.isEmpty ? null : _endDateController.text,
               isOngoing: widget.project.isOngoing,
               highlights: widget.project.highlights,
             );
@@ -2568,6 +2643,20 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
   late TextEditingController _endDateController;
   late TextEditingController _gpaController;
 
+  Future<void> _pickDate(TextEditingController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2610,13 +2699,29 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
               controller: _fieldOfStudyController,
               decoration: const InputDecoration(labelText: 'Field of Study'),
             ),
-            TextField(
-              controller: _startDateController,
-              decoration: const InputDecoration(labelText: 'Start Date'),
+            GestureDetector(
+              onTap: () => _pickDate(_startDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Start Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
             ),
-            TextField(
-              controller: _endDateController,
-              decoration: const InputDecoration(labelText: 'End Date'),
+            GestureDetector(
+              onTap: () => _pickDate(_endDateController),
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'End Date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+              ),
             ),
             TextField(
               controller: _gpaController,
