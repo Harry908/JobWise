@@ -93,14 +93,17 @@ class JobRepository:
         Args:
             user_id: User ID
             status: Optional status filter (active, archived, draft)
-            source: Optional source filter (user_created, mock, etc.)
+            source: Optional source filter (user_created, imported, etc.)
             limit: Maximum number of results
             offset: Number of results to skip
             
         Returns:
-            List of Job entities
+            List of Job entities (excludes source='mock')
         """
         stmt = select(JobModel).where(JobModel.user_id == user_id)
+        
+        # ALWAYS exclude mock jobs (they should never be in database anyway)
+        stmt = stmt.where(JobModel.source != "mock")
         
         # Apply filters
         if status:

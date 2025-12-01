@@ -115,7 +115,7 @@ class JobActions extends _$JobActions {
   Future<void> saveBrowseJob(BrowseJob browseJob) async {
     final jobsApi = ref.read(jobsApiClientProvider);
     await jobsApi.createJob(
-      source: browseJob.source,
+      source: JobSource.imported, // Always use 'imported' when saving from browse
       title: browseJob.title,
       company: browseJob.company,
       location: browseJob.location,
