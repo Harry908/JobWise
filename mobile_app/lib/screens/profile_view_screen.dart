@@ -9,6 +9,7 @@ import '../providers/samples_provider.dart';
 import '../providers/generations_provider.dart';
 import '../widgets/error_display.dart';
 import '../widgets/tag_input.dart';
+import '../services/settings_service.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   const ProfileViewScreen({super.key});
@@ -2208,6 +2209,8 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
   late TextEditingController _achievementsController;
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
+  final SettingsService _settingsService = SettingsService();
+  String _dateFormat = SettingsService.dateFormatUS;
 
   Future<void> _pickDate(TextEditingController controller) async {
     final DateTime? picked = await showDatePicker(
@@ -2218,7 +2221,7 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        controller.text = _settingsService.formatDateToDisplay(picked, _dateFormat);
       });
     }
   }
@@ -2232,8 +2235,20 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
     _descriptionController = TextEditingController(text: widget.experience.description);
     _enhancedDescriptionController = TextEditingController(text: widget.experience.enhancedDescription ?? '');
     _achievementsController = TextEditingController(text: widget.experience.achievements.join('\n'));
-    _startDateController = TextEditingController(text: widget.experience.startDate);
-    _endDateController = TextEditingController(text: widget.experience.endDate);
+    _startDateController = TextEditingController();
+    _endDateController = TextEditingController();
+    _loadDateFormat();
+  }
+
+  Future<void> _loadDateFormat() async {
+    final format = await _settingsService.getDateFormat();
+    setState(() {
+      _dateFormat = format;
+      _startDateController.text = _settingsService.toDisplayFormat(widget.experience.startDate, _dateFormat);
+      _endDateController.text = widget.experience.endDate != null 
+          ? _settingsService.toDisplayFormat(widget.experience.endDate!, _dateFormat)
+          : '';
+    });
   }
 
   @override
@@ -2344,8 +2359,8 @@ class _EditExperienceDialogState extends State<_EditExperienceDialog> {
               achievements: _achievementsController.text.isEmpty 
                   ? [] 
                   : _achievementsController.text.split('\n').where((line) => line.trim().isNotEmpty).toList(),
-              startDate: _startDateController.text,
-              endDate: _endDateController.text,
+              startDate: _settingsService.toApiFormat(_startDateController.text, _dateFormat),
+              endDate: _settingsService.toApiFormat(_endDateController.text, _dateFormat),
             ));
           },
           child: const Text('Save'),
@@ -2372,6 +2387,8 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
   late TextEditingController _urlController;
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
+  final SettingsService _settingsService = SettingsService();
+  String _dateFormat = SettingsService.dateFormatUS;
 
   @override
   void initState() {
@@ -2381,8 +2398,22 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
     _enhancedDescriptionController = TextEditingController(text: widget.project.enhancedDescription ?? '');
     _technologiesController = TextEditingController(text: widget.project.technologies.join(', '));
     _urlController = TextEditingController(text: widget.project.url ?? '');
-    _startDateController = TextEditingController(text: widget.project.startDate ?? '');
-    _endDateController = TextEditingController(text: widget.project.endDate ?? '');
+    _startDateController = TextEditingController();
+    _endDateController = TextEditingController();
+    _loadDateFormat();
+  }
+
+  Future<void> _loadDateFormat() async {
+    final format = await _settingsService.getDateFormat();
+    setState(() {
+      _dateFormat = format;
+      _startDateController.text = widget.project.startDate != null 
+          ? _settingsService.toDisplayFormat(widget.project.startDate!, _dateFormat) 
+          : '';
+      _endDateController.text = widget.project.endDate != null 
+          ? _settingsService.toDisplayFormat(widget.project.endDate!, _dateFormat) 
+          : '';
+    });
   }
 
   @override
@@ -2406,7 +2437,7 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        controller.text = _settingsService.formatDateToDisplay(picked, _dateFormat);
       });
     }
   }
@@ -2506,8 +2537,8 @@ class _EditProjectDialogState extends State<_EditProjectDialog> {
               technologies: techs,
               url: _urlController.text.isEmpty ? null : _urlController.text,
               repositoryUrl: widget.project.repositoryUrl,
-              startDate: _startDateController.text.isEmpty ? null : _startDateController.text,
-              endDate: _endDateController.text.isEmpty ? null : _endDateController.text,
+              startDate: _startDateController.text.isEmpty ? null : _settingsService.toApiFormat(_startDateController.text, _dateFormat),
+              endDate: _endDateController.text.isEmpty ? null : _settingsService.toApiFormat(_endDateController.text, _dateFormat),
               isOngoing: widget.project.isOngoing,
               highlights: widget.project.highlights,
             );
@@ -2642,6 +2673,8 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
   late TextEditingController _gpaController;
+  final SettingsService _settingsService = SettingsService();
+  String _dateFormat = SettingsService.dateFormatUS;
 
   Future<void> _pickDate(TextEditingController controller) async {
     final DateTime? picked = await showDatePicker(
@@ -2652,7 +2685,7 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        controller.text = _settingsService.formatDateToDisplay(picked, _dateFormat);
       });
     }
   }
@@ -2663,9 +2696,21 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
     _institutionController = TextEditingController(text: widget.education.institution);
     _degreeController = TextEditingController(text: widget.education.degree);
     _fieldOfStudyController = TextEditingController(text: widget.education.fieldOfStudy);
-    _startDateController = TextEditingController(text: widget.education.startDate);
-    _endDateController = TextEditingController(text: widget.education.endDate ?? '');
+    _startDateController = TextEditingController();
+    _endDateController = TextEditingController();
     _gpaController = TextEditingController(text: widget.education.gpa?.toString() ?? '');
+    _loadDateFormat();
+  }
+
+  Future<void> _loadDateFormat() async {
+    final format = await _settingsService.getDateFormat();
+    setState(() {
+      _dateFormat = format;
+      _startDateController.text = _settingsService.toDisplayFormat(widget.education.startDate, _dateFormat);
+      _endDateController.text = widget.education.endDate != null 
+          ? _settingsService.toDisplayFormat(widget.education.endDate!, _dateFormat) 
+          : '';
+    });
   }
 
   @override
@@ -2744,8 +2789,8 @@ class _EditEducationDialogState extends State<_EditEducationDialog> {
               institution: _institutionController.text,
               degree: _degreeController.text,
               fieldOfStudy: _fieldOfStudyController.text,
-              startDate: _startDateController.text,
-              endDate: _endDateController.text.isEmpty ? null : _endDateController.text,
+              startDate: _settingsService.toApiFormat(_startDateController.text, _dateFormat),
+              endDate: _endDateController.text.isEmpty ? null : _settingsService.toApiFormat(_endDateController.text, _dateFormat),
               gpa: double.tryParse(_gpaController.text),
               honors: widget.education.honors,
               description: widget.education.description,
