@@ -1,5 +1,26 @@
 # Document Export Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: Document Export (Flutter front-end)
+- **Primary Role**: Let users choose templates, customize options, call export APIs, and manage/download S3-backed files.
+- **Key Files**: `lib/providers/exports/exports_notifier.dart`, `lib/providers/exports/exports_state.dart`, `lib/services/api/exports_api_client.dart`, `lib/models/exported_file.dart`, `lib/models/template.dart`
+- **Backend Contract**: `../api-services/05-document-export-api.md` (PDF/DOCX/ZIP + S3-only storage)
+- **Main Screens**: `TemplateSelectionScreen`, `ExportOptionsScreen`, `ExportedFilesScreen`
+
+**Related Docs (Navigation Hints)**
+- Backend Export API: `../api-services/05-document-export-api.md`
+- Mobile Generation Feature: `04-generation-feature.md`, `04b-ai-generation-feature.md` (sources for `generation_id`)
+- Backend architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (S3 storage model)
+
+**Key Field / Property Semantics**
+- `ExportedFile.exportId` ↔ backend `export_id`: Used for download/delete and correlates to `exports.id`.
+- `ExportedFile.generationId` ↔ `generation_id`: Foreign key to a generation; used to link export to source doc.
+- `ExportedFile.format` / `template`: Must align with backend enum-like strings (`"pdf"`, `"docx"`, `"zip"`, template ids).
+- `ExportedFile.downloadUrl`: Backend route or pre-signed URL wrapper; always treated as opaque by the app.
+- `Template.id` / `Template.atsScore` / `Template.industries`: Mirror backend template catalog and drive filtering/UX.
+- `ExportsState.storageUsedBytes` / `storageLimitBytes`: Reflect backend storage usage and free-tier limits.
+- `ExportsApiClient` methods: Map directly to `/exports/pdf`, `/exports/docx`, `/exports/batch`, `/exports/templates*`, `/exports/preview`, `/exports/files*`.
+
 **Backend API**: [Document Export API](../api-services/05-document-export-api.md)
 **Base Path**: `/api/v1/exports`
 **Status**: 🔄 Design Complete - Implementation Pending
@@ -194,7 +215,7 @@ class ExportOptions {
 ```dart
 final exportedFile = await exportsApiClient.exportToPDF(
   generationId: generationId,
-  templateId: 'modern',
+  template: 'modern',
   options: ExportOptions(
     accentColor: '#3498db',
     lineSpacing: 'normal',
@@ -207,7 +228,7 @@ Request:
 ```json
 {
   "generation_id": "550e8400-e29b-41d4-a716-446655440000",
-  "template_id": "modern",
+  "template": "modern",
   "options": {
     "accent_color": "#3498db",
     "line_spacing": "normal",
@@ -219,11 +240,10 @@ Request:
 Response:
 ```json
 {
-  "id": "export-uuid",
+  "export_id": "export-uuid",
   "generation_id": "generation-uuid",
   "format": "pdf",
   "template": "modern",
-  "file_path": "/exports/user1/resume_modern_2025-11-15.pdf",
   "file_size_bytes": 125840,
   "download_url": "https://api.jobwise.app/api/v1/exports/files/export-uuid/download",
   "expires_at": "2025-12-15T10:30:00Z",
@@ -236,7 +256,7 @@ Response:
 ```dart
 final exportedFile = await exportsApiClient.exportToDOCX(
   generationId: generationId,
-  templateId: 'classic',
+  template: 'classic',
   options: ExportOptions(
     fontFamily: 'Calibri',
     lineSpacing: 'relaxed',
@@ -248,7 +268,7 @@ Request:
 ```json
 {
   "generation_id": "550e8400-e29b-41d4-a716-446655440000",
-  "template_id": "classic",
+  "template": "classic",
   "options": {
     "font_family": "Calibri",
     "line_spacing": "relaxed"
@@ -264,37 +284,74 @@ Export resume + cover letter together as a ZIP package.
 
 ```dart
 final batchExport = await exportsApiClient.batchExport(
-  generationIds: [resumeId, coverLetterId],
-  templateId: 'modern',
-  format: 'pdf',
+  exports: [
+    BatchExportItem(
+      generationId: resumeId,
+      format: 'pdf',
+      template: 'modern',
+    ),
+    BatchExportItem(
+      generationId: coverLetterId,
+      format: 'pdf',
+      template: 'modern',
+    ),
+  ],
+  createZip: true,
+  zipFilename: 'application_package_2025-11-15.zip',
 );
 ```
 
 Request:
 ```json
 {
-  "generation_ids": [
-    "resume-generation-uuid",
-    "cover-letter-generation-uuid"
+  "exports": [
+    {
+      "generation_id": "resume-generation-uuid",
+      "format": "pdf",
+      "template": "modern",
+      "filename": "resume_modern_2025-11-15.pdf"
+    },
+    {
+      "generation_id": "cover-letter-generation-uuid",
+      "format": "pdf",
+      "template": "modern",
+      "filename": "cover_letter_modern_2025-11-15.pdf"
+    }
   ],
-  "template_id": "modern",
-  "format": "pdf"
+  "create_zip": true,
+  "zip_filename": "application_package_2025-11-15.zip"
 }
 ```
 
 Response:
 ```json
 {
-  "id": "batch-export-uuid",
-  "format": "zip",
-  "template": "modern",
-  "file_path": "/exports/user1/application_package_2025-11-15.zip",
-  "file_size_bytes": 248560,
-  "download_url": "https://api.jobwise.app/api/v1/exports/files/batch-export-uuid/download",
-  "included_files": [
-    "resume_modern_2025-11-15.pdf",
-    "cover_letter_modern_2025-11-15.pdf"
+  "batch_id": "batch-export-uuid",
+  "total_exports": 2,
+  "successful": 2,
+  "failed": 0,
+  "exports": [
+    {
+      "export_id": "export-uuid-1",
+      "generation_id": "resume-generation-uuid",
+      "status": "completed",
+      "filename": "resume_modern_2025-11-15.pdf",
+      "file_size_bytes": 125840
+    },
+    {
+      "export_id": "export-uuid-2",
+      "generation_id": "cover-letter-generation-uuid",
+      "status": "completed",
+      "filename": "cover_letter_modern_2025-11-15.pdf",
+      "file_size_bytes": 122720
+    }
   ],
+  "zip_file": {
+    "export_id": "batch-export-uuid",
+    "filename": "application_package_2025-11-15.zip",
+    "file_size_bytes": 248560,
+    "download_url": "https://api.jobwise.app/api/v1/exports/files/batch-export-uuid/download"
+  },
   "expires_at": "2025-12-15T10:30:00Z",
   "created_at": "2025-11-15T10:30:00Z"
 }
@@ -420,9 +477,9 @@ GET /api/v1/exports/files?format=pdf&limit=20&offset=0
 Response:
 ```json
 {
-  "items": [
+  "files": [
     {
-      "id": "export-uuid",
+      "export_id": "export-uuid",
       "generation_id": "generation-uuid",
       "format": "pdf",
       "template": "modern",
@@ -434,6 +491,12 @@ Response:
     }
   ],
   "total": 5,
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 5,
+    "hasMore": false
+  },
   "storage_used_bytes": 1245600,
   "storage_limit_bytes": 104857600
 }
@@ -497,7 +560,7 @@ Response: `204 No Content`
 
 ```dart
 class ExportedFile {
-  final String id;
+  final String exportId;
   final String generationId;
   final String format; // 'pdf', 'docx', 'zip'
   final String template;
@@ -508,7 +571,7 @@ class ExportedFile {
   final DateTime expiresAt;
 
   ExportedFile({
-    required this.id,
+    required this.exportId,
     required this.generationId,
     required this.format,
     required this.template,
@@ -521,7 +584,7 @@ class ExportedFile {
 
   factory ExportedFile.fromJson(Map<String, dynamic> json) {
     return ExportedFile(
-      id: json['id'],
+      exportId: json['export_id'],
       generationId: json['generation_id'],
       format: json['format'],
       template: json['template'],
@@ -738,7 +801,7 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
   Future<void> fetchExportedFiles() async {
     try {
       final response = await _apiClient.getExportedFiles();
-      final files = (response['items'] as List)
+      final files = (response['files'] as List)
           .map((json) => ExportedFile.fromJson(json))
           .toList();
 
@@ -757,7 +820,7 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
       final filePath = '${directory.path}/${file.filename}';
 
       await _apiClient.downloadFile(
-        exportId: file.id,
+        exportId: file.exportId,
         savePath: filePath,
       );
 
@@ -775,7 +838,7 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
       // Remove from list
       state = state.copyWith(
         exportedFiles: state.exportedFiles
-            .where((f) => f.id != exportId)
+        .where((f) => f.exportId != exportId)
             .toList(),
       );
     } catch (e) {

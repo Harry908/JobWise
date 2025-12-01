@@ -1,5 +1,23 @@
 # JobWise Mobile App - Feature Documentation
 
+**At a Glance (For AI Agents)**
+- **Directory Role**: Canonical reference for how the Flutter app talks to the JobWise backend across auth, profile, jobs, AI generation, samples, and exports.
+- **Key Index Files**: `00-api-configuration.md` (client config), this `README.md` (map), and feature docs `01`–`05`.
+- **Backend Contract Index**: Each feature doc links to a sibling in `../api-services/` with the same numeric prefix (01 auth, 02 profile, 03 jobs, 04x generation, 05 exports).
+- **Critical Invariants**: JWT auth required for all `/api/v1/**` except `/auth/*`; jobs use `application_status` as the only status; exports are S3-backed only (no local storage assumptions).
+
+**Related Docs (Navigation Hints)**
+- Backend overview: `../JobWise-Services-APIs-Specification.md`, `../BACKEND_ARCHITECTURE_OVERVIEW.md`.
+- Backend APIs by number: `../api-services/01-authentication-api.md` through `../api-services/05-document-export-api.md`.
+- Mobile feature details: `01-authentication-feature.md`, `02-profile-management-feature.md`, `03-job-browsing-feature.md`, `04a-sample-upload-feature.md`, `04b-ai-generation-feature.md`, `04-generation-feature.md`, `05-document-feature.md`.
+
+**Key Field / Flow Semantics**
+- Auth/session: `access_token` / `refresh_token` drive all authenticated Dio requests via `BaseHttpClient`; logout and 401s must clear or refresh these.
+- Profile-centric: `Profile.id` is used as the anchor for experiences, education, projects, skills, and AI enhancements.
+- Job-centric: `job_id` links job parsing, ranking, and document generation flows; `application_status` drives all job pipeline UI.
+- Generation-centric: `generation_id` connects AI outputs to exports and history; `document_type` differentiates resumes vs cover letters.
+- Export-centric: `export_id` and `generation_id` form the bridge between text content and S3-backed files; mobile treats `download_url` as opaque.
+
 **Version**: 1.0
 **Platform**: Flutter (iOS & Android)
 **State Management**: Riverpod
@@ -12,7 +30,7 @@
 This directory contains comprehensive technical documentation for all mobile app features in the JobWise application. Each feature is aligned with its corresponding backend API service and includes complete implementation details for data models, state management, service layer, and UI components.
 
 **Documentation Type**: Technical Implementation Guides
-**Audience**: Mobile Developers, Backend Developers, QA Engineers
+**Audience**: Mobile Developers, Backend Developers, QA Engineers, AI Coding Agents
 **Total Features**: 5 core features + 1 configuration guide
 **Total Screens**: 16 screens (13 implemented + 3 planned)
 

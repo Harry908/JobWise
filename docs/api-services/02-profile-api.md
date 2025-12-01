@@ -1,6 +1,27 @@
 # Profile API
 
 **Version**: 1.0
+
+**At a Glance**
+- **Service Name**: Profile Management
+- **Primary Tables**: `master_profiles`, `experiences`, `education`, `projects`
+- **Key Dependencies**: `users` (ownership), AI enhancement models (v3)
+- **Auth Required**: Yes (Bearer JWT)
+- **Primary Routes**: `/profiles`, `/profiles/{profile_id}`, `/profiles/{profile_id}/experiences`, `/profiles/{profile_id}/analytics`
+
+**Related Docs**
+- Backend Architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md`
+- Database Schema: `06-database-schema.md`
+- Jobs API: `03-job-api.md`
+- Generation API: `04b-ai-generation-api.md`
+- Mobile Feature: `../mobile-new/02-profile-management-feature.md`
+
+**Key Field Semantics**
+- `profile_id`: UUID primary key of `master_profiles`; required on all profile-scoped endpoints.
+- `user_id`: Owner of the profile; derived from the authenticated user and never taken from the client.
+- `personal_info`: JSON object with contact details, links, etc.
+- `skills`: JSON grouping of technical, soft, languages, and certifications.
+- `enhanced_*` fields: AI-enhanced copies of summaries/descriptions; original fields remain as user-authored content.
 **Base Path**: `/api/v1/profiles`
 **Status**: ✅ Fully Implemented
 

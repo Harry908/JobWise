@@ -1,5 +1,41 @@
 # Document Export API
 
+**At a Glance (For AI Agents)**
+- **Service Name**: Document Export (PDF/DOCX/ZIP over S3)
+- **Primary Table**: `exports` (plus `generations`, `users`)
+- **Storage Backend**: Amazon S3 **only** (no local filesystem)
+- **Core Dependencies**: Auth (`01-authentication-api.md`), V3 Generation (`04-v3-generation-api.md`), AI Generation (`04b-ai-generation-api.md`), Database schema (`06-database-schema.md`)
+- **Auth Requirements**: All endpoints require an authenticated user; all queries are scoped by `user_id`
+- **Primary Routes**:
+  - `POST /api/v1/exports/pdf` — export a single generation to PDF
+  - `POST /api/v1/exports/docx` — export a single generation to DOCX
+  - `POST /api/v1/exports/batch` — batch export and optional ZIP
+  - `GET /api/v1/exports/templates` / `/templates/{template_id}` — list + detail templates
+  - `POST /api/v1/exports/preview` — generate a preview image
+  - `GET /api/v1/exports/files` — list exported files for the user
+  - `GET /api/v1/exports/files/{export_id}/download` — download via backend (S3-backed)
+  - `DELETE /api/v1/exports/files/{export_id}` — delete export (and underlying S3 object)
+
+**Related Docs (Navigation Hints)**
+- Backend overview: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (export & S3 flow diagrams)
+- Database schema: `06-database-schema.md` (`exports` table, S3 key semantics)
+- Generation services: `04-v3-generation-api.md`, `04b-ai-generation-api.md`
+- Mobile feature: `../mobile-new/05-document-feature.md` (client usage and wire shapes)
+
+**Key Field Semantics (Canonical Meanings)**
+- `id` / `export_id` (UUID): Primary key for an exported artifact; used across API and DB.
+- `generation_id` (string/UUID): Foreign key to `generations.id`; the source text for export.
+- `document_type` (string): `"resume"`, `"cover_letter"`, or `"zip"` depending on export context.
+- `format` (string): Output format such as `"pdf"`, `"docx"`, or `"zip"` (container).
+- `template` (string): Template identifier (e.g., `modern`, `classic`, `creative`, `ats-optimized`).
+- `filename` (string): Client-facing filename suggested in `Content-Disposition`.
+- `file_path` (string): **S3 object key only** (pattern `exports/{user_id}/{export_id}.{ext}`); never a local path.
+- `file_size_bytes` / `page_count`: Storage and rendering metadata (page count is PDF-only).
+- `options` (JSON/text): Serialized template and export options used to create the file.
+- `metadata` (JSON/text): Additional info like ATS scores, processing time, or word counts.
+- `expires_at` (datetime): Hard expiry after which cleanup jobs must delete S3 object and DB row.
+- `download_url` (string): Backend download route or pre-signed URL wrapper returned to clients; S3 remains private.
+
 **Version**: 1.0
 **Base Path**: `/api/v1/exports`
 **Status**: 🔄 Planned (Design Complete)
@@ -157,8 +193,9 @@ Export a generated resume or cover letter to PDF format.
 2. Parse text into structured sections
 3. Apply template formatting rules
 4. Render PDF using library (ReportLab, WeasyPrint, or similar)
-5. Save file to storage (`uploads/{user_id}/exports/`)
-6. Return download URL and metadata
+5. Upload binary file to Amazon S3 (see **S3 Storage Model**)
+6. Create `exports` row with S3 object key
+7. Return download URL and metadata
 
 **Error Responses**:
 
@@ -720,11 +757,72 @@ def generate_docx(content, template_options, output_path):
     doc.save(output_path)
 ```
 
-### File Storage
-**Options**:
-1. **Local Filesystem**: `uploads/{user_id}/exports/`
-2. **S3/Cloud Storage**: For production scalability
-3. **Temporary Storage**: Auto-cleanup after 30 days
+### S3 Storage Model
+
+JobWise uses **Amazon S3 as the only storage backend** for exported files in **all environments** (development, staging, production). The local filesystem is not used for persistent storage.
+
+**Buckets**:
+- One S3 bucket per environment is recommended, for example:
+  - `jobwise-exports-dev`
+  - `jobwise-exports-prod`
+
+**Object Keys**:
+- Every exported file is stored under a deterministic key and tracked in the `exports` table:
+  - Pattern: `exports/{user_id}/{export_id}.{ext}`
+  - Example: `exports/1/bb0e8400-e29b-41d4-a716-446655440006.pdf`
+- The `exports.file_path` column always stores this **S3 object key** (never a local path).
+
+**Write Flow (PDF/DOCX/ZIP)**:
+1. Generate a new `export_id` (UUID) for each export.
+2. Build the S3 key using the pattern above.
+3. Render the document bytes (PDF/DOCX/ZIP) in memory.
+4. Call `PutObject` to upload the bytes to the configured S3 bucket.
+5. Insert a new row into `exports` with:
+   - `id = export_id`
+   - `user_id`, `generation_id`, `document_type`, `format`, `template`, `filename`
+   - `file_path =` S3 object key
+   - `file_size_bytes`, `page_count` (for PDFs), `options`, `metadata`
+   - `expires_at` (e.g., 30 days from creation)
+
+**Read/Download Flow**:
+1. Client calls `GET /api/v1/exports/files/{export_id}/download`.
+2. Backend looks up the `exports` row by `id` and verifies:
+   - The row exists and belongs to the authenticated user (`user_id`).
+   - `expires_at` is in the future.
+3. Backend fetches the S3 object by `file_path` and either:
+   - Streams the file content through the API response, or
+   - Generates a short-lived pre-signed S3 URL and redirects the client.
+4. The mobile app always uses the backend download URL; it never talks to S3 directly.
+
+**Delete Flow**:
+1. Client calls `DELETE /api/v1/exports/files/{export_id}`.
+2. Backend validates ownership and existence.
+3. Backend deletes the S3 object at `file_path` and then deletes the `exports` row.
+
+**Automatic Expiration & Cleanup**:
+- A scheduled job (cron, Celery beat, or background task) periodically:
+  1. Finds exports where `expires_at < NOW()`.
+  2. Deletes corresponding S3 objects.
+  3. Deletes the `exports` rows.
+- This enforces storage quotas and the documented auto-delete behavior.
+
+**Required Configuration**:
+- **Environment Variables** (example names):
+  - `S3_EXPORTS_BUCKET` – bucket name (e.g., `jobwise-exports-dev`).
+  - `S3_EXPORTS_REGION` – AWS region (e.g., `us-west-2`).
+  - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` – or use an IAM role when running on AWS.
+- **IAM Permissions** for the backend service principal:
+  - `s3:PutObject` on `arn:aws:s3:::${S3_EXPORTS_BUCKET}/exports/*`
+  - `s3:GetObject` on `arn:aws:s3:::${S3_EXPORTS_BUCKET}/exports/*`
+  - `s3:DeleteObject` on `arn:aws:s3:::${S3_EXPORTS_BUCKET}/exports/*`
+  - Optionally `s3:ListBucket` for debugging/ops.
+
+**Security Notes**:
+- Exported files are **never** publicly readable from S3; access is always mediated by the backend.
+- If pre-signed URLs are used, they should:
+  - Have short expirations (e.g., 5–15 minutes).
+  - Be generated only after verifying `user_id` ownership and `expires_at`.
+- `exports.file_path` must not be exposed directly to clients.
 
 ---
 

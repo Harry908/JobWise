@@ -1,6 +1,27 @@
 # Job API
 
 **Version**: 1.0
+
+**At a Glance**
+- **Service Name**: Job Management
+- **Primary Tables**: `jobs`, `job_content_rankings`
+- **Key Dependencies**: `users`, `master_profiles` (for ranking and generation), `generations`
+- **Auth Required**: Yes (Bearer JWT)
+- **Primary Routes**: `/jobs`, `/jobs/{job_id}`, `/jobs/{job_id}/rankings`
+
+**Related Docs**
+- Backend Architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md`
+- Database Schema: `06-database-schema.md`
+- Profile API: `02-profile-api.md`
+- Generation API: `04b-ai-generation-api.md`
+- Mobile Feature: `../mobile-new/03-job-browsing-feature.md`
+
+**Key Field Semantics**
+- `job_id`: UUID primary key of `jobs`; used on all job-scoped endpoints.
+- `user_id`: Owner of the job; always inferred from the authenticated user.
+- `source`: Where the job came from (e.g., `user_created`, `indeed`, `linkedin`, `mock`).
+- `application_status`: The only status-like field for jobs (e.g., `not_applied`, `preparing`, `applied`, `interview`, `offer`, `accepted`, `rejected`, `withdrawn`).
+- `parsed_keywords`, `requirements`, `benefits`: Structured content derived from job description for ranking and generation.
 **Base Path**: `/api/v1/jobs`
 **Status**: ✅ Fully Implemented
 
@@ -13,8 +34,8 @@ The Job API manages job postings with intelligent text parsing capabilities. Use
 **Key Features**:
 - **Three Input Methods**: Raw text parsing, URL scraping, structured data
 - **Intelligent Parsing**: AI-powered extraction of job details from text
-- **Application Tracking**: Status management (not_applied, preparing, applied, etc.)
-- **Flexible Filtering**: Filter by status, source, employment type
+- **Application Tracking**: Application status management (not_applied, preparing, applied, etc.)
+- **Flexible Filtering**: Filter by application_status, source, employment type
 - **Pagination**: Efficient list handling with limit/offset
 - **Unified Model**: Single table design for all job sources
 
@@ -51,7 +72,7 @@ offer_received
     └→ withdrawn
 ```
 
-**Status Values**:
+**Application Status Values**:
 - `not_applied` - Job saved, no action yet
 - `preparing` - Preparing application materials
 - `applied` - Application submitted
@@ -123,7 +144,6 @@ Extract job details from pasted job description text.
   "salary_range": "$120k-$150k",
   "remote": true,
   "employment_type": "full_time",
-  "status": "active",
   "application_status": "not_applied",
   "created_at": "2025-11-15T10:30:00Z",
   "updated_at": "2025-11-15T10:30:00Z"
@@ -168,7 +188,7 @@ Provide job details directly with all fields.
   "salary_range": "$120k-$150k",
   "remote": true,
   "employment_type": "full_time",
-  "status": "active"
+  "application_status": "not_applied"
 }
 ```
 
@@ -187,7 +207,6 @@ Provide job details directly with all fields.
 | `salary_range` | string | No | Max 100 chars | Salary information |
 | `remote` | boolean | No | Default: false | Remote work option |
 | `employment_type` | string | No | See enum below | Employment type |
-| `status` | string | No | active/archived/draft | Job status |
 
 **Employment Type Enum**:
 - `full_time` (default)
@@ -225,7 +244,7 @@ Retrieve all jobs for the authenticated user with filtering and pagination.
 **Query Parameters**:
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `status` | string | No | - | Filter by job status (active/archived/draft) |
+| `application_status` | string | No | - | Filter by application status (not_applied, applied, etc.) |
 | `source` | string | No | - | Filter by source (user_created, text_parsed, etc.) |
 | `employment_type` | string | No | - | Filter by employment type |
 | `remote` | boolean | No | - | Filter remote jobs |
@@ -235,7 +254,7 @@ Retrieve all jobs for the authenticated user with filtering and pagination.
 **Example Requests**:
 ```
 GET /api/v1/jobs
-GET /api/v1/jobs?status=active&limit=10
+GET /api/v1/jobs?application_status=applied&limit=10
 GET /api/v1/jobs?source=text_parsed&remote=true
 GET /api/v1/jobs?employment_type=full_time&offset=20
 ```
@@ -258,7 +277,6 @@ GET /api/v1/jobs?employment_type=full_time&offset=20
       "salary_range": "$120k-$150k",
       "remote": true,
       "employment_type": "full_time",
-      "status": "active",
       "application_status": "applied",
       "created_at": "2025-11-15T10:30:00Z",
       "updated_at": "2025-11-15T10:30:00Z"
@@ -316,7 +334,6 @@ Retrieve detailed information for a specific job.
   "salary_range": "$120k-$150k",
   "remote": true,
   "employment_type": "full_time",
-  "status": "active",
   "application_status": "applied",
   "applied_date": "2025-11-10T14:00:00Z",
   "notes": "Great company culture, aligned with my skills",
@@ -356,7 +373,6 @@ Update job information (partial updates supported).
 {
   "title": "Lead Python Developer",
   "location": "Seattle, WA (Fully Remote)",
-  "status": "active",
   "application_status": "interviewing",
   "notes": "Phone interview scheduled for Nov 20th",
   "applied_date": "2025-11-10T14:00:00Z"
@@ -370,7 +386,6 @@ Update job information (partial updates supported).
 | `company` | string | Company name |
 | `location` | string | Job location |
 | `description` | string | Job description |
-| `status` | string | Job status (active/archived/draft) |
 | `application_status` | string | Application progress |
 | `applied_date` | string | Date applied (ISO 8601) |
 | `notes` | string | Personal notes about the job |
@@ -388,7 +403,7 @@ Update job information (partial updates supported).
 }
 ```
 
-**422 Unprocessable Entity** (Invalid status):
+**422 Unprocessable Entity** (Invalid application_status):
 ```json
 {
   "detail": "Invalid application_status. Must be one of: not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn"
@@ -507,7 +522,6 @@ CREATE TABLE jobs (
     salary_range VARCHAR,
     remote BOOLEAN DEFAULT FALSE,
     employment_type VARCHAR DEFAULT 'full_time',
-    status VARCHAR DEFAULT 'active',
     application_status VARCHAR DEFAULT 'not_applied',
     applied_date DATETIME,
     notes TEXT,
@@ -517,7 +531,6 @@ CREATE TABLE jobs (
 );
 
 CREATE INDEX idx_jobs_user_id ON jobs(user_id);
-CREATE INDEX idx_jobs_status ON jobs(status);
 CREATE INDEX idx_jobs_application_status ON jobs(application_status);
 CREATE INDEX idx_jobs_source ON jobs(source);
 ```
@@ -570,35 +583,6 @@ curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
 
 ---
 
-### Use Case 3: Filter Active Applications
-
-**Scenario**: User wants to see all jobs they've applied to.
-
-**Solution**: Filter by application status.
-
-```bash
-curl -X GET "http://localhost:8000/api/v1/jobs?status=active" \
-  -H "Authorization: Bearer <token>"
-```
-
----
-
-### Use Case 4: Archive Old Jobs
-
-**Scenario**: User wants to clean up old job postings.
-
-**Solution**: Update status to "archived".
-
-```bash
-curl -X PUT http://localhost:8000/api/v1/jobs/{id} \
-  -H "Authorization: Bearer <token>" \
-  -d '{"status": "archived"}'
-```
-
-Archived jobs don't appear in default list views.
-
----
-
 ## Best Practices
 
 ### 1. Text Parsing Quality
@@ -616,14 +600,7 @@ Maintain accurate application status:
 - Update `application_status` at each stage
 - Add `notes` for interview details
 - Set `applied_date` when submitting application
-- Archive jobs after final decision
-
-### 3. Job Organization
-
-Use status field strategically:
-- `active` - Jobs you're pursuing
-- `draft` - Jobs you're considering
-- `archived` - Jobs no longer relevant
+  after final decision
 
 ---
 

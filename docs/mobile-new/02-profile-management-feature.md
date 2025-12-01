@@ -1,5 +1,24 @@
 # Profile Management Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: Profile Management (Flutter front-end)
+- **Primary Role**: Manage the master resume profile that feeds all AI ranking and generation flows.
+- **Key Files**: `lib/models/profile.dart`, `lib/models/experience.dart`, `lib/models/education.dart`, `lib/models/project.dart`, `lib/models/skills.dart`, `lib/providers/profile/profile_state.dart`, `lib/providers/profile/profile_notifier.dart`, `lib/services/api/profiles_api_client.dart`
+- **Backend Contract**: `../api-services/02-profile-api.md` (24 endpoints for profile, experiences, education, projects, skills, custom fields, analytics).
+- **Main Screens**: `ProfileViewScreen`, `ProfileEditScreen`, `SettingsScreen`.
+
+**Related Docs (Navigation Hints)**
+- Backend: `../api-services/02-profile-api.md`.
+- AI & generation: `../api-services/04b-ai-generation-api.md`, `../api-services/04-v3-generation-api.md`, mobile `04b-ai-generation-feature.md`, `04-generation-feature.md`.
+- Samples & jobs: `04a-sample-upload-feature.md`, `03-job-browsing-feature.md`.
+
+**Key Field / Property Semantics**
+- `Profile.id` ↔ backend `id`: Primary identifier used when calling nested resources (`/profiles/{id}/experiences`, etc.).
+- `Profile.personalInfo` ↔ `personal_info` object; this is what gets surfaced in generated resumes/cover letters.
+- `Profile.enhancedSummary` ↔ backend `enhanced_summary`: AI-enriched summary; used by generation as a higher-quality source when present.
+- `Skills.technical` / `soft` / `languages` / `certifications`: Mirror backend `skills` object; incomplete lists are valid and safe to send.
+- `ProfileState.completenessScore` ↔ analytics `completeness_score`; read-only signal to drive UI indicators, not user-editable.
+
 **Backend API**: [Profile API](../api-services/02-profile-api.md)
 **Base Path**: `/api/v1/profiles`
 **Status**: ✅ Fully Implemented
@@ -192,7 +211,7 @@ Response:
 
 **5. GET /api/v1/profiles/{id}/analytics** - Get completeness score
 
-Response:
+Response (example):
 ```json
 {
   "completeness_score": 85,
@@ -203,6 +222,8 @@ Response:
   ]
 }
 ```
+
+The backend may add additional analytics fields over time (for example, new counters or trend metrics). The mobile app should treat unknown fields as optional and safely ignore any extra properties it does not use.
 
 #### Experiences (Bulk Operations)
 
@@ -243,6 +264,28 @@ Request (Bulk):
 ```
 
 **7. GET /api/v1/profiles/{id}/experiences** - Get all experiences
+
+Response:
+```json
+{
+  "experiences": [
+    {
+      "id": "exp_123",
+      "title": "Senior Software Engineer",
+      "company": "Tech Corp",
+      "location": "Seattle, WA",
+      "start_date": "2020-01-01",
+      "end_date": "2023-12-31",
+      "is_current": false,
+      "description": "Led development of scalable web applications",
+      "enhanced_description": null,
+      "technologies": ["Python", "FastAPI"],
+      "display_order": 0
+    }
+  ],
+  "total": 4
+}
+```
 
 **8. PUT /api/v1/profiles/{id}/experiences** - Update experiences (bulk)
 

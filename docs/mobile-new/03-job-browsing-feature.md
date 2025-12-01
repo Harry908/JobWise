@@ -1,5 +1,24 @@
 # Job Management Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: Job Management (Flutter front-end)
+- **Primary Role**: Persist parsed job postings, expose filters, and connect jobs to downstream generation flows.
+- **Key Files**: `lib/models/job.dart`, `lib/models/job_filter.dart`, `lib/models/saved_job.dart`, `lib/providers/jobs/jobs_state.dart`, `lib/providers/jobs/jobs_notifier.dart`, `lib/services/api/jobs_api_client.dart`
+- **Backend Contract**: `../api-services/03-job-api.md` (`/api/v1/jobs` CRUD + filtering; single canonical `application_status`).
+- **Main Screens**: `JobListScreen`, `JobDetailScreen`, `JobPasteScreen`, `JobBrowseScreen` (future).
+
+**Related Docs (Navigation Hints)**
+- Backend: `../api-services/03-job-api.md`.
+- AI & generation: `04b-ai-generation-feature.md`, `04-generation-feature.md` (consume `job_id` and `parsed_keywords`).
+- Profiles & samples: `02-profile-management-feature.md`, `04a-sample-upload-feature.md`.
+
+**Key Field / Property Semantics**
+- `Job.applicationStatus` ↔ backend `application_status`: Single source for all status badges, filters, and transitions.
+- `Job.jobKeywords` ↔ backend `parsed_keywords` (or similar); used by `KeywordHighlighter` and AI ranking logic.
+- `Job.rawText` ↔ backend `raw_text`, especially when created via `createJobFromText`.
+- `JobsState.filter` (status/source/limit/offset): Mirrors query parameters for `/api/v1/jobs` and drives list paging.
+- `JobsApiClient.createJobFromText/createJobFromUrl/createJob`: All map to `POST /api/v1/jobs` with mutually exclusive payload shapes.
+
 **Backend API**: [Job API](../api-services/03-job-api.md)
 **Base Path**: `/api/v1/jobs`
 **Status**: ✅ Fully Implemented
@@ -20,7 +39,7 @@ The Job Management feature allows users to save job postings from various source
 - Track application status for each job (Not Applied, Applied, Interview, Offer, Rejected)
 - View job details with keyword highlighting
 - Delete jobs I'm no longer interested in
-- Filter jobs by status and source
+- Filter jobs by application status and source
 
 ---
 
@@ -62,14 +81,17 @@ The Job Management feature allows users to save job postings from various source
 - Pull-to-refresh
 - Empty state ("No saved jobs yet")
 
-**Filters**:
+**Filters** (map to `application_status` and `source`):
 ```dart
 enum JobStatus {
   notApplied('Not Applied'),
+  preparing('Preparing'),
   applied('Applied'),
   interview('Interview'),
   offer('Offer'),
-  rejected('Rejected');
+  accepted('Accepted'),
+  rejected('Rejected'),
+  withdrawn('Withdrawn');
 }
 
 enum JobSource {
@@ -177,6 +199,8 @@ class KeywordHighlighter extends StatelessWidget {
 
 ## Backend API Integration
 
+All Job API calls use the authenticated user's bearer token and are scoped to that user's jobs (no cross-user access).
+
 ### API Endpoints (5 total)
 
 #### 1. POST /api/v1/jobs - Create Job
@@ -205,24 +229,30 @@ Request:
 }
 ```
 
-Response:
+Response (example, canonical backend field names):
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "user_id": 1,
-  "source": "user_created",
-  "company_name": "TechCorp",
-  "job_title": "Senior Software Engineer",
+  "source": "text_parsed",
+  "company": "TechCorp",
+  "title": "Senior Software Engineer",
   "location": "Seattle, WA",
-  "employment_type": "Full-time",
+  "employment_type": "full_time",
   "description": "We are looking for an experienced software engineer...",
-  "requirements": "5+ years Python experience, FastAPI knowledge, AWS experience",
-  "qualifications": null,
+  "requirements": [
+    "5+ years Python experience",
+    "FastAPI knowledge",
+    "AWS experience"
+  ],
+  "benefits": null,
+  "salary_range": null,
+  "remote": false,
   "job_url": null,
   "raw_text": "Senior Software Engineer - TechCorp...",
-  "job_keywords": ["Python", "FastAPI", "AWS", "software engineer"],
+  "parsed_keywords": ["Python", "FastAPI", "AWS", "software engineer"],
+  "status": "active",
   "application_status": "not_applied",
-  "posted_date": null,
   "created_at": "2025-11-15T10:30:00Z",
   "updated_at": "2025-11-15T10:30:00Z"
 }
@@ -275,10 +305,10 @@ Request:
 final jobs = await jobsApiClient.getJobs();
 ```
 
-**With Filters**:
+**With Filters** (by application_status):
 ```dart
 final jobs = await jobsApiClient.getJobs(
-  status: 'applied',
+  applicationStatus: 'applied',
   source: 'user_created',
   limit: 20,
   offset: 0,
@@ -287,28 +317,34 @@ final jobs = await jobsApiClient.getJobs(
 
 Request:
 ```
-GET /api/v1/jobs?status=applied&source=user_created&limit=20&offset=0
+GET /api/v1/jobs?application_status=applied&source=user_created&limit=20&offset=0
 ```
 
-Response:
+Response (backend shape):
 ```json
 {
-  "items": [
+  "jobs": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
-      "company_name": "TechCorp",
-      "job_title": "Senior Software Engineer",
+      "company": "TechCorp",
+      "title": "Senior Software Engineer",
       "location": "Seattle, WA",
-      "employment_type": "Full-time",
+      "employment_type": "full_time",
       "application_status": "applied",
       "created_at": "2025-11-15T10:30:00Z"
     }
   ],
   "total": 1,
-  "limit": 20,
-  "offset": 0
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 1,
+    "hasMore": false
+  }
 }
 ```
+
+Note: The mobile `JobsApiClient` may internally normalize this response into a simpler `{ items, total, limit, offset }` shape for `JobsNotifier`, but the canonical backend field names are as shown above.
 
 #### 3. GET /api/v1/jobs/{id} - Get Job Details
 
@@ -356,6 +392,19 @@ Response: `204 No Content`
 ---
 
 ## Data Models
+
+### Backend ↔ Mobile Field Mapping
+
+The Job API uses snake_case field names, while the Dart models use camelCase and slightly different labels. Key mappings:
+
+- Backend `company` ↔ Dart `companyName`
+- Backend `title` ↔ Dart `jobTitle`
+- Backend `employment_type` ↔ Dart `employmentType`
+- Backend `job_url` ↔ Dart `jobUrl`
+- Backend `parsed_keywords` ↔ Dart `jobKeywords`
+- Backend `raw_text` ↔ Dart `rawText`
+
+The only status-like field the mobile app cares about is `application_status` (not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn). UI enums, filters, and badges all map directly to this field.
 
 ### Job (Freezed Model)
 

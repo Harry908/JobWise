@@ -1,5 +1,25 @@
 # Generation Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: V3 Generation (combined pipeline UI)
+- **Primary Role**: End-to-end orchestration of sample upload, profile enhancement, rankings, and generation in Flutter.
+- **Key Files**: `lib/providers/samples_provider.dart`, `lib/providers/generations_provider.dart`, `lib/services/api/generations_api_client.dart`, `lib/models/sample.dart`, `lib/models/generation.dart`, `lib/models/ranking.dart`
+- **Backend Contract**: `../api-services/04-v3-generation-api.md` (10 endpoints: samples + rankings + generations + history)
+- **Main Screens**: `GenerationOptionsScreen`, `GenerationProgressScreen`, `GenerationResultScreen`, `GenerationHistoryScreen`
+
+**Related Docs (Navigation Hints)**
+- Backend V3 API: `../api-services/04-v3-generation-api.md`
+- AI-focused backend: `../api-services/04b-ai-generation-api.md`
+- Mobile AI feature split: `04a-sample-upload-feature.md`, `04b-ai-generation-feature.md`
+- Jobs and profiles: `03-job-browsing-feature.md`, `02-profile-management-feature.md`
+
+**Key Field / Property Semantics**
+- `Sample` model: Represents `sample_documents` rows; `contentText` / `fullText` hold uploaded text used by LLM.
+- `Generation` model: Represents `generations` rows; `documentType`, `contentText`, `atsScore`, and `metadata` drive UI.
+- `Ranking` / `RankedItem`: Mirror backend ranking payloads and feed into resume/cover-letter generation stages.
+- `GenerationsState` / `SamplesState`: Front-end aggregation of backend state plus UI-only progress/error fields.
+- `GenerationsApiClient` methods: Map to all V3 endpoints (`/samples/*`, `/profile/enhance`, `/rankings/*`, `/generations/*`, `/generations/history`).
+
 **Backend API**: [V3 Generation API](../api-services/04-v3-generation-api.md)
 **Base Path**: `/api/v1`
 **Status**: ✅ Fully Implemented  

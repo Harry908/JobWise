@@ -1,10 +1,11 @@
 # Software Requirements Specification (SRS)
 ## JobWise - AI-Powered Job Application Assistant
 
-**Document Version:** 1.1  
-**Date:** October 18, 2025  
+**Document Version:** 1.2  
+**Date:** November 2025  
 **Prepared by:** Solutions Architect Team  
 **Project:** JobWise AI Resume Generation System  
+**LLM Provider:** Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant)  
 
 ---
 
@@ -64,7 +65,7 @@ This SRS is organized into seven main sections covering system introduction, ove
 ## 2. Overall Description
 
 ### 2.1 Product Perspective
-JobWise is a standalone mobile application with cloud-based backend services. The system integrates with external AI services (OpenAI) and job listing APIs while maintaining offline-first capabilities.
+JobWise is a standalone mobile application with cloud-based backend services. The system integrates with external AI services (Groq LLM) and job listing APIs while maintaining offline-first capabilities.
 
 #### 2.1.1 System Context
 ```
@@ -120,7 +121,7 @@ The major functions of JobWise include:
 - **Platform**: Flutter framework for cross-platform compatibility
 - **Backend**: Python FastAPI for REST API services
 - **Database**: SQLite (prototype) → PostgreSQL (production)
-- **AI Provider**: OpenAI GPT models with token budget limitations
+- **AI Provider**: Groq LLM (llama-3.3-70b-versatile, llama-3.1-8b-instant) with rate limiting
 
 #### 2.4.2 Business Constraints
 - **Budget**: Limited token usage for AI processing (~$100/month development)
@@ -141,7 +142,7 @@ The major functions of JobWise include:
 - Job descriptions are in English language
 
 #### 2.5.2 Dependencies
-- **OpenAI API**: Availability and pricing stability
+- **Groq API**: LLM inference availability and rate limits
 - **Flutter Framework**: Continued support and compatibility
 - **Job APIs**: Future integration with Indeed/LinkedIn
 - **PDF Libraries**: Reliable PDF generation capabilities
@@ -352,10 +353,10 @@ Functionality for managing generated resumes, cover letters, and document versio
 - **Base URL**: Configurable endpoint for different environments
 
 #### 4.3.2 AI Service Interface
-- **Provider**: OpenAI API
-- **Models**: GPT-3.5-turbo (development) / GPT-4 (production)
+- **Provider**: Groq API
+- **Models**: llama-3.1-8b-instant (fast/ranking), llama-3.3-70b-versatile (quality/generation)
 - **Authentication**: API key management
-- **Rate Limiting**: Token budget management and request throttling
+- **Rate Limiting**: Request throttling per user and per endpoint
 
 #### 4.3.3 Database Interface
 - **Prototype**: SQLite embedded database
@@ -562,7 +563,7 @@ GenerationRequest 1--1 GeneratedDocument
 #### 6.4.1 Development Environment
 - **Client**: Flutter development on local machine
 - **Server**: FastAPI running locally with SQLite
-- **AI**: OpenAI API calls with development quota
+- **AI**: Groq API calls with development rate limits
 - **Storage**: Local file system for documents
 
 #### 6.4.2 Production Environment
@@ -590,14 +591,14 @@ GenerationRequest 1--1 GeneratedDocument
 
 1. Users have basic smartphone proficiency and understand resume concepts
 2. Internet connectivity is available for AI generation and job searching
-3. OpenAI API pricing and availability remain stable during development
+3. Groq API availability and rate limits remain stable during development
 4. Job description text is primarily in English language
 5. Users understand the difference between ATS-optimized and visual resume formats
 
 ### Appendix C: Dependencies
 
 **Critical Dependencies:**
-- OpenAI API for AI generation capabilities
+- Groq API for LLM-powered generation capabilities
 - Flutter framework for cross-platform mobile development
 - FastAPI framework for backend services
 
@@ -614,8 +615,8 @@ GenerationRequest 1--1 GeneratedDocument
 ### Appendix D: Risks and Mitigation
 
 **High Risk: AI Service Availability**
-- Risk: OpenAI API downtime or rate limiting
-- Mitigation: Caching, fallback models, graceful degradation
+- Risk: Groq API downtime or rate limiting
+- Mitigation: Caching, model fallback (8b to 70b or vice versa), graceful degradation
 
 **Medium Risk: Performance Requirements**
 - Risk: Generation time exceeds 30-second target
@@ -628,7 +629,7 @@ GenerationRequest 1--1 GeneratedDocument
 ---
 
 **Document Control:**
-- Version: 1.1
-- Last Updated: October 18, 2025
-- Next Review: November 18, 2025
+- Version: 1.2
+- Last Updated: January 2025
+- Changes: Updated LLM provider from OpenAI to Groq
 - Approved by: Solutions Architect Team

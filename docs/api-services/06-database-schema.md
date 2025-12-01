@@ -1,21 +1,58 @@
 # JobWise Database Schema
 
-**Version**: 3.0
-**Database**: SQLite (Development), PostgreSQL (Production)
-**ORM**: SQLAlchemy 2.0 (Async)
-**Last Updated**: November 2025
+**Version**: 3.0  
+**Database**: SQLite (Development), PostgreSQL (Production)  
+**ORM**: SQLAlchemy 2.0 (Async)  
+**Last Updated**: November 2025  
+
+---
+
+## At a Glance (For AI Agents)
+
+### Tables Quick Reference
+
+| Table | Purpose | Owner FK | Key Fields |
+|-------|---------|----------|------------|
+| `users` | Authentication | - | email (unique), hashed_password |
+| `master_profiles` | Resume data | user_id | personal_info (JSON), skills (JSON) |
+| `experiences` | Work history | profile_id | company, title, start_date, end_date |
+| `education` | Academic records | profile_id | institution, degree, field_of_study |
+| `projects` | Portfolio items | profile_id | name, description, technologies |
+| `jobs` | Saved job postings | user_id | title, company, source, application_status |
+| `sample_documents` | User writing samples | user_id | document_type, content, is_active |
+| `writing_styles` | Extracted voice/tone | user_id | extracted_style (JSON), source_sample_ids |
+| `job_content_rankings` | AI relevance rankings | user_id, job_id | ranked_experience_ids, ranked_project_ids |
+| `generations` | Generated documents | user_id, job_id | document_type, content, status, ats_score |
+| `exports` | Export metadata | user_id, generation_id | format, template_id, file_path (S3) |
+
+### Key Relationships
+- `users` 1:1 `master_profiles` (one profile per user)
+- `master_profiles` 1:N `experiences`, `education`, `projects`
+- `users` 1:N `jobs`, `sample_documents`, `generations`, `exports`
+- `jobs` 1:1 `job_content_rankings` (one ranking per job)
+- `generations` 1:N `exports` (multiple formats per generation)
+
+### JSON Field Patterns
+- **personal_info**: `{full_name, email, phone, location, linkedin, github, website}`
+- **skills**: `{technical: [], soft: [], languages: [], certifications: []}`
+- **extracted_style**: `{tone, vocabulary_level, sentence_patterns, key_phrases: []}`
+
+### Cascade Rules
+- Deleting a `user` cascades to all related records
+- Deleting a `master_profile` cascades to experiences/education/projects
+- Soft deletes recommended for `generations` and `exports` (audit trail)
 
 ---
 
 ## Overview
 
-JobWise uses a relational database with 10 core tables organized into three functional groups:
+JobWise uses a relational database with 11 core tables organized into three functional groups:
 
 1. **User & Authentication** (1 table): User accounts and authentication
 2. **Profile Management** (4 tables): Master resume profiles with experiences, education, and projects
-3. **Job & Generation** (5 tables): Job postings, AI generation tracking, and content optimization
+3. **Job & Generation** (6 tables): Job postings, AI generation tracking, content optimization, and exported documents
 
-**Total Tables**: 10
+**Total Tables**: 11
 **Database Technology**: SQLAlchemy ORM with async support
 **Migration Tool**: Alembic
 
@@ -668,6 +705,63 @@ engine = create_async_engine(
 - LLM analyzes job requirements and ranks content by relevance
 - Rankings can be overridden by users
 - `times_used_in_generation` increments on each generation using this ranking
+
+---
+
+### 11. exports (v3.1)
+
+**Purpose**: Track exported PDF/DOCX/ZIP files and their metadata
+
+**Table Name**: `exports`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR (UUID) | PRIMARY KEY | Export ID (export_id in API) |
+| `user_id` | INTEGER | FOREIGN KEY (users.id), NOT NULL, INDEXED | Owner user ID |
+| `generation_id` | VARCHAR (UUID) | FOREIGN KEY (generations.id), NOT NULL, INDEXED | Source generation ID |
+| `document_type` | VARCHAR | NOT NULL | 'resume' or 'cover_letter' |
+| `format` | VARCHAR | NOT NULL | 'pdf', 'docx', or 'zip' |
+| `template` | VARCHAR | NOT NULL | Template identifier (modern, classic, creative, ats-optimized) |
+| `filename` | VARCHAR | NOT NULL | User-facing filename |
+| `file_path` | VARCHAR | NOT NULL | S3 object key for the exported file (never a local filesystem path) |
+| `file_size_bytes` | INTEGER | NOT NULL | File size in bytes |
+| `page_count` | INTEGER | NULLABLE | Page count (PDF only) |
+| `options` | TEXT | NULLABLE | Export options JSON (as TEXT) |
+| `metadata` | TEXT | NULLABLE | Export metadata JSON (ATS score, processing time, etc.) |
+| `download_count` | INTEGER | DEFAULT 0 | Number of times downloaded |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | Expiration timestamp |
+| `created_at` | TIMESTAMP | DEFAULT NOW, NOT NULL | Export creation timestamp |
+
+**Indexes**:
+- PRIMARY KEY on `id`
+- INDEX on `user_id`
+- INDEX on `generation_id`
+- INDEX on `expires_at`
+
+**Relationships**:
+- MANY-TO-ONE with `users` (cascade delete)
+- MANY-TO-ONE with `generations` (cascade delete)
+
+**Example Row**:
+```json
+{
+  "id": "bb0e8400-e29b-41d4-a716-446655440006",
+  "user_id": 1,
+  "generation_id": "990e8400-e29b-41d4-a716-446655440004",
+  "document_type": "resume",
+  "format": "pdf",
+  "template": "modern",
+  "filename": "John_Doe_Resume_TechCorp_2025.pdf",
+  "file_path": "exports/1/bb0e8400-e29b-41d4-a716-446655440006.pdf",
+  "file_size_bytes": 87432,
+  "page_count": 2,
+  "options": "{\"font_size\": 11, \"accent_color\": \"#2563EB\"}",
+  "metadata": "{\"ats_score\": 88.5, \"processing_time_seconds\": 1.2}",
+  "download_count": 3,
+  "expires_at": "2025-12-15T10:30:00Z",
+  "created_at": "2025-11-15T10:30:00Z"
+}
+```
 
 ---
 

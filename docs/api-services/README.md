@@ -1,66 +1,77 @@
 # JobWise API Documentation
 
-**Version**: 1.0
-**Base URL**: `http://localhost:8000`
-**API Documentation**: `http://localhost:8000/docs` (Swagger UI)
-**Last Updated**: November 2025
+**Version**: 1.2  
+**Base URL**: `http://localhost:8000`  
+**API Documentation**: `http://localhost:8000/docs` (Swagger UI)  
+**Last Updated**: November 2025  
+
+---
+
+## At a Glance (For AI Agents)
+
+| API Group | Document | Endpoints | Status |
+|-----------|----------|-----------|--------|
+| 01 - Auth | [01-authentication-api.md](01-authentication-api.md) | 9 | Production |
+| 02 - Profile | [02-profile-api.md](02-profile-api.md) | 24+ | Production |
+| 03 - Job | [03-job-api.md](03-job-api.md) | 5 | Production |
+| 04a - Sample | [04a-sample-upload-api.md](04a-sample-upload-api.md) | 4 | Design Ready |
+| 04b - Generation | [04b-ai-generation-api.md](04b-ai-generation-api.md) | 6 | Design Ready |
+| 05 - Export | [05-document-export-api.md](05-document-export-api.md) | 9 | Planned |
+| 06 - Schema | [06-database-schema.md](06-database-schema.md) | 11 tables | Reference |
+
+**LLM Provider**: Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant)  
+**Storage**: S3 (exports), SQLite/PostgreSQL (data)  
+**Auth**: JWT (1hr access, 7-day refresh)
 
 ---
 
 ## Overview
 
-JobWise provides a RESTful API for AI-powered job application document generation. The API consists of five main service groups plus comprehensive database documentation:
+JobWise provides a RESTful API for AI-powered job application document generation. The API consists of six service groups plus comprehensive database documentation:
 
-1. **Authentication API** - User registration and JWT authentication
-2. **Profile API** - Master resume profile management
-3. **Job API** - Job posting management and text parsing
-4. **V3 Generation API** - AI-powered document generation (10 endpoints)
-5. **Document Export API** - PDF/DOCX formatting and export (9 endpoints) 🔄 Planned
-6. **Database Schema** - Complete database documentation (10 tables)
+1. **Authentication API (01)** - User registration and JWT authentication
+2. **Profile API (02)** - Master resume profile management  
+3. **Job API (03)** - Job posting management and text parsing
+4. **Sample Upload API (04a)** - User writing sample management (no LLM)
+5. **AI Generation API (04b)** - LLM-powered document generation (6 endpoints)
+6. **Document Export API (05)** - PDF/DOCX formatting and export (9 endpoints)
+7. **Database Schema (06)** - Complete database documentation (11 tables)
 
 ---
 
 ## Service Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     JobWise API v1.0                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Auth API                Profile API       Job API         │
-│  /api/v1/auth/*         /api/v1/profiles/* /api/v1/jobs/*  │
-│  ├─ POST /register      ├─ POST /         ├─ POST /       │
-│  ├─ POST /login         ├─ GET /me        ├─ GET /        │
-│  ├─ POST /refresh       ├─ PUT /{id}      ├─ GET /{id}    │
-│  ├─ GET /me             ├─ DELETE /{id}   ├─ PUT /{id}    │
-│  └─ POST /logout        └─ ... (15+ more) └─ DELETE /{id} │
-│                                                             │
-│  V3 Generation API                                          │
-│  /api/v1/*                                                  │
-│  ├─ POST /samples/upload                                    │
-│  ├─ POST /profile/enhance                                   │
-│  ├─ POST /rankings/create                                   │
-│  ├─ POST /generations/resume                                │
-│  ├─ POST /generations/cover-letter                          │
-│  ├─ GET /samples                                            │
-│  ├─ GET /samples/{id}                                       │
-│  ├─ DELETE /samples/{id}                                    │
-│  ├─ GET /rankings/job/{job_id}                              │
-│  └─ GET /generations/history                                │
-│                                                             │
-│  Document Export API (Planned)                              │
-│  /api/v1/exports/*                                          │
-│  ├─ POST /pdf                                               │
-│  ├─ POST /docx                                              │
-│  ├─ POST /batch                                             │
-│  ├─ GET /templates                                          │
-│  ├─ GET /templates/{id}                                     │
-│  ├─ POST /preview                                           │
-│  ├─ GET /files                                              │
-│  ├─ GET /files/{id}/download                                │
-│  └─ DELETE /files/{id}                                      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         JobWise API v1.2                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [01] Auth API          [02] Profile API      [03] Job API                  │
+│  /api/v1/auth/*         /api/v1/profiles/*    /api/v1/jobs/*                │
+│  ├─ POST /register      ├─ POST /             ├─ POST /                     │
+│  ├─ POST /login         ├─ GET /me            ├─ GET /                      │
+│  ├─ POST /refresh       ├─ PUT /{id}          ├─ GET /{id}                  │
+│  ├─ GET /me             ├─ DELETE /{id}       ├─ PUT /{id}                  │
+│  └─ ... (9 total)       └─ ... (24+ total)    └─ DELETE /{id}               │
+│                                                                             │
+│  [04a] Sample API       [04b] Generation API                                │
+│  /api/v1/samples/*      /api/v1/*                                           │
+│  ├─ POST /upload        ├─ POST /profile/enhance                            │
+│  ├─ GET /               ├─ POST /rankings/create                            │
+│  ├─ GET /{id}           ├─ GET /rankings/job/{job_id}                       │
+│  └─ DELETE /{id}        ├─ POST /generations/resume                         │
+│                         ├─ POST /generations/cover-letter                   │
+│                         └─ GET /generations/history                         │
+│                                                                             │
+│  [05] Export API                                                            │
+│  /api/v1/exports/*                                                          │
+│  ├─ POST /pdf           ├─ GET /templates                                   │
+│  ├─ POST /docx          ├─ GET /templates/{id}                              │
+│  ├─ POST /batch         ├─ POST /preview                                    │
+│  ├─ GET /files          ├─ GET /files/{id}/download                         │
+│  └─ DELETE /files/{id}                                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -173,11 +184,12 @@ AI-powered resume and cover letter generation using Groq LLM.
 
 **Endpoints**: 6 specialized endpoints
 
-#### [V3 Generation API](04-v3-generation-api.md) (Combined Reference)
-**Note**: This is the combined documentation. Use 04a and 04b for focused agent work.
+#### [V3 Generation API](04-v3-generation-api.md) (Legacy Reference)
+**Note**: Use 04a and 04b for focused agent work. This combined doc is for reference only.
 
-### 5. [Document Export API](05-document-export-api.md) 🔄 Planned
-**Base Path**: `/api/v1/exports`
+### 5. [Document Export API](05-document-export-api.md)
+**Base Path**: `/api/v1/exports`  
+**Status**: Design Ready (Planned Implementation)
 
 Professional PDF and DOCX export with multiple templates and customization.
 
@@ -199,19 +211,20 @@ Professional PDF and DOCX export with multiple templates and customization.
 ### 6. [Database Schema](06-database-schema.md)
 **Database**: SQLite (Dev), PostgreSQL (Prod)
 
-Complete database schema documentation including all 10 tables, relationships, indexes, and data structures.
+Complete database schema documentation including all 11 tables, relationships, indexes, and data structures.
 
-**Tables**:
+**Tables** (11 total):
 - `users` - User authentication and accounts
 - `master_profiles` - Master resume profiles
 - `experiences` - Work experience history
 - `education` - Educational background
 - `projects` - Personal and professional projects
 - `jobs` - Job postings (saved, scraped, API-sourced)
+- `sample_documents` - User-uploaded sample documents
+- `writing_styles` - Extracted user writing styles
+- `job_content_rankings` - Job-specific content rankings
 - `generations` - AI document generation tracking
-- `writing_styles` - Extracted user writing styles (v3.0)
-- `sample_documents` - User-uploaded sample documents (v3.0)
-- `job_content_rankings` - Job-specific content rankings (v3.0)
+- `exports` - Document export records and S3 metadata
 
 **Features**:
 - Complete schema with column types and constraints
@@ -444,6 +457,6 @@ curl -X POST http://localhost:8000/api/v1/generations/resume \
 
 ---
 
-**Last Updated**: November 2025
-**API Version**: 1.0
-**Documentation Status**: Complete
+**Last Updated**: November 2025  
+**API Version**: 1.2  
+**Documentation Status**: Complete (APIs 01-03 Production, 04-05 Design Ready)

@@ -1,5 +1,40 @@
 # V3 Generation API
 
+**At a Glance (For AI Agents)**
+- **Service Name**: V3 Generation (end-to-end pipeline)
+- **Primary Tables**: `sample_documents`, `job_content_rankings`, `generations`, `master_profiles`, `jobs`, `users`
+- **Core Dependencies**: Auth (`01-authentication-api.md`), Profile (`02-profile-api.md`), Jobs (`03-job-api.md`), Sample Upload (`04a-sample-upload-api.md`)
+- **Auth Requirements**: All endpoints require a valid user JWT (no anonymous access)
+- **Primary Routes**:
+  - `POST /api/v1/samples/upload` — upload resume/cover letter samples (text only)
+  - `GET /api/v1/samples`, `GET /api/v1/samples/{id}`, `DELETE /api/v1/samples/{id}` — manage samples
+  - `POST /api/v1/profile/enhance` — enhance profile using LLM + writing style
+  - `POST /api/v1/rankings/create` — create job-specific ranking via LLM
+  - `POST /api/v1/generations/resume` — generate resume (no LLM)
+  - `POST /api/v1/generations/cover-letter` — generate cover letter (LLM)
+  - `GET /api/v1/rankings/job/{job_id}` — fetch cached ranking
+  - `GET /api/v1/generations/history` — list past generations
+
+**Related Docs (Navigation Hints)**
+- Backend overview: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (pipeline diagrams and flows)
+- Database schema: `06-database-schema.md` (`sample_documents`, `job_content_rankings`, `generations`)
+- Auth service: `01-authentication-api.md`
+- Profile service: `02-profile-api.md`
+- Jobs service: `03-job-api.md`
+- AI-focused breakdown: `04b-ai-generation-api.md`
+
+**Key Field Semantics (Canonical Meanings)**
+- `job_id` (string/UUID): Foreign key to `jobs.id`; all rankings and generations are scoped to a single job.
+- `profile_id` (string/UUID): Foreign key to `master_profiles.id`; the profile used for generation.
+- `ranking_id` (string): Foreign key to `job_content_rankings.id`; connects generations to a cached ranking.
+- `document_type` (string): Either `"resume"` or `"cover_letter"`; determines generation path.
+- `content_text` (text): Final generated document body stored in `generations`.
+- `status` (string): Lifecycle for rankings and generations; typical values: `"completed"`, `"pending"`, `"failed"`.
+- `llm_metadata` (JSON/text): LLM call metadata (model, token counts, latency) for ranking/enhancement/cover letters.
+- `ranked_experience_ids` / `ranked_project_ids` (JSON arrays): Ordered IDs used as inputs for resume/cover-letter generation.
+- `ats_score` / `ats_feedback`: ATS quality indicator and explanation for the generated content.
+- `writing_style` on samples (JSON/text): Style fingerprint extracted from uploaded cover letters and reused across calls.
+
 **Version**: 3.0
 **Base Path**: `/api/v1`
 **Status**: ✅ Fully Implemented with Real LLM Integration

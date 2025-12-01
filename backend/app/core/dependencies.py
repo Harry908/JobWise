@@ -7,15 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.services.auth_service import AuthService
 from app.application.services.job_service import JobService
 from app.core.security import get_user_id_from_token
-from app.core.config import get_settings
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.job_repository import JobRepository
-from app.domain.ports.llm_service import ILLMService
-from app.infrastructure.adapters.groq_llm_service import GroqLLMService
-
-
-settings = get_settings()
 
 
 # Security scheme
@@ -73,64 +67,3 @@ async def get_job_service(
 ) -> JobService:
     """Get job service instance."""
     return JobService(job_repo)
-
-
-def get_llm_service() -> ILLMService:
-    """
-    Get LLM service instance using Groq with API key from environment.
-    
-    Returns:
-        ILLMService: GroqLLMService with API key from settings
-        
-    Raises:
-        ValueError: If no API key is configured
-    """
-    if not settings.groq_api_key:
-        raise ValueError(
-            "GROQ_API_KEY is required but not configured. "
-            "Please set GROQ_API_KEY in your .env file to use the generation features."
-        )
-    
-    try:
-        # Use Groq service with API key from settings
-        return GroqLLMService(api_key=settings.groq_api_key)
-    except Exception as e:
-        # Log error and re-raise with helpful message
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Failed to initialize Groq service: {e}")
-        raise ValueError(f"Failed to initialize Groq LLM service: {e}. Please check your GROQ_API_KEY.")
-
-
-# ==================== V3 API Service Dependencies ====================
-
-async def get_writing_style_service(
-    db: AsyncSession = Depends(get_db_session)
-) -> "WritingStyleService":
-    """Get writing style service instance with database session."""
-    from app.application.services.writing_style_service import WritingStyleService
-    return WritingStyleService(db)
-
-
-async def get_profile_enhancement_service(
-    db: AsyncSession = Depends(get_db_session)
-) -> "ProfileEnhancementService":
-    """Get profile enhancement service instance."""
-    from app.application.services.profile_enhancement_service import ProfileEnhancementService
-    return ProfileEnhancementService(db)
-
-
-async def get_content_ranking_service(
-    db: AsyncSession = Depends(get_db_session)
-) -> "ContentRankingService":
-    """Get content ranking service instance."""
-    from app.application.services.content_ranking_service import ContentRankingService
-    return ContentRankingService(db)
-
-
-async def get_document_generation_service(
-    db: AsyncSession = Depends(get_db_session)
-) -> "DocumentGenerationService":
-    """Get document generation service instance."""
-    from app.application.services.document_generation_service import DocumentGenerationService
-    return DocumentGenerationService(db)

@@ -1,5 +1,37 @@
 # AI Generation API
 
+**At a Glance (For AI Agents)**
+- **Service Name**: AI Generation (profile enhancement, rankings, resume & cover letter)
+- **Primary Tables**: `job_content_rankings`, `generations`, `master_profiles`, `jobs`, `users`
+- **Core Dependencies**: Auth (`01-authentication-api.md`), Profile (`02-profile-api.md`), Jobs (`03-job-api.md`), Sample Upload (`04a-sample-upload-api.md`)
+- **Auth Requirements**: All endpoints require a valid user JWT (see Auth API)
+- **Primary Routes**:
+  - `POST /api/v1/profile/enhance` — enhance profile text using LLM + writing style
+  - `POST /api/v1/rankings/create` — create/update job-specific content ranking
+  - `POST /api/v1/generations/resume` — generate resume (no LLM, fast)
+  - `POST /api/v1/generations/cover-letter` — generate cover letter (LLM)
+  - `GET /api/v1/rankings/job/{job_id}` — fetch cached ranking
+  - `GET /api/v1/generations/history` — list generation history
+
+**Related Docs (Navigation Hints)**
+- Backend overview: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (end-to-end flows)
+- Database schema: `06-database-schema.md` (`job_content_rankings`, `generations`)
+- Auth service: `01-authentication-api.md`
+- Profile service: `02-profile-api.md`
+- Jobs service: `03-job-api.md`
+- Sample Upload service: `04a-sample-upload-api.md`
+
+**Key Field Semantics (Canonical Meanings)**
+- `job_id` (string/UUID): Foreign key to `jobs.id`; all ranking and generation operations are scoped to a specific job.
+- `profile_id` (string/UUID): Foreign key to `master_profiles.id`; profile that supplies content.
+- `ranking_id` (string): Foreign key to `job_content_rankings.id`; links a generation to the cached ranking used.
+- `document_type` (string): Either `"resume"` or `"cover_letter"`; controls generation path and template.
+- `status` (string): Lifecycle for both rankings and generations; typical values `"completed"`, `"pending"`, `"failed"` (see error handling).
+- `content_text` (text): Final generated document body (resume or cover letter) stored in `generations`.
+- `llm_metadata` (JSON/text): Raw LLM call metadata (model, tokens, latency, prompts/trace) for observability.
+- `ranked_experience_ids` / `ranked_project_ids` (JSON arrays): Ordered IDs used as input when generating documents.
+- `ats_score` / `ats_feedback`: Numeric score and explanation for ATS-readiness of generated content.
+
 **Version**: 3.0
 **Base Path**: `/api/v1`
 **Status**: ✅ Fully Implemented with Real LLM Integration

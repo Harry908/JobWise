@@ -1,6 +1,26 @@
 # Authentication API
 
 **Version**: 1.0
+
+**At a Glance**
+- **Service Name**: Authentication
+- **Primary Tables**: `users`
+- **Key Dependencies**: JWT library, password hashing (Bcrypt)
+- **Auth Required**: No for login/register; Yes for token refresh and logout
+- **Primary Routes**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`
+
+**Related Docs**
+- Backend Architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md`
+- Database Schema: `06-database-schema.md`
+- Mobile Feature: `../mobile-new/01-authentication-feature.md`
+
+**Key Field Semantics**
+- `email`: Unique login identifier for a user.
+- `password_hash`: Bcrypt-hashed password stored in `users` (never plain text).
+- `is_active`: Controls whether a user can log in.
+- `is_verified`: Email verification status; may be required for some actions.
+- Access tokens: Short-lived JWTs used in `Authorization: Bearer <token>`.
+- Refresh tokens: Longer-lived tokens for obtaining new access tokens.
 **Base Path**: `/api/v1/auth`
 **Status**: ✅ Fully Implemented
 
@@ -248,7 +268,11 @@ Generate a new access token using a valid refresh token.
   "user": {
     "id": 1,
     "email": "user@example.com",
-    "full_name": "John Doe"
+    "full_name": "John Doe",
+    "is_active": true,
+    "is_verified": false,
+    "created_at": "2025-11-15T10:30:00Z",
+    "updated_at": "2025-11-15T10:30:00Z"
   }
 }
 ```

@@ -1,5 +1,29 @@
 # Sample Upload Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: Sample Upload (Flutter front-end)
+- **Primary Role**: Manage resume/cover-letter text samples used for writing-style extraction
+- **Key Files**: `lib/providers/samples_provider.dart`, `lib/services/api/samples_api_client.dart`, `lib/models/sample.dart`
+- **Backend Contract**: `../api-services/04a-sample-upload-api.md` (`/api/v1/samples`)
+- **Main Screens/Widgets**:
+  - `SampleUploadScreen` — list + upload/delete samples
+  - `SampleDetailScreen` — view full text and stats
+  - `SampleCard`, `SampleUploadButton`, `EmptySampleState` — reusable UI components
+
+**Related Docs (Navigation Hints)**
+- Backend API: `../api-services/04a-sample-upload-api.md`
+- AI Generation feature: `04b-ai-generation-feature.md` (consumes active samples)
+- V3 Generation feature: `04-generation-feature.md` (end-to-end pipeline)
+- Profile feature: `02-profile-management-feature.md`
+
+**Key Field / Property Semantics**
+- `Sample.id` ↔ backend `id` (UUID): Unique sample identifier used across routes.
+- `Sample.documentType` ↔ `document_type`: Either `"resume"` or `"cover_letter"`; exactly one active per type.
+- `Sample.fullText` ↔ `full_text`: Only present in detail responses; omitted from list for performance.
+- `Sample.isActive` ↔ `is_active`: Determines which sample the backend will use for style extraction.
+- `SamplesState.activeResumeSample` / `activeCoverLetterSample`: Convenience getters to drive UI and validation.
+- `SamplesApiClient` methods map 1:1 to backend endpoints: `uploadSample`, `getSamples`, `getSample`, `deleteSample`.
+
 **Backend API**: [Sample Upload API](../api-services/04a-sample-upload-api.md)
 **Base Path**: `/api/v1/samples`
 **Status**: ✅ Fully Implemented
@@ -152,9 +176,11 @@ Response:
   "samples": [
     {
       "id": "sample-uuid",
+      "user_id": 1,
       "document_type": "cover_letter",
       "original_filename": "my_cover_letter.txt",
       "word_count": 421,
+      "character_count": 2847,
       "is_active": true,
       "created_at": "2025-11-15T10:30:00Z"
     }

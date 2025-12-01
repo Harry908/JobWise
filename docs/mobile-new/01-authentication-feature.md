@@ -1,5 +1,24 @@
 # Authentication Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: Authentication (Flutter front-end)
+- **Primary Role**: Handle registration, login, token refresh, and secure session lifecycle for the app.
+- **Key Files**: `lib/services/api/auth_api_client.dart`, `lib/models/user.dart`, `lib/models/auth_response.dart`, `lib/providers/auth/auth_state.dart`, `lib/providers/auth/auth_notifier.dart`
+- **Backend Contract**: `../api-services/01-authentication-api.md` (`/api/v1/auth/*` including register, login, refresh, me, logout, password flows).
+- **Main Screens**: `LoginScreen`, `RegisterScreen`.
+
+**Related Docs (Navigation Hints)**
+- Backend: `../api-services/01-authentication-api.md`.
+- Mobile config: `00-api-configuration.md` (base HTTP client, token storage).
+- Downstream features relying on auth: `02-profile-management-feature.md`, `03-job-browsing-feature.md`, `04-generation-feature.md`, `05-document-feature.md`.
+
+**Key Field / Property Semantics**
+- `AuthResponse.accessToken` / `refreshToken` ↔ backend `access_token` / `refresh_token`; both must be persisted for auto-login and refresh.
+- `AuthResponse.user` ↔ backend `user` object; this is the canonical mobile representation of an authenticated user.
+- `AuthState.status`: Drives routing guards (unauthenticated → `/login`, authenticated → `/home`).
+- `AuthState.user`: Single source of truth for logged-in user details across the app.
+- `AuthNotifier.register/login/logout/refreshToken`: Thin wrappers over `AuthApiClient` plus token persistence and state updates.
+
 **Backend API**: [Authentication API](../api-services/01-authentication-api.md)
 **Base Path**: `/api/v1/auth`
 **Status**: ✅ Fully Implemented
@@ -187,6 +206,8 @@ final response = await authApiClient.refreshToken(
 }
 ```
 
+Note: The backend may also include a `user` object (same shape as in the login response). The mobile client currently relies on `/api/v1/auth/me` when it needs to refresh user details.
+
 #### 4. GET /api/v1/auth/me
 
 **Request**:
@@ -211,8 +232,12 @@ final user = await authApiClient.getCurrentUser();
 ```dart
 await authApiClient.logout();
 ```
-
-**Response**: `204 No Content`
+**Response**:
+```json
+{
+  "message": "Successfully logged out"
+}
+```
 
 #### 6. POST /api/v1/auth/change-password
 
@@ -241,7 +266,7 @@ await authApiClient.forgotPassword(email: 'user@example.com');
 **Response**:
 ```json
 {
-  "message": "Password reset email sent"
+  "message": "If an account with that email exists, a password reset link has been sent"
 }
 ```
 
@@ -274,10 +299,12 @@ final isAvailable = await authApiClient.checkEmailAvailability(
 **Response**:
 ```json
 {
-  "available": false,
-  "message": "Email is already registered"
+  "available": false
 }
 ```
+
+The UI maps `available: false` to a user-facing message like "This email is already registered".
+
 
 ---
 

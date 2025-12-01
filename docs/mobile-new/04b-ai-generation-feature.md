@@ -1,5 +1,30 @@
 # AI Generation Feature
 
+**At a Glance (For AI Agents)**
+- **Feature Name**: AI Generation (Flutter front-end)
+- **Primary Role**: Drive profile enhancement, content ranking, resume and cover-letter generation, and history views.
+- **Key Files**: `lib/providers/generations_provider.dart`, `lib/services/api/generations_api_client.dart`, `lib/models/generation.dart`, `lib/models/ranking.dart`
+- **Backend Contract**: `../api-services/04b-ai-generation-api.md` (and `04-v3-generation-api.md` for shared endpoints)
+- **Main Screens/Widgets**:
+  - `GenerationOptionsScreen`, `GenerationProgressScreen`, `GenerationResultScreen`, `GenerationHistoryScreen`
+  - `ATSScoreBadge`, `GenerationProgressIndicator`, `GenerationCard`
+
+**Related Docs (Navigation Hints)**
+- Backend AI API: `../api-services/04b-ai-generation-api.md`
+- V3 Generation API: `../api-services/04-v3-generation-api.md`
+- Sample Upload feature: `04a-sample-upload-feature.md`
+- Job browsing feature: `03-job-browsing-feature.md`
+- Profile feature: `02-profile-management-feature.md`
+
+**Key Field / Property Semantics**
+- `Generation.id` ↔ `generation_id`/`id`: Single generation run identifier used by history and exports.
+- `Generation.documentType` ↔ `document_type`: `"resume"` or `"cover_letter"`; controls UI labels and export options.
+- `Generation.contentText` ↔ `resume_text` / `cover_letter_text` / `content_text`: The actual generated body.
+- `Generation.atsScore` / `atsFeedback`: Maps to backend ATS metrics; used by `ATSScoreBadge` and result screens.
+- `Ranking.id` ↔ backend `id`: Links UI state to `job_content_rankings` rows for a `job_id`.
+- `GenerationsState.progress` / `currentStage`: UI-only progress model that mirrors the backend pipeline stages.
+- `GenerationsApiClient` methods: Straight mappings to `/profile/enhance`, `/rankings/create`, `/rankings/job/{job_id}`, `/generations/resume`, `/generations/cover-letter`, `/generations/history`.
+
 **Backend API**: [AI Generation API](../api-services/04b-ai-generation-api.md)
 **Base Path**: `/api/v1`
 **Status**: ✅ Fully Implemented

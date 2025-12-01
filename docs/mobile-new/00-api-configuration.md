@@ -1,5 +1,22 @@
 # API Configuration
 
+**At a Glance (For AI Agents)**
+- **Document Role**: Describes how all Flutter API clients talk to the backend (base URL, auth, interceptors, error envelope).
+- **Key Files**: `lib/services/api/base_http_client.dart`, `lib/config/environment.dart`, `lib/services/token_storage.dart`, `lib/providers/api_providers.dart`
+- **Backend Contracts Relied On**: `/api/v1/auth/*` for refresh, all other `/api/v1/**` feature APIs for normal traffic.
+- **Critical Behaviors**: JWT injection on every non-auth request, automatic 401 → refresh → retry, environment-based base URL.
+
+**Related Docs (Navigation Hints)**
+- Backend: `../api-services/01-authentication-api.md` (refresh endpoint), service-specific API docs under `../api-services/`.
+- Mobile features: `01-authentication-feature.md`, `02-profile-management-feature.md`, `03-job-browsing-feature.md`, `04-generation-feature.md`, `05-document-feature.md`.
+
+**Key Field / Property Semantics**
+- `BaseHttpClient.baseUrl`: Single source of truth for backend host; must align with environment and platform.
+- Auth headers: `Authorization: Bearer <access_token>` automatically added for non-`/auth/` paths.
+- Refresh flow: `/api/v1/auth/refresh` request body uses `refresh_token`; response returns new `access_token` and `refresh_token`.
+- Error handling: Maps `DioExceptionType` and HTTP status codes (401, 403, 404, 422, 500) into domain exceptions used across features.
+- `TokenStorage`: Canonical place where `access_token` and `refresh_token` are persisted and cleared.
+
 **Version**: 1.0
 **Last Updated**: November 2025
 

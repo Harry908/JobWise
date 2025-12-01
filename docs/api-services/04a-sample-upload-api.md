@@ -1,5 +1,31 @@
 # Sample Upload API
 
+**At a Glance (For AI Agents)**
+- **Service Name**: Sample Upload (writing style source)
+- **Primary Table**: `sample_documents`
+- **Core Dependencies**: Auth (`01-authentication-api.md`), AI Generation (`04b-ai-generation-api.md`)
+- **Auth Requirements**: All endpoints require a valid user JWT
+- **Primary Routes**:
+  - `POST /api/v1/samples/upload` — upload a `.txt` resume or cover letter sample
+  - `GET /api/v1/samples` — list samples for the authenticated user
+  - `GET /api/v1/samples/{sample_id}` — get full text and style analysis
+  - `DELETE /api/v1/samples/{sample_id}` — hard-delete a sample
+
+**Related Docs (Navigation Hints)**
+- Backend overview: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (overall flows)
+- Database schema: `06-database-schema.md` (`sample_documents` definition)
+- AI Generation service: `04b-ai-generation-api.md` (uses samples for style extraction)
+- Profile service: `02-profile-api.md` (enhanced content that benefits from writing style)
+
+**Key Field Semantics (Canonical Meanings)**
+- `id` (UUID): Primary key for a single uploaded sample document.
+- `user_id` (int): Owner of the sample; all queries are scoped to this.
+- `document_type` (string): Either `"resume"` or `"cover_letter"`; exactly one active per type.
+- `full_text` (text): Raw UTF-8 content of the uploaded `.txt` file, used as LLM input.
+- `writing_style` (JSON/text): Optional AI-derived style summary (tone, vocabulary, phrases) populated by generation flows.
+- `is_active` (bool): Enforces a single active sample per `user_id + document_type`; new uploads flip prior actives to false.
+- `word_count` / `character_count` (ints): Basic metrics used for validation and analytics.
+
 **Version**: 3.0
 **Base Path**: `/api/v1/samples`
 **Status**: ✅ Fully Implemented
