@@ -1,8 +1,3 @@
-# Sensitive files
-data/test_profile_create.json
-data/test_credentials.json
-data/Huy_Ky_Enhanced_Resume.txt
-data/Huy_Ky_General_Cover_Letter.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -100,3 +95,10 @@ instance/
 # Windows batch files (if generated or temporary)
 *.bat
 *.cmd
+
+# Sensitive files
+data/test_profile_create.json
+data/test_credentials.json
+data/Huy_Ky_Enhanced_Resume.txt
+data/Huy_Ky_General_Cover_Letter.txt
+data/test_user.json

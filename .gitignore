@@ -1,5 +1,4 @@
-# Sample artifacts - personal data
-docs/sample artifacts/
+
 
 # IDE and editor files
 .vscode/
@@ -42,4 +41,6 @@ coverage/
 # Temporary folders
 tmp/
 temp/
-backend/data/test_profile_create.json
+
+# Sample artifacts - personal data
+docs/sample artifacts/
