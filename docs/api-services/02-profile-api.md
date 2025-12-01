@@ -21,7 +21,9 @@
 - `user_id`: Owner of the profile; derived from the authenticated user and never taken from the client.
 - `personal_info`: JSON object with contact details, links, etc.
 - `skills`: JSON grouping of technical, soft, languages, and certifications.
-- `enhanced_*` fields: AI-enhanced copies of summaries/descriptions; original fields remain as user-authored content.
+- `enhanced_professional_summary`: AI-enhanced version of professional_summary; the original field remains as user-authored content.
+- `enhanced_description` (in experiences/projects): AI-enhanced versions of descriptions; original description fields remain as user-authored content.
+- `achievements`: List of strings representing key accomplishments in experiences.
 **Base Path**: `/api/v1/profiles`
 **Status**: ✅ Fully Implemented
 
@@ -47,7 +49,7 @@ The Profile API manages user master resume profiles, including personal informat
 Profile
 ├── Personal Info (name, email, phone, location, links)
 ├── Professional Summary (text summary of career)
-├── Enhanced Summary (AI-generated improvement)
+├── Enhanced Professional Summary (AI-generated improvement)
 ├── Skills
 │   ├── Technical Skills (e.g., Python, React, AWS)
 │   ├── Soft Skills (e.g., Leadership, Communication)
@@ -240,7 +242,7 @@ Retrieve the user's primary (default) profile.
       "is_current": false,
       "description": "Led development of scalable web applications",
       "enhanced_description": null,
-      "achievements": ["Increased performance by 40%"]
+      "achievements": ["Increased performance by 40%", "Led team of 5 developers"]
     }
   ],
   "education": [...],
@@ -1059,11 +1061,14 @@ DELETE /api/v1/profiles/{id}/education
 
 ---
 
-**Last Updated**: November 30, 2025
+**Last Updated**: December 1, 2025
 **API Version**: 1.0
 **Total Endpoints**: 24
 **Status**: Production Ready
 **Recent Changes**:
+- ✅ **Enhanced Professional Summary** (Dec 1, 2025): Added `enhanced_professional_summary` field to profile updates for AI-enhanced summaries
+- ✅ **Achievements Array** (Dec 1, 2025): Experiences now support `achievements` array for key accomplishments
+- ✅ **Date Format Integration** (Dec 1, 2025): Mobile app integrates with SettingsService for user-preferred date formats while maintaining yyyy-MM-dd API standard
 - ✅ **ID Auto-Generation** (Nov 30, 2025): All resource IDs (experiences, education, projects) are now automatically generated as UUIDs by the backend. Clients should never include `id` fields in POST requests.
 - ✅ Standardized DELETE request formats across all bulk operations (Nov 27, 2025)
 - ✅ Updated response codes for education/projects DELETE (200 OK instead of 204 No Content) (Nov 27, 2025)

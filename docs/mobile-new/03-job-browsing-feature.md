@@ -13,11 +13,14 @@
 - Profiles & samples: `02-profile-management-feature.md`, `04a-sample-upload-feature.md`.
 
 **Key Field / Property Semantics**
-- `Job.applicationStatus` ↔ backend `application_status`: Single source for all status badges, filters, and transitions.
-- `Job.jobKeywords` ↔ backend `parsed_keywords` (or similar); used by `KeywordHighlighter` and AI ranking logic.
-- `Job.rawText` ↔ backend `raw_text`, especially when created via `createJobFromText`.
-- `JobsState.filter` (status/source/limit/offset): Mirrors query parameters for `/api/v1/jobs` and drives list paging.
-- `JobsApiClient.createJobFromText/createJobFromUrl/createJob`: All map to `POST /api/v1/jobs` with mutually exclusive payload shapes.
+- `Job.status` ↔ backend `status`: Job visibility (active, archived, draft) - controls list filtering
+- `Job.applicationStatus` ↔ backend `application_status`: Application progress for status badges, filters, and transitions
+- `Job.jobKeywords` ↔ backend `parsed_keywords`: Used by `KeywordHighlighter` and AI ranking logic
+- `Job.rawText` ↔ backend `raw_text`: Original pasted text when created via `createJobFromText`
+- `Job.source` ↔ backend `source`: Origin tracking (user_created, text_parsed, url_scraped, mock)
+- `Job.employmentType` ↔ backend `employment_type`: Job type (full_time, part_time, contract, temporary, internship)
+- `JobsState.filter` (status/applicationStatus/source/limit/offset): Mirrors query parameters for `/api/v1/jobs`
+- `JobsApiClient.createJobFromText/createJobFromUrl/createJob`: All map to `POST /api/v1/jobs` with mutually exclusive payload shapes
 
 **Backend API**: [Job API](../api-services/03-job-api.md)
 **Base Path**: `/api/v1/jobs`
@@ -395,16 +398,22 @@ Response: `204 No Content`
 
 ### Backend ↔ Mobile Field Mapping
 
-The Job API uses snake_case field names, while the Dart models use camelCase and slightly different labels. Key mappings:
+The Job API uses snake_case field names, while the Dart models use camelCase. Key mappings:
 
+- Backend `id` ↔ Dart `id` (UUID string)
+- Backend `user_id` ↔ Dart `userId` (nullable int)
+- Backend `source` ↔ Dart `source` (string: user_created, text_parsed, url_scraped, mock)
 - Backend `company` ↔ Dart `companyName`
 - Backend `title` ↔ Dart `jobTitle`
-- Backend `employment_type` ↔ Dart `employmentType`
-- Backend `job_url` ↔ Dart `jobUrl`
-- Backend `parsed_keywords` ↔ Dart `jobKeywords`
+- Backend `employment_type` ↔ Dart `employmentType` (string: full_time, part_time, contract, temporary, internship)
+- Backend `parsed_keywords` ↔ Dart `jobKeywords` (List<String>)
 - Backend `raw_text` ↔ Dart `rawText`
+- Backend `status` ↔ Dart `status` (string: active, archived, draft)
+- Backend `application_status` ↔ Dart `applicationStatus` (string: not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn)
 
-The only status-like field the mobile app cares about is `application_status` (not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn). UI enums, filters, and badges all map directly to this field.
+The mobile app uses two status fields:
+1. `status` - Job visibility and lifecycle management
+2. `applicationStatus` - User's application progress tracking
 
 ### Job (Freezed Model)
 
@@ -934,4 +943,10 @@ test('JobsNotifier filters jobs by status', () async {
 **Screens**: 4 (Browse, List, Detail, Paste)
 **API Endpoints**: 5 endpoints
 **Dependencies**: freezed, json_serializable, dio
-**Last Updated**: November 2025
+**Last Updated**: December 1, 2025
+
+**Recent Implementation Updates (Dec 1, 2025)**:
+- ✅ **Dual Status Fields**: Jobs now track both `status` (visibility: active/archived/draft) and `applicationStatus` (progress tracking)
+- ✅ **Source Tracking**: Jobs maintain source information (user_created, text_parsed, url_scraped, mock)
+- ✅ **Employment Type**: Full support for employment_type field (full_time, part_time, contract, temporary, internship)
+- ✅ **Field Consistency**: Mobile models synchronized with backend snake_case → camelCase mapping

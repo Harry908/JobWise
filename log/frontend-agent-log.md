@@ -4,6 +4,158 @@ This log tracks all frontend development interactions and changes.
 
 ---
 
+## Log Entry: 12
+
+### User Request
+Multiple UI enhancement requests during session:
+1. "ok there is another issue. when i update the enhance_profile_summary is not update in the database."
+2. "log this session"
+3. "Now there is an small change to the experience card: i want to display 'Key Achievements' header and the update modal also forget to include this"
+4. "make sure the request format fields naming are correct"
+5. "add date picker for the edit dialogues for all entries"
+6. "Should the date formate still link wiht the setting screen?"
+
+### Response Summary
+Completed comprehensive profile enhancement updates across backend and frontend: (1) Fixed enhanced_professional_summary persistence by adding field to backend schema and service layer, (2) Added "Key Achievements:" header and full editing capability to experience cards/modal, (3) Verified field naming consistency between frontend and backend, (4) Implemented date pickers with calendar icons for all edit dialogs (Experience, Education, Project), (5) Integrated date pickers with existing SettingsService to respect user's date format preference (US/European/ISO), enabling automatic format conversion between display and API formats.
+
+### Actions Taken
+- **File:** `backend/app/presentation/api/profile.py`
+  - **Change:** Added `enhanced_professional_summary` field to `UpdateProfileRequest` schema
+  - **Details:** Added `enhanced_professional_summary: Optional[str] = None` at line 277
+  - **Reason:** Backend wasn't accepting enhanced summary in update requests, causing it to be lost on profile updates
+
+- **File:** `backend/app/application/services/profile_service.py`
+  - **Change:** Added `enhanced_professional_summary` parameter to `update_profile()` method and processing logic
+  - **Details:** Added parameter with default None, implemented conditional update logic to persist enhanced summary to database
+  - **Reason:** Service layer needed to handle enhanced summary from API requests
+
+- **File:** `log/backend-agent-log.md`
+  - **Change:** Created Entry 5 documenting enhanced_professional_summary fix
+  - **Details:** Documented schema addition, endpoint extraction, service processing with debug logging
+  - **Reason:** Session logging as requested by user
+
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change 1:** Added "Key Achievements:" header to experience card display
+  - **Details:** Added Text widget with titleSmall bold styling before achievements bullet list (around line 666)
+  - **Reason:** User wanted visual header to separate achievements section
+
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change 2:** Added achievements editing to experience modal
+  - **Details:**
+    * Added `_achievementsController` TextEditingController to `_EditExperienceDialogState`
+    * Initialized controller with `experience.achievements.join('\n')`
+    * Added multi-line TextField in modal UI for achievements editing
+    * Implemented parsing on save: split by newlines, filter empty
+    * Added proper disposal in `dispose()` method
+  - **Reason:** Modal was missing ability to edit achievements despite displaying them
+
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change 3:** Added date pickers to all three edit dialogs
+  - **Details:**
+    * **Experience Dialog:** Added GestureDetector + AbsorbPointer pattern for start/end date fields, calendar icons, `_pickDate()` method with showDatePicker
+    * **Education Dialog:** Same date picker implementation for start/end dates
+    * **Project Dialog:** Same date picker implementation for start/end dates
+    * Pattern: Calendar icon → GestureDetector → showDatePicker → update controller
+  - **Reason:** User requested date picker UI for better UX across all entry types
+
+- **File:** `mobile_app/lib/screens/profile_view_screen.dart`
+  - **Change 4:** Integrated SettingsService for date format preferences
+  - **Details:**
+    * Added `import '../services/settings_service.dart'`
+    * Added `SettingsService _settingsService` instance to all three dialog states
+    * Added `String _dateFormat` variable to each dialog
+    * Implemented `_loadDateFormat()` async method to get user preference
+    * Updated `initState()` to load format and convert API dates to display format using `toDisplayFormat()`
+    * Modified `_pickDate()` to use `formatDateToDisplay()` for selected dates
+    * Updated save methods to convert back to API format using `toApiFormat()`
+    * Added null checks for optional endDate fields with ternary operators
+  - **Reason:** User asked if date format should link with settings; discovered existing SettingsService with three formats (US: MM/dd/yyyy, European: dd/MM/yyyy, ISO: yyyy-MM-dd) and integrated for consistency
+
+### Technical Details
+
+**Enhanced Professional Summary Flow:**
+- Frontend: `Profile.toJson()` sends `enhanced_professional_summary` field
+- Backend: `UpdateProfileRequest` validates and extracts field
+- Service: `profile_service.update_profile()` processes parameter
+- Database: Field persists in profiles table
+- Naming: Consistent `enhanced_professional_summary` across all layers
+
+**Achievements Implementation:**
+- Display: Header text + bullet-pointed list with `•` prefix
+- Modal: Multi-line TextField with one achievement per line
+- Parsing: `text.split('\n').where((line) => line.trim().isNotEmpty).toList()`
+- Storage: List<String> in Profile model
+
+**Date Picker Pattern:**
+```dart
+GestureDetector(
+  onTap: () => _pickDate(context, controller, initialDate),
+  child: AbsorbPointer(
+    child: TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        suffixIcon: Icon(Icons.calendar_today),
+      ),
+    ),
+  ),
+)
+```
+
+**Settings Integration Flow:**
+1. Dialog opens → `_loadDateFormat()` loads user preference from SettingsService
+2. `initState()` converts API dates (yyyy-MM-dd) → user format (MM/dd/yyyy, dd/MM/yyyy, or yyyy-MM-dd)
+3. User picks date → `formatDateToDisplay()` formats in user preference
+4. Save button → `toApiFormat()` converts display format → yyyy-MM-dd for API
+5. Backend receives consistent yyyy-MM-dd regardless of user's display preference
+
+**Date Format Conversion:**
+- API Format: Always `yyyy-MM-dd` (ISO standard)
+- Display Format: User's choice from settings (US/European/ISO)
+- Conversion Methods:
+  * `toDisplayFormat(apiDate, dateFormat)`: yyyy-MM-dd → user format
+  * `toApiFormat(displayDate, dateFormat)`: user format → yyyy-MM-dd
+  * `formatDateToDisplay(DateTime, dateFormat)`: DateTime → user format
+
+### User Experience Improvements
+- ✅ Enhanced summary persistence: No longer lost on profile updates
+- ✅ Achievements visibility: Clear "Key Achievements:" header
+- ✅ Achievements editing: Full CRUD capability in modal
+- ✅ Field naming: Verified consistency between frontend/backend
+- ✅ Date pickers: Calendar icon UI for all date fields
+- ✅ Settings integration: Date format respects user preference
+- ✅ Format conversion: Seamless bidirectional conversion (display ↔ API)
+- ✅ Null safety: Proper handling of optional endDate fields
+
+### Files Modified Summary
+**Backend:**
+- `backend/app/presentation/api/profile.py` - Schema update
+- `backend/app/application/services/profile_service.py` - Service logic
+- `log/backend-agent-log.md` - Session documentation
+
+**Frontend:**
+- `mobile_app/lib/screens/profile_view_screen.dart` (2833 lines):
+  * Experience card display with achievements header
+  * Experience modal with achievements editing
+  * Date pickers for Experience, Education, Project dialogs
+  * SettingsService integration for date format preferences
+  * Format conversion on display and save
+
+**Services (already existed):**
+- `mobile_app/lib/services/settings_service.dart` - Date format management
+- `mobile_app/lib/screens/settings_screen.dart` - Format selection UI
+
+### Status
+✅ Enhanced professional summary persists correctly
+✅ "Key Achievements:" header displays in experience cards
+✅ Achievements fully editable in experience modal
+✅ Field naming verified consistent across stack
+✅ Date pickers implemented with calendar icons
+✅ Settings integration complete with format conversion
+✅ All changes logged in backend-agent-log.md Entry 5
+✅ Ready for user testing with hot reload
+
+---
+
 ## Log Entry: 11
 
 ### User Request

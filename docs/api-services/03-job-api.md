@@ -17,10 +17,12 @@
 - Mobile Feature: `../mobile-new/03-job-browsing-feature.md`
 
 **Key Field Semantics**
-- `job_id`: UUID primary key of `jobs`; used on all job-scoped endpoints.
-- `user_id`: Owner of the job; always inferred from the authenticated user.
-- `source`: Where the job came from (e.g., `user_created`, `indeed`, `linkedin`, `mock`).
-- `application_status`: The only status-like field for jobs (e.g., `not_applied`, `preparing`, `applied`, `interview`, `offer`, `accepted`, `rejected`, `withdrawn`).
+- `id`: UUID primary key of `jobs`; automatically generated on creation; used on all job-scoped endpoints.
+- `user_id`: Owner of the job; always inferred from the authenticated user (nullable for external/mock jobs).
+- `source`: Where the job came from (e.g., `user_created`, `text_parsed`, `url_scraped`, `mock`).
+- `status`: Job visibility status (active, archived, draft) - controls whether job appears in active lists.
+- `application_status`: Application progress (not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn).
+- `employment_type`: Job type (full_time, part_time, contract, temporary, internship).
 - `parsed_keywords`, `requirements`, `benefits`: Structured content derived from job description for ranking and generation.
 **Base Path**: `/api/v1/jobs`
 **Status**: ✅ Fully Implemented
@@ -146,6 +148,7 @@ Extract job details from pasted job description text.
   "salary_range": "$120k-$150k",
   "remote": true,
   "employment_type": "full_time",
+  "status": "active",
   "application_status": "not_applied",
   "created_at": "2025-11-15T10:30:00Z",
   "updated_at": "2025-11-15T10:30:00Z"
@@ -250,9 +253,10 @@ Retrieve all jobs for the authenticated user with filtering and pagination.
 **Query Parameters**:
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `application_status` | string | No | - | Filter by application status (not_applied, applied, etc.) |
-| `source` | string | No | - | Filter by source (user_created, text_parsed, etc.) |
-| `employment_type` | string | No | - | Filter by employment type |
+| `status` | string | No | - | Filter by job status (active, archived, draft) |
+| `application_status` | string | No | - | Filter by application status (not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn) |
+| `source` | string | No | - | Filter by source (user_created, text_parsed, url_scraped, etc.) |
+| `employment_type` | string | No | - | Filter by employment type (full_time, part_time, contract, temporary, internship) |
 | `remote` | boolean | No | - | Filter remote jobs |
 | `limit` | integer | No | 20 | Results per page (1-100) |
 | `offset` | integer | No | 0 | Results offset |
@@ -260,7 +264,7 @@ Retrieve all jobs for the authenticated user with filtering and pagination.
 **Example Requests**:
 ```
 GET /api/v1/jobs
-GET /api/v1/jobs?application_status=applied&limit=10
+GET /api/v1/jobs?status=active&application_status=applied&limit=10
 GET /api/v1/jobs?source=text_parsed&remote=true
 GET /api/v1/jobs?employment_type=full_time&offset=20
 ```
@@ -283,6 +287,7 @@ GET /api/v1/jobs?employment_type=full_time&offset=20
       "salary_range": "$120k-$150k",
       "remote": true,
       "employment_type": "full_time",
+      "status": "active",
       "application_status": "applied",
       "created_at": "2025-11-15T10:30:00Z",
       "updated_at": "2025-11-15T10:30:00Z"
@@ -340,9 +345,8 @@ Retrieve detailed information for a specific job.
   "salary_range": "$120k-$150k",
   "remote": true,
   "employment_type": "full_time",
+  "status": "active",
   "application_status": "applied",
-  "applied_date": "2025-11-10T14:00:00Z",
-  "notes": "Great company culture, aligned with my skills",
   "created_at": "2025-11-08T10:30:00Z",
   "updated_at": "2025-11-10T14:00:00Z"
 }
@@ -379,9 +383,8 @@ Update job information (partial updates supported).
 {
   "title": "Lead Python Developer",
   "location": "Seattle, WA (Fully Remote)",
-  "application_status": "interviewing",
-  "notes": "Phone interview scheduled for Nov 20th",
-  "applied_date": "2025-11-10T14:00:00Z"
+  "status": "active",
+  "application_status": "interviewing"
 }
 ```
 
@@ -392,11 +395,8 @@ Update job information (partial updates supported).
 | `company` | string | Company name |
 | `location` | string | Job location |
 | `description` | string | Job description |
+| `status` | string | Job visibility (active, archived, draft) |
 | `application_status` | string | Application progress |
-| `applied_date` | string | Date applied (ISO 8601) |
-| `notes` | string | Personal notes about the job |
-| `remote` | boolean | Remote work option |
-| `employment_type` | string | Employment type |
 
 **Success Response** (200 OK): Full updated job object
 
@@ -632,10 +632,13 @@ Maintain accurate application status:
 
 ---
 
-**Last Updated**: November 30, 2025
+**Last Updated**: December 1, 2025
 **API Version**: 1.0
 **Total Endpoints**: 5
-**Status**: Production Ready (URL scraping planned)
+**Status**: Production Ready
 
-**Changelog**:
+**Recent Changes**:
 - ✅ **ID Auto-Generation** (Nov 30, 2025): All job IDs automatically generated as UUIDs. Clients should never provide IDs when creating jobs.
+- ✅ **Status Field Separation** (Dec 1, 2025): Jobs now have two status fields:
+  - `status`: Job visibility (active, archived, draft)
+  - `application_status`: Application progress (not_applied, preparing, applied, interviewing, offer_received, accepted, rejected, withdrawn)
