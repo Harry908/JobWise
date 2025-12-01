@@ -1,7 +1,9 @@
-backend/data/test_profile_create.json
-backend/data/test_credentials.json
-backend/data/Huy_Ky_Enhanced_Resume.txt
-backend/data/Huy_Ky_General_Cover_Letter.txt
+
+data/test_profile_create.json
+data/test_credentials.json
+data/Huy_Ky_Enhanced_Resume.txt
+data/Huy_Ky_General_Cover_Letter.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.pyc
