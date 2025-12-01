@@ -76,6 +76,7 @@ class Experience(BaseModel):
     end_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date
     is_current: bool = False
     description: Optional[str] = Field(None, max_length=2000)
+    enhanced_description: Optional[str] = Field(None, max_length=2000)  # AI-enhanced version
     achievements: List[str] = Field(default_factory=list)
 
     @model_validator(mode='after')
@@ -115,6 +116,7 @@ class Project(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=1000)
+    enhanced_description: Optional[str] = Field(None, max_length=1000)  # AI-enhanced version
     technologies: List[str] = Field(default_factory=list)
     url: Optional[str] = Field(None, max_length=200)
     start_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # ISO date, optional

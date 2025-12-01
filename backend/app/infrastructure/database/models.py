@@ -160,4 +160,62 @@ class SampleDocumentModel(Base):
     user = relationship("UserModel", backref="sample_documents")
 
 
+class WritingStyleModel(Base):
+    """Writing style extracted from sample documents."""
+    __tablename__ = "writing_styles"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    extracted_style = Column(JSON, nullable=False)  # Tone, vocabulary, structure analysis
+    sample_document_id = Column(String, ForeignKey("sample_documents.id"), nullable=False)
+    extraction_date = Column(DateTime, default=datetime.utcnow)
+    llm_metadata = Column(JSON)  # Model, tokens, etc.
+    
+    # Relationships
+    user = relationship("UserModel", backref="writing_styles")
+
+
+class JobContentRankingModel(Base):
+    """Job-specific content ranking."""
+    __tablename__ = "job_content_rankings"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False, index=True)
+    profile_id = Column(String, ForeignKey("master_profiles.id"), nullable=False)
+    ranked_experience_ids = Column(JSON, nullable=False)  # Ordered list of experience IDs
+    ranked_project_ids = Column(JSON, nullable=False)  # Ordered list of project IDs
+    ranking_rationale = Column(Text)
+    keyword_matches = Column(JSON)
+    relevance_scores = Column(JSON)
+    llm_metadata = Column(JSON)
+    status = Column(String, default="completed")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("UserModel", backref="content_rankings")
+    job = relationship("JobModel", backref="content_rankings")
+
+
+class GenerationModel(Base):
+    """Generated documents (resumes and cover letters)."""
+    __tablename__ = "generations"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False, index=True)
+    ranking_id = Column(String, ForeignKey("job_content_rankings.id"), nullable=True)
+    document_type = Column(String, nullable=False)  # resume, cover_letter
+    content_text = Column(Text, nullable=False)
+    status = Column(String, default="pending")
+    ats_score = Column(Float)
+    ats_feedback = Column(Text)
+    llm_metadata = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("UserModel", backref="generations")
+    job = relationship("JobModel", backref="generations")
+
+
 # Removed PromptTemplateModel - prompts are now stored in source code

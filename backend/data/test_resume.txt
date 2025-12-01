@@ -1,0 +1,51 @@
+Test User
+Seattle, WA | test@example.com | +1-555-123-4567
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 5+ years in full-stack development
+
+TECHNICAL SKILLS
+Python, JavaScript, SQL, AWS
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | Tech Corp | Seattle, WA
+2021-01-15 - Present
+Lead development of microservices architecture
+• Improved system performance by 40%
+• Led team of 4 developers
+
+Software Engineer | Startup Inc | San Francisco, CA
+2019-01-01 - 2020-12-31
+Full-stack development using React and Node.js
+• Built user-facing features
+• Improved application performance by 30%
+
+Junior Developer | Digital Solutions | Portland, OR
+2017-06-01 - 2018-12-31
+Frontend development and UI/UX implementation
+• Developed responsive web applications
+• Collaborated with design team on 5+ projects
+
+PROJECTS
+
+E-commerce Platform
+Built scalable e-commerce solution with React and Node.js
+Technologies: React, Node.js, PostgreSQL, AWS
+URL: https://github.com/testuser/ecommerce
+
+AI Chat Application
+Real-time chat application with AI-powered responses
+Technologies: Python, FastAPI, WebSocket, OpenAI API
+URL: https://github.com/testuser/ai-chat
+
+Mobile Fitness Tracker
+Cross-platform mobile app for fitness tracking
+Technologies: Flutter, Firebase, Dart
+URL: https://github.com/testuser/fitness-tracker
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of Washington | 2015-09-01 - 2019-06-15
+GPA: 3.8

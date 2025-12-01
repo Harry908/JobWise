@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     app_version: str = Field(default="1.0.0", alias="APP_VERSION")
     debug: bool = Field(default=False, alias="DEBUG")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    
+    # LLM Configuration
+    groq_api_key: str = Field(
+        ...,
+        alias="GROQ_API_KEY",
+        description="Groq API key for LLM operations"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

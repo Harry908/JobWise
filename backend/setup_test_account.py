@@ -105,12 +105,24 @@ def create_user(force_new=False):
 
 
 def create_profile(token):
-    """Create master profile for the test user."""
+    """Create master profile for the test user, or get existing profile."""
     print("\n" + "="*70)
     print("STEP 2: Creating Master Profile")
     print("="*70)
     
     profile_data = load_json_file(TEST_PROFILE_FILE)
+    
+    # First, check if user already has a profile
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"{API_V1}/profiles/me", headers=headers)
+    
+    if response.status_code == 200:
+        # User already has a profile, use it
+        data = response.json()
+        print(f"\n✅ Using existing profile!")
+        print(f"  Profile ID: {data['id']}")
+        print(f"  Name: {data['personal_info']['full_name']}")
+        return data['id']
     
     # Extract only profile-level data (no nested experiences/education/projects)
     profile_payload = {
@@ -124,7 +136,6 @@ def create_profile(token):
     print(f"  Location: {profile_payload['personal_info']['location']}")
     print(f"  Summary: {profile_payload['professional_summary'][:60]}...")
     
-    headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(
         f"{API_V1}/profiles",
         headers=headers,
@@ -270,11 +281,17 @@ def add_custom_fields(token, profile_id):
     
     print(f"\nAdding custom fields...")
     
+    # Transform dict to list of {"key": k, "value": v} objects as required by API
+    custom_fields_list = [
+        {"key": key, "value": value}
+        for key, value in custom_fields.items()
+    ]
+    
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(
         f"{API_V1}/profiles/{profile_id}/custom-fields",
         headers=headers,
-        json=custom_fields
+        json={"fields": custom_fields_list}  # API expects List[CustomFieldModel]
     )
     
     if response.status_code == 201:

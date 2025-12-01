@@ -4,12 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from app.application.services.profile_service import ProfileService
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ValidationException, NotFoundError, ForbiddenException
 from app.domain.entities.profile import PersonalInfo, Skills
 from app.infrastructure.database.connection import get_db_session
+
+logger = logging.getLogger(__name__)
 
 
 # Request/Response models
@@ -110,6 +113,7 @@ class ExperienceModel(BaseModel):
     end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
     is_current: bool = Field(False, description="Is this current position")
     description: Optional[str] = Field(None, max_length=1000, description="Job description")
+    enhanced_description: Optional[str] = Field(None, max_length=2000, description="AI-enhanced job description")
     achievements: List[str] = Field(default_factory=list, description="Key achievements")
 
     model_config = {
@@ -160,6 +164,7 @@ class ProjectModel(BaseModel):
     id: Optional[str] = Field(None, description="Unique project ID (auto-generated if not provided)")
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=1000)
+    enhanced_description: Optional[str] = Field(None, max_length=1000, description="AI-enhanced project description")
     technologies: List[str] = Field(default_factory=list)
     url: Optional[str] = Field(None, max_length=200)
     start_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
@@ -328,6 +333,7 @@ class ExperienceCreateModel(BaseModel):
     end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
     is_current: bool = Field(False, description="Is this current position")
     description: Optional[str] = Field(None, max_length=1000, description="Job description")
+    enhanced_description: Optional[str] = Field(None, max_length=2000, description="AI-enhanced job description")
     achievements: List[str] = Field(default_factory=list, description="Key achievements")
 
     model_config = {
@@ -383,6 +389,7 @@ class ProjectCreateModel(BaseModel):
     id: Optional[str] = Field(None, description="Unique project ID (auto-generated if not provided)")
     name: str = Field(..., min_length=1, max_length=100, description="Project name")
     description: str = Field(..., min_length=1, max_length=500, description="Project description")
+    enhanced_description: Optional[str] = Field(None, max_length=1000, description="AI-enhanced project description")
     technologies: List[str] = Field(default_factory=list, description="Technologies used")
     url: Optional[str] = Field(None, description="Project URL")
     start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
@@ -797,6 +804,11 @@ async def create_experiences_bulk(
 ):
     """Create multiple experiences for a profile."""
     try:
+        # Log enhanced descriptions in request
+        enhanced_count = sum(1 for exp in experiences if exp.enhanced_description)
+        if enhanced_count > 0:
+            logger.info(f"API: Received {len(experiences)} experiences ({enhanced_count} with enhanced descriptions) for profile {profile_id[:8]}...")
+        
         experiences_data = [exp.model_dump() for exp in experiences]
         created_experiences = await profile_service.create_experiences_bulk(
             profile_id=profile_id,
@@ -1018,6 +1030,11 @@ async def create_projects_bulk(
 ):
     """Create multiple projects for a profile."""
     try:
+        # Log enhanced descriptions in request
+        enhanced_count = sum(1 for proj in projects if proj.enhanced_description)
+        if enhanced_count > 0:
+            logger.info(f"API: Received {len(projects)} projects ({enhanced_count} with enhanced descriptions) for profile {profile_id[:8]}...")
+        
         projects_data = [proj.model_dump() for proj in projects]
         created_projects = await profile_service.create_projects_bulk(
             profile_id=profile_id,

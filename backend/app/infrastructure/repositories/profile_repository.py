@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+import logging
 
 from app.domain.entities.profile import Profile, Experience, Education, Project
 from app.infrastructure.database.models import (
@@ -12,6 +13,8 @@ from app.infrastructure.database.models import (
     EducationModel,
     ProjectModel
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ProfileRepository:
@@ -72,6 +75,7 @@ class ProfileRepository:
                 profile_id=profile.id,
                 name=proj.name,
                 description=proj.description,
+                enhanced_description=proj.enhanced_description,
                 technologies=proj.technologies,
                 url=proj.url,
                 start_date=proj.start_date,
@@ -234,23 +238,44 @@ class ProfileRepository:
 
     async def create_experiences_bulk(self, profile_id: str, experiences: List[Experience]) -> List[Experience]:
         """Create multiple experiences for a profile."""
+        # Get all existing experiences for this profile
+        stmt = select(ExperienceModel).where(ExperienceModel.profile_id == profile_id)
+        result = await self.session.execute(stmt)
+        existing_experiences = result.scalars().all()
+        
+        # Build set of existing content signatures (title, company, start_date)
+        existing_signatures = set()
+        for existing in existing_experiences:
+            signature = (existing.title, existing.company, existing.start_date)
+            existing_signatures.add(signature)
+        
+        # Only add experiences that don't already exist based on content
+        created_experiences = []
         for exp in experiences:
-            exp_model = ExperienceModel(
-                id=exp.id,
-                profile_id=profile_id,
-                title=exp.title,
-                company=exp.company,
-                location=exp.location,
-                start_date=exp.start_date,
-                end_date=exp.end_date,
-                is_current=exp.is_current,
-                description=exp.description,
-                achievements=exp.achievements
-            )
-            self.session.add(exp_model)
+            signature = (exp.title, exp.company, exp.start_date)
+            if signature not in existing_signatures:
+                if exp.enhanced_description:
+                    logger.info(f"Creating experience with ENHANCED description: {exp.title} at {exp.company}")
+                    logger.debug(f"Enhanced description preview: {exp.enhanced_description[:100]}...")
+                exp_model = ExperienceModel(
+                    id=exp.id,
+                    profile_id=profile_id,
+                    title=exp.title,
+                    company=exp.company,
+                    location=exp.location,
+                    start_date=exp.start_date,
+                    end_date=exp.end_date,
+                    is_current=exp.is_current,
+                    description=exp.description,
+                    enhanced_description=exp.enhanced_description,
+                    achievements=exp.achievements
+                )
+                self.session.add(exp_model)
+                created_experiences.append(exp)
 
-        await self.session.commit()
-        return experiences
+        if created_experiences:
+            await self.session.commit()
+        return created_experiences
 
     async def get_experiences_by_profile_id(self, profile_id: str, limit: int = 50, offset: int = 0) -> List[Experience]:
         """Get experiences for a profile."""
@@ -272,6 +297,7 @@ class ProfileRepository:
                 end_date=exp_model.end_date,
                 is_current=exp_model.is_current,
                 description=exp_model.description,
+                enhanced_description=exp_model.enhanced_description,
                 achievements=exp_model.achievements or []
             ))
 
@@ -291,6 +317,7 @@ class ProfileRepository:
                 end_date=exp.end_date,
                 is_current=exp.is_current,
                 description=exp.description,
+                enhanced_description=exp.enhanced_description,
                 achievements=exp.achievements
             )
             await self.session.execute(stmt)
@@ -310,22 +337,39 @@ class ProfileRepository:
 
     async def create_education_bulk(self, profile_id: str, education_list: List[Education]) -> List[Education]:
         """Create multiple education entries for a profile."""
+        # Get all existing education entries for this profile
+        stmt = select(EducationModel).where(EducationModel.profile_id == profile_id)
+        result = await self.session.execute(stmt)
+        existing_education = result.scalars().all()
+        
+        # Build set of existing content signatures (institution, degree, field_of_study)
+        existing_signatures = set()
+        for existing in existing_education:
+            signature = (existing.institution, existing.degree, existing.field_of_study)
+            existing_signatures.add(signature)
+        
+        # Only add education entries that don't already exist based on content
+        created_education = []
         for edu in education_list:
-            edu_model = EducationModel(
-                id=edu.id,
-                profile_id=profile_id,
-                institution=edu.institution,
-                degree=edu.degree,
-                field_of_study=edu.field_of_study,
-                start_date=edu.start_date,
-                end_date=edu.end_date,
-                gpa=edu.gpa,
-                honors=edu.honors
-            )
-            self.session.add(edu_model)
+            signature = (edu.institution, edu.degree, edu.field_of_study)
+            if signature not in existing_signatures:
+                edu_model = EducationModel(
+                    id=edu.id,
+                    profile_id=profile_id,
+                    institution=edu.institution,
+                    degree=edu.degree,
+                    field_of_study=edu.field_of_study,
+                    start_date=edu.start_date,
+                    end_date=edu.end_date,
+                    gpa=edu.gpa,
+                    honors=edu.honors
+                )
+                self.session.add(edu_model)
+                created_education.append(edu)
 
-        await self.session.commit()
-        return education_list
+        if created_education:
+            await self.session.commit()
+        return created_education
 
     async def update_education_bulk(self, profile_id: str, education_list: List[Education]) -> List[Education]:
         """Update multiple education entries for a profile."""
@@ -359,21 +403,45 @@ class ProfileRepository:
 
     async def create_projects_bulk(self, profile_id: str, projects: List[Project]) -> List[Project]:
         """Create multiple projects for a profile."""
+        # Get all existing projects for this profile
+        stmt = select(ProjectModel).where(ProjectModel.profile_id == profile_id)
+        result = await self.session.execute(stmt)
+        existing_projects = result.scalars().all()
+        
+        # Build set of existing content signatures (name, first 100 chars of description)
+        existing_signatures = set()
+        for existing in existing_projects:
+            # Use name and description prefix to identify duplicates
+            desc_prefix = (existing.description or "")[:100]
+            signature = (existing.name, desc_prefix)
+            existing_signatures.add(signature)
+        
+        # Only add projects that don't already exist based on content
+        created_projects = []
         for proj in projects:
-            proj_model = ProjectModel(
-                id=proj.id,
-                profile_id=profile_id,
-                name=proj.name,
-                description=proj.description,
-                technologies=proj.technologies,
-                url=proj.url,
-                start_date=proj.start_date,
-                end_date=proj.end_date
-            )
-            self.session.add(proj_model)
+            desc_prefix = (proj.description or "")[:100]
+            signature = (proj.name, desc_prefix)
+            if signature not in existing_signatures:
+                if proj.enhanced_description:
+                    logger.info(f"Creating project with ENHANCED description: {proj.name}")
+                    logger.debug(f"Enhanced description preview: {proj.enhanced_description[:100]}...")
+                proj_model = ProjectModel(
+                    id=proj.id,
+                    profile_id=profile_id,
+                    name=proj.name,
+                    description=proj.description,
+                    enhanced_description=proj.enhanced_description,
+                    technologies=proj.technologies,
+                    url=proj.url,
+                    start_date=proj.start_date,
+                    end_date=proj.end_date
+                )
+                self.session.add(proj_model)
+                created_projects.append(proj)
 
-        await self.session.commit()
-        return projects
+        if created_projects:
+            await self.session.commit()
+        return created_projects
 
     async def update_projects_bulk(self, profile_id: str, projects: List[Project]) -> List[Project]:
         """Update multiple projects for a profile."""
@@ -384,6 +452,7 @@ class ProfileRepository:
             ).values(
                 name=proj.name,
                 description=proj.description,
+                enhanced_description=proj.enhanced_description,
                 technologies=proj.technologies,
                 url=proj.url,
                 start_date=proj.start_date,
@@ -420,6 +489,7 @@ class ProfileRepository:
                 end_date=exp_model.end_date,
                 is_current=exp_model.is_current,
                 description=exp_model.description,
+                enhanced_description=exp_model.enhanced_description,
                 achievements=exp_model.achievements or []
             ))
 
@@ -444,6 +514,7 @@ class ProfileRepository:
                 id=proj_model.id,
                 name=proj_model.name,
                 description=proj_model.description,
+                enhanced_description=proj_model.enhanced_description,
                 technologies=proj_model.technologies or [],
                 url=proj_model.url,
                 start_date=proj_model.start_date,

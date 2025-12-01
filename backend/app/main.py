@@ -13,6 +13,7 @@ from app.presentation.api.auth import router as auth_router
 from app.presentation.api.profile import router as profile_router
 from app.presentation.api.job import router as job_router
 from app.presentation.api.v1.samples import router as samples_router
+from app.presentation.api.generation import router as generation_router
 
 settings = get_settings()
 
@@ -75,6 +76,7 @@ def create_application() -> FastAPI:
     app.include_router(profile_router)
     app.include_router(job_router)
     app.include_router(samples_router, prefix="/api/v1")
+    app.include_router(generation_router)  # AI Generation API
 
     @app.get("/health")
     async def health_check():
