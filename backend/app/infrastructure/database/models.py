@@ -140,4 +140,24 @@ class JobModel(Base):
     user = relationship("UserModel", backref="jobs")
 
 
+class SampleDocumentModel(Base):
+    """Sample document database model for writing style extraction."""
+    __tablename__ = "sample_documents"
+
+    id = Column(String, primary_key=True)  # UUID as string
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    document_type = Column(String, nullable=False, index=True)  # 'resume' or 'cover_letter'
+    original_filename = Column(String, nullable=False)
+    full_text = Column(Text, nullable=False)  # Full document text for AI analysis
+    writing_style = Column(JSON)  # AI-derived style analysis (populated by generation API)
+    word_count = Column(INTEGER)
+    character_count = Column(INTEGER)
+    is_active = Column(Boolean, default=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("UserModel", backref="sample_documents")
+
+
 # Removed PromptTemplateModel - prompts are now stored in source code

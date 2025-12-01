@@ -63,7 +63,7 @@ class TestAuthAPILive:
 
         # Second registration with same email
         response2 = await live_client.post("/api/v1/auth/register", json=user_data)
-        assert response2.status_code == 400
+        assert response2.status_code == 409
         data = response2.json()
         assert "already exists" in data["detail"].lower()
 
@@ -304,7 +304,7 @@ class TestAuthAPILive:
             "new_password": "NewSecurePass456!"
         }
         response = await live_client.post("/api/v1/auth/reset-password", json=reset_data)
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert "token" in data["detail"].lower()
 

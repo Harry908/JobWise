@@ -46,10 +46,9 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(experiences)} experiences")
                 for i, exp_data in enumerate(experiences):
                     print(f"DEBUG: Processing experience {i}: {exp_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in exp_data or exp_data['id'] is None:
-                        # Generate incremental ID for experience
-                        exp_data['id'] = f"exp_{i + 1}"
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in exp_data and exp_data['id'] is None:
+                        del exp_data['id']
                     experiences_list.append(Experience(**exp_data))
                 print(f"DEBUG: Successfully created {len(experiences_list)} experiences")
 
@@ -60,10 +59,9 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(education)} education entries")
                 for i, edu_data in enumerate(education):
                     print(f"DEBUG: Processing education {i}: {edu_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in edu_data or edu_data['id'] is None:
-                        # Generate incremental ID for education
-                        edu_data['id'] = f"edu_{i + 1}"
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in edu_data and edu_data['id'] is None:
+                        del edu_data['id']
                     education_list.append(Education(**edu_data))
                 print(f"DEBUG: Successfully created {len(education_list)} education entries")
 
@@ -74,10 +72,9 @@ class ProfileService:
                 print(f"DEBUG: Creating {len(projects)} projects")
                 for i, proj_data in enumerate(projects):
                     print(f"DEBUG: Processing project {i}: {proj_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in proj_data or proj_data['id'] is None:
-                        # Generate incremental ID for project
-                        proj_data['id'] = f"proj_{i + 1}"
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in proj_data and proj_data['id'] is None:
+                        del proj_data['id']
                     projects_list.append(Project(**proj_data))
                 print(f"DEBUG: Successfully created {len(projects_list)} projects")
 
@@ -180,16 +177,11 @@ class ProfileService:
                 from app.domain.entities.profile import Experience
                 print(f"DEBUG: ProfileService updating {len(experiences)} experiences")
                 
-                # Get existing experience count for incremental ID generation
-                existing_exp_count = len(existing_profile.experiences)
-                
                 for i, exp_data in enumerate(experiences):
                     print(f"DEBUG: Processing experience {i}: {exp_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in exp_data or exp_data['id'] is None:
-                        # Generate incremental ID based on existing + new count
-                        exp_data['id'] = f"exp_{existing_exp_count + i + 1}"
-                        print(f"DEBUG: Generated experience ID: {exp_data['id']}")
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in exp_data and exp_data['id'] is None:
+                        del exp_data['id']
                     experiences_list.append(Experience(**exp_data))
                 existing_profile.experiences = experiences_list
                 print(f"DEBUG: Successfully processed {len(experiences_list)} experiences")
@@ -205,16 +197,11 @@ class ProfileService:
                 from app.domain.entities.profile import Education
                 print(f"DEBUG: ProfileService updating {len(education)} education entries")
                 
-                # Get existing education count for incremental ID generation
-                existing_edu_count = len(existing_profile.education)
-                
                 for i, edu_data in enumerate(education):
                     print(f"DEBUG: Processing education {i}: {edu_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in edu_data or edu_data['id'] is None:
-                        # Generate incremental ID based on existing + new count
-                        edu_data['id'] = f"edu_{existing_edu_count + i + 1}"
-                        print(f"DEBUG: Generated education ID: {edu_data['id']}")
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in edu_data and edu_data['id'] is None:
+                        del edu_data['id']
                     education_list.append(Education(**edu_data))
                 existing_profile.education = education_list
                 print(f"DEBUG: Successfully processed {len(education_list)} education entries")
@@ -230,16 +217,11 @@ class ProfileService:
                 from app.domain.entities.profile import Project
                 print(f"DEBUG: ProfileService updating {len(projects)} projects")
                 
-                # Get existing project count for incremental ID generation
-                existing_proj_count = len(existing_profile.projects)
-                
                 for i, proj_data in enumerate(projects):
                     print(f"DEBUG: Processing project {i}: {proj_data}")
-                    # Ensure required fields are present and properly formatted
-                    if 'id' not in proj_data or proj_data['id'] is None:
-                        # Generate incremental ID based on existing + new count
-                        proj_data['id'] = f"proj_{existing_proj_count + i + 1}"
-                        print(f"DEBUG: Generated project ID: {proj_data['id']}")
+                    # Remove None id to let default_factory generate UUID
+                    if 'id' in proj_data and proj_data['id'] is None:
+                        del proj_data['id']
                     projects_list.append(Project(**proj_data))
                 existing_profile.projects = projects_list
                 print(f"DEBUG: Successfully processed {len(projects_list)} projects")
@@ -305,16 +287,11 @@ class ProfileService:
 
         experiences = []
         try:
-            # Get existing experience count for incremental ID generation
-            profile = await self.get_profile(profile_id, user_id)
-            existing_exp_count = len(profile.experiences)
-            
             for i, exp_data in enumerate(experiences_data):
                 print(f"DEBUG: Processing bulk experience {i}: {exp_data}")
-                # Generate incremental ID if not provided
-                if "id" not in exp_data or exp_data["id"] is None:
-                    exp_data["id"] = f"exp_{existing_exp_count + i + 1}"
-                    print(f"DEBUG: Generated experience ID: {exp_data['id']}")
+                # Remove None id to let default_factory generate UUID
+                if 'id' in exp_data and exp_data['id'] is None:
+                    del exp_data['id']
                 experience = Experience(**exp_data)
                 experiences.append(experience)
             print(f"DEBUG: Successfully processed {len(experiences)} experiences for bulk creation")
@@ -414,16 +391,11 @@ class ProfileService:
 
         education_list = []
         try:
-            # Get existing education count for incremental ID generation
-            profile = await self.get_profile(profile_id, user_id)
-            existing_edu_count = len(profile.education)
-            
             for i, edu_data in enumerate(education_data):
                 print(f"DEBUG: Processing bulk education {i}: {edu_data}")
-                # Generate incremental ID if not provided
-                if "id" not in edu_data or edu_data["id"] is None:
-                    edu_data["id"] = f"edu_{existing_edu_count + i + 1}"
-                    print(f"DEBUG: Generated education ID: {edu_data['id']}")
+                # Remove None id to let default_factory generate UUID
+                if 'id' in edu_data and edu_data['id'] is None:
+                    del edu_data['id']
                 education = Education(**edu_data)
                 education_list.append(education)
             print(f"DEBUG: Successfully processed {len(education_list)} education entries for bulk creation")
@@ -511,16 +483,11 @@ class ProfileService:
 
         projects = []
         try:
-            # Get existing project count for incremental ID generation
-            profile = await self.get_profile(profile_id, user_id)
-            existing_proj_count = len(profile.projects)
-            
             for i, proj_data in enumerate(projects_data):
                 print(f"DEBUG: Processing bulk project {i}: {proj_data}")
-                # Generate incremental ID if not provided
-                if "id" not in proj_data or proj_data["id"] is None:
-                    proj_data["id"] = f"proj_{existing_proj_count + i + 1}"
-                    print(f"DEBUG: Generated project ID: {proj_data['id']}")
+                # Remove None id to let default_factory generate UUID
+                if 'id' in proj_data and proj_data['id'] is None:
+                    del proj_data['id']
                 project = Project(**proj_data)
                 projects.append(project)
             print(f"DEBUG: Successfully processed {len(projects)} projects for bulk creation")

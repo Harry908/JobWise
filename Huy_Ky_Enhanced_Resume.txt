@@ -1,0 +1,60 @@
+HUY KY
+huyqky@wsu.edu | (509) 123-4567 | Pullman, WA 99163
+LinkedIn: linkedin.com/in/huyky | GitHub: github.com/huyky
+
+EDUCATION
+Washington State University, Pullman, WA
+Bachelor of Science in Computer Science
+Expected Graduation: May 2026
+GPA: 4.0/4.0
+
+TECHNICAL SKILLS
+Languages: Python, Java, JavaScript, TypeScript, C++, SQL, HTML/CSS
+Frameworks & Libraries: React, Node.js, Express, FastAPI, Flutter, SQLAlchemy
+Tools & Technologies: Git, Docker, PostgreSQL, SQLite, REST APIs, AWS, VS Code
+Development Practices: Agile, Test-Driven Development, CI/CD, Clean Architecture
+
+PROFESSIONAL EXPERIENCE
+Software Engineering Intern | Tech Solutions Inc. | Pullman, WA | May 2024 - August 2024
+• Developed and maintained full-stack web applications using React and Node.js, improving user engagement by 35%
+• Implemented RESTful APIs with Express.js and PostgreSQL, handling 10,000+ daily requests
+• Collaborated with cross-functional teams using Agile methodologies to deliver features on schedule
+• Reduced API response time by 40% through database query optimization and caching strategies
+
+Research Assistant | WSU Computer Science Department | Pullman, WA | January 2024 - Present
+• Conducting research on machine learning algorithms for natural language processing applications
+• Implemented and evaluated transformer-based models for text classification with 92% accuracy
+• Presented research findings at departmental seminars and contributed to academic publications
+
+PROJECTS
+JobWise - AI-Powered Job Application Assistant | Python, FastAPI, Flutter, PostgreSQL
+• Architected and developed a full-stack mobile application with clean architecture principles
+• Designed RESTful API with 15+ endpoints for profile management, job tracking, and AI-powered content generation
+• Integrated GitHub Models API for AI-driven resume and cover letter enhancement
+• Implemented comprehensive testing suite achieving 90%+ code coverage
+
+E-Commerce Platform | React, Node.js, MongoDB, Stripe
+• Built a responsive e-commerce platform with shopping cart, payment processing, and order management
+• Integrated Stripe API for secure payment processing handling $50,000+ in transactions
+• Implemented user authentication and authorization using JWT and bcrypt
+• Deployed application on AWS with auto-scaling capabilities
+
+Real-Time Chat Application | WebSocket, React, Express, Redis
+• Developed real-time messaging application supporting 100+ concurrent users
+• Implemented Redis for session management and message caching
+• Created responsive UI with React and Material-UI component library
+• Achieved sub-100ms message latency through WebSocket optimization
+
+LEADERSHIP & ACTIVITIES
+Vice President | WSU Computer Science Club | September 2023 - Present
+• Organize technical workshops and coding competitions for 100+ members
+• Coordinate with industry professionals for guest speaker events and networking opportunities
+
+Volunteer Tutor | WSU Math & Computer Science Tutoring Center | September 2023 - Present
+• Provide one-on-one tutoring for students in programming and algorithm courses
+• Developed supplemental learning materials used by 50+ students
+
+AWARDS & HONORS
+• Dean's List: All semesters (Fall 2022 - Present)
+• WSU Computer Science Scholarship Recipient (2024)
+• First Place, WSU Hackathon 2024 - Best Mobile Application

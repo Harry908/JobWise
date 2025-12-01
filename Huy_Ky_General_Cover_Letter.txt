@@ -1,0 +1,26 @@
+Huy Ky
+huyqky@wsu.edu | (509) 123-4567
+Pullman, WA 99163
+
+[Date]
+
+Hiring Manager
+[Company Name]
+[Company Address]
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the Software Engineering position at your organization. As a Computer Science student at Washington State University with a 4.0 GPA and hands-on experience in full-stack development, I am excited about the opportunity to contribute to your team's innovative projects.
+
+Throughout my academic career and professional experiences, I have developed a solid foundation in software engineering principles and modern development practices. During my internship at Tech Solutions Inc., I gained valuable experience building scalable web applications using React and Node.js, where I successfully improved user engagement by 35% and reduced API response times by 40% through systematic optimization. This experience taught me the importance of writing clean, maintainable code and collaborating effectively with cross-functional teams in an Agile environment.
+
+My passion for software development extends beyond the classroom and workplace. I have undertaken several ambitious projects that demonstrate my technical versatility and problem-solving abilities. Most notably, I architected and developed JobWise, an AI-powered job application assistant that showcases my expertise in clean architecture, API design, and integration of cutting-edge AI technologies. This project involved designing RESTful APIs, implementing comprehensive testing strategies, and creating an intuitive mobile interface using Flutter. Through this work, I deepened my understanding of full-stack development and gained practical experience with modern development tools and frameworks.
+
+In addition to my technical skills, I bring strong leadership experience as Vice President of the WSU Computer Science Club, where I organize technical workshops and foster a collaborative learning environment for over 100 members. I am also committed to giving back to the community through my role as a volunteer tutor, where I help fellow students master programming concepts and develop their problem-solving skills.
+
+I am particularly drawn to your company because of your commitment to innovation and excellence in software development. I am confident that my technical expertise, collaborative mindset, and passion for continuous learning make me a strong candidate for this position. I would welcome the opportunity to discuss how my skills and experiences align with your team's needs and contribute to your ongoing success.
+
+Thank you for considering my application. I look forward to the possibility of discussing this exciting opportunity with you.
+
+Sincerely,
+Huy Ky

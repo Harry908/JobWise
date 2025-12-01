@@ -1,5 +1,6 @@
 """Job domain entity."""
 
+import uuid
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -8,7 +9,7 @@ from pydantic import BaseModel, Field
 class Job(BaseModel):
     """Job domain entity representing a job description."""
     
-    id: str = Field(..., description="UUID of the job")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="UUID of the job")
     user_id: Optional[int] = Field(None, description="Owner user ID (nullable for external jobs)")
     source: str = Field(..., description="Job source: user_created, indeed, linkedin, mock, etc.")
     title: str = Field(..., min_length=1, max_length=200, description="Job title")

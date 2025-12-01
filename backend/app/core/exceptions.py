@@ -19,7 +19,7 @@ class ValidationException(HTTPException):
         message: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None
     ):
-        super().__init__(status_code=400, detail=detail)
+        super().__init__(status_code=422, detail=detail)
         self.error_code = error_code
         self.message = message or detail
         self.details = details or {}

@@ -6,20 +6,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# Load environment variables from .env file
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-    print("[OK] Loaded environment variables from .env file")
-except ImportError:
-    print("[WARNING] python-dotenv not available")
-
-from app.core.config import settings
+from app.core.config import get_settings
 from app.infrastructure.database.connection import create_engine
 from app.infrastructure.database.models import Base
 from app.presentation.api.auth import router as auth_router
 from app.presentation.api.profile import router as profile_router
 from app.presentation.api.job import router as job_router
+from app.presentation.api.v1.samples import router as samples_router
+
+settings = get_settings()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,6 +74,7 @@ def create_application() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(profile_router)
     app.include_router(job_router)
+    app.include_router(samples_router, prefix="/api/v1")
 
     @app.get("/health")
     async def health_check():

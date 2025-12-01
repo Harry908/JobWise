@@ -101,7 +101,7 @@ class TestProfileAPILive:
 
         # Try to create second profile
         response2 = await live_client.post("/api/v1/profiles", json=profile_data, headers=headers)
-        assert response2.status_code == 400
+        assert response2.status_code == 422
         data = response2.json()
         assert "already has a profile" in data["detail"].lower()
 
@@ -336,23 +336,27 @@ class TestProfileAPILive:
         # Add some experience and education for better analytics
         profile_data["experiences"] = [
             {
+                "id": "exp_1",
                 "title": "Senior Developer",
                 "company": "Tech Corp",
                 "location": "Seattle, WA",
                 "start_date": "2020-01-01",
                 "end_date": "2023-01-01",
                 "is_current": False,
-                "description": "Led development of web applications"
+                "description": "Led development of web applications",
+                "achievements": ["Built scalable systems"]
             }
         ]
         profile_data["education"] = [
             {
+                "id": "edu_1",
                 "institution": "University of Washington",
                 "degree": "BS",
                 "field_of_study": "Computer Science",
                 "start_date": "2016-01-01",
                 "end_date": "2020-01-01",
-                "gpa": 3.8
+                "gpa": 3.8,
+                "honors": ["Summa Cum Laude"]
             }
         ]
 

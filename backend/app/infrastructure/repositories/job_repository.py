@@ -31,30 +31,29 @@ class JobRepository:
         Returns:
             Created Job entity
         """
-        # Generate UUID if not provided
-        if "id" not in job_data:
-            job_data["id"] = f"job_{uuid.uuid4().hex[:12]}"
+        # Create domain entity first (this triggers UUID generation if id not provided)
+        job_entity = Job(**job_data)
         
-        # Create database model
+        # Create database model from entity
         job_model = JobModel(
-            id=job_data.get("id"),
-            user_id=job_data.get("user_id"),
-            source=job_data.get("source", "user_created"),
-            title=job_data.get("title"),
-            company=job_data.get("company"),
-            location=job_data.get("location"),
-            description=job_data.get("description"),
-            raw_text=job_data.get("raw_text"),
-            parsed_keywords=job_data.get("parsed_keywords", []),
-            requirements=job_data.get("requirements", []),
-            benefits=job_data.get("benefits", []),
-            salary_range=job_data.get("salary_range"),
-            remote=job_data.get("remote", False),
-            employment_type=job_data.get("employment_type", "full_time"),
-            status=job_data.get("status", "active"),
-            application_status=job_data.get("application_status", "not_applied"),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            id=job_entity.id,
+            user_id=job_entity.user_id,
+            source=job_entity.source,
+            title=job_entity.title,
+            company=job_entity.company,
+            location=job_entity.location,
+            description=job_entity.description,
+            raw_text=job_entity.raw_text,
+            parsed_keywords=job_entity.parsed_keywords,
+            requirements=job_entity.requirements,
+            benefits=job_entity.benefits,
+            salary_range=job_entity.salary_range,
+            remote=job_entity.remote,
+            employment_type=job_entity.employment_type,
+            status=job_entity.status,
+            application_status=job_entity.application_status,
+            created_at=job_entity.created_at,
+            updated_at=job_entity.updated_at
         )
         
         self.db.add(job_model)
