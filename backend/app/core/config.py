@@ -41,6 +41,45 @@ class Settings(BaseSettings):
         alias="GROQ_API_KEY",
         description="Groq API key for LLM operations"
     )
+    
+    # AWS S3 Configuration for Document Exports
+    aws_access_key_id: str = Field(
+        ...,
+        alias="AWS_ACCESS_KEY_ID",
+        description="AWS access key for S3 storage"
+    )
+    aws_secret_access_key: str = Field(
+        ...,
+        alias="AWS_SECRET_ACCESS_KEY",
+        description="AWS secret key for S3 storage"
+    )
+    s3_bucket_name: str = Field(
+        ...,
+        alias="S3_BUCKET_NAME",
+        description="S3 bucket name for document exports"
+    )
+    s3_region: str = Field(
+        default="us-east-1",
+        alias="S3_REGION",
+        description="AWS S3 region"
+    )
+    
+    # Export Configuration
+    export_max_file_size_mb: int = Field(
+        default=100,
+        alias="EXPORT_MAX_FILE_SIZE_MB",
+        description="Maximum export file size in MB"
+    )
+    presigned_url_expiration_seconds: int = Field(
+        default=3600,
+        alias="PRESIGNED_URL_EXPIRATION_SECONDS",
+        description="Presigned URL expiration time (default 1 hour)"
+    )
+    export_retention_days: int = Field(
+        default=30,
+        alias="EXPORT_RETENTION_DAYS",
+        description="Days to retain exports before auto-deletion"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

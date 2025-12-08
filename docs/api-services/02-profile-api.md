@@ -104,6 +104,7 @@ Profile
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/{profile_id}/education` | Add education entries (single or bulk) |
+| GET | `/{profile_id}/education` | Get all education entries |
 | PUT | `/{profile_id}/education` | Update education entries |
 | DELETE | `/{profile_id}/education` | Delete education entries |
 
@@ -124,6 +125,13 @@ Profile
 | POST | `/{profile_id}/skills/soft` | Add soft skills |
 | DELETE | `/{profile_id}/skills/soft` | Remove soft skills |
 
+### Certifications
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/{profile_id}/certifications` | Add certifications |
+| PUT | `/{profile_id}/certifications` | Update certifications |
+| DELETE | `/{profile_id}/certifications` | Delete certifications |
+
 ### Custom Fields
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -131,7 +139,7 @@ Profile
 | POST | `/{profile_id}/custom-fields` | Add custom fields |
 | PUT | `/{profile_id}/custom-fields` | Update custom fields |
 
-**Total Endpoints**: 24
+**Total Endpoints**: 29
 
 ---
 

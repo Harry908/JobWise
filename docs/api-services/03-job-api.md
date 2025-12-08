@@ -92,11 +92,12 @@ offer_received
 |--------|----------|-------------|
 | POST | `/` | Create job (text, URL, or structured) |
 | GET | `/` | List user's jobs with filters |
+| GET | `/browse` | Browse mock job listings (public) |
 | GET | `/{job_id}` | Get specific job details |
 | PUT | `/{job_id}` | Update job information |
 | DELETE | `/{job_id}` | Delete job permanently |
 
-**Total Endpoints**: 5
+**Total Endpoints**: 6
 
 ---
 
@@ -305,7 +306,55 @@ GET /api/v1/jobs?employment_type=full_time&offset=20
 
 ---
 
-### 3. Get Specific Job
+### 3. Browse Mock Jobs
+
+Browse mock job listings (public endpoint, no authentication required).
+
+**Endpoint**: `GET /api/v1/jobs/browse`
+
+**Authentication**: Not required
+
+**Query Parameters**:
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | integer | No | 20 | Results per page (1-100) |
+| `offset` | integer | No | 0 | Results offset |
+
+**Example Requests**:
+```
+GET /api/v1/jobs/browse
+GET /api/v1/jobs/browse?limit=10&offset=0
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "jobs": [
+    {
+      "id": "mock_job_1",
+      "source": "mock",
+      "title": "Senior Software Engineer",
+      "company": "Tech Company",
+      "location": "Remote",
+      "description": "Job description...",
+      "employment_type": "full_time",
+      "remote": true,
+      "status": "active"
+    }
+  ],
+  "total": 50,
+  "pagination": {
+    "limit": 20,
+    "offset": 0,
+    "total": 50,
+    "hasMore": true
+  }
+}
+```
+
+---
+
+### 4. Get Specific Job
 
 Retrieve detailed information for a specific job.
 
@@ -370,7 +419,7 @@ Retrieve detailed information for a specific job.
 
 ---
 
-### 4. Update Job
+### 5. Update Job
 
 Update job information (partial updates supported).
 
@@ -418,7 +467,7 @@ Update job information (partial updates supported).
 
 ---
 
-### 5. Delete Job
+### 6. Delete Job
 
 Permanently delete a job posting.
 

@@ -113,6 +113,7 @@ Prerequisites: User has uploaded samples via Sample Upload API
 | 4 | POST | `/generations/cover-letter` | Generate cover letter | 70b-versatile | ~3-5s |
 | 5 | GET | `/rankings/job/{job_id}` | Get job rankings | None | <100ms |
 | 6 | GET | `/generations/history` | Get generation history | None | <200ms |
+| 7 | DELETE | `/generations/{generation_id}` | Delete generation | None | <100ms |
 
 ---
 
@@ -518,6 +519,45 @@ curl -X GET "http://localhost:8000/api/v1/generations/history?document_type=resu
     "total": 12,
     "hasMore": false
   }
+}
+```
+
+---
+
+### 7. Delete Generation
+
+Delete a generation permanently.
+
+**Endpoint**: `DELETE /api/v1/generations/{generation_id}`
+
+**Authentication**: Required
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `generation_id` | UUID | Yes | Generation unique identifier |
+
+**Request Example**:
+```bash
+curl -X DELETE http://localhost:8000/api/v1/generations/990e8400-e29b-41d4-a716-446655440004 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success Response** (204 No Content): No body
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Generation not found"
+}
+```
+
+**403 Forbidden**:
+```json
+{
+  "detail": "Not authorized to delete this generation"
 }
 ```
 

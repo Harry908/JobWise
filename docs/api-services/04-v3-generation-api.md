@@ -124,6 +124,7 @@ The V3 Generation API provides AI-powered resume and cover letter generation usi
 | 8 | DELETE | `/samples/{id}` | Delete sample | No |
 | 9 | GET | `/rankings/job/{job_id}` | Get job rankings | No |
 | 10 | GET | `/generations/history` | Get generation history | No |
+| 11 | DELETE | `/generations/{generation_id}` | Delete generation | No |
 
 ---
 
@@ -693,6 +694,45 @@ Retrieve user's generation history with pagination.
     "total": 12,
     "hasMore": false
   }
+}
+```
+
+---
+
+### 11. Delete Generation
+
+Delete a generation permanently.
+
+**Endpoint**: `DELETE /api/v1/generations/{generation_id}`
+
+**Authentication**: Required
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `generation_id` | UUID | Yes | Generation unique identifier |
+
+**Request Example**:
+```bash
+curl -X DELETE http://localhost:8000/api/v1/generations/990e8400-e29b-41d4-a716-446655440004 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success Response** (204 No Content): No body
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Generation not found"
+}
+```
+
+**403 Forbidden**:
+```json
+{
+  "detail": "Not authorized to delete this generation"
 }
 ```
 

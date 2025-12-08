@@ -48,11 +48,11 @@ The Job Management feature allows users to save job postings from various source
 
 ## Screens
 
-### 1. JobBrowseScreen (Future - API Integration)
+### 1. JobBrowseScreen
 
 **Route**: `/jobs/browse`
-**File**: `lib/screens/jobs/job_browse_screen.dart`
-**Status**: 🔄 Planned for future sprint
+**File**: `lib/screens/job_browse_screen.dart`
+**Status**: ✅ Implemented with mock data
 
 **UI Components** (Future):
 - Search bar with filters (location, salary, remote, etc.)
@@ -69,7 +69,7 @@ The Job Management feature allows users to save job postings from various source
 ### 2. JobListScreen (Saved Jobs)
 
 **Route**: `/jobs`
-**File**: `lib/screens/jobs/job_list_screen.dart`
+**File**: `lib/screens/job_list_screen.dart`
 
 **UI Components**:
 - Filter chips (status, source)
@@ -119,7 +119,13 @@ enum JobSource {
 ### 3. JobDetailScreen
 
 **Route**: `/jobs/:id`
-**File**: `lib/screens/jobs/job_detail_screen.dart`
+**File**: `lib/screens/job_detail_screen.dart`
+
+**Features**:
+- Two tabs: Job Details and AI Generation
+- Job details tab shows job information with keyword highlighting
+- AI Generation tab provides resume/cover letter generation
+- Uses `JobDetailView` and `JobGenerationTab` widgets
 
 **UI Components**:
 - Job header:
@@ -171,7 +177,7 @@ class KeywordHighlighter extends StatelessWidget {
 ### 4. JobPasteScreen (Text Input)
 
 **Route**: `/jobs/paste`
-**File**: `lib/screens/jobs/job_paste_screen.dart`
+**File**: `lib/screens/job_paste_screen.dart`
 
 **UI Components**:
 - Large multi-line text field
@@ -496,9 +502,19 @@ class SavedJob with _$SavedJob {
 
 ## State Management
 
-### JobsState
+### Job Providers (Riverpod Code Generation)
 
-**File**: `lib/providers/jobs/jobs_state.dart`
+The job feature uses **Riverpod with code generation** and **Freezed** for immutable models.
+
+**Providers**:
+- `userJobsProvider` - Manages user's saved jobs
+- `selectedJobProvider(jobId)` - Single job details by ID
+- `browseJobsProvider` - Browse mock/external jobs
+- `jobActionsProvider` - Job actions (save, delete)
+
+**Files**: 
+- `lib/providers/job_provider.dart` + `.g.dart` + `.freezed.dart`
+- `lib/models/job.dart` + `.g.dart` + `.freezed.dart`
 
 ```dart
 class JobsState {
@@ -542,9 +558,92 @@ class JobsState {
 }
 ```
 
-### JobsNotifier
+### UserJobs Provider
 
-**File**: `lib/providers/jobs/jobs_notifier.dart`
+**File**: `lib/providers/job_provider.dart`
+
+```dart
+@riverpod
+class UserJobs extends _$UserJobs {
+  JobsApiClient get _jobsApi => ref.read(jobsApiClientProvider);
+
+  @override
+  Future<List<Job>> build() async {
+    final response = await _jobsApi.getUserJobs();
+    return response.jobs;
+  }
+
+  Future<void> addJob(Job job) async {
+    final Job newJob;
+    
+    if (job.rawText != null && job.rawText!.isNotEmpty) {
+      newJob = await _jobsApi.createFromText(
+        rawText: job.rawText!,
+        source: job.source,
+      );
+    } else {
+      newJob = await _jobsApi.createJob(
+        source: job.source,
+        title: job.title,
+        company: job.company,
+        // ... other fields
+      );
+    }
+    
+    state.whenData((jobs) {
+      state = AsyncValue.data([...jobs, newJob]);
+    });
+  }
+
+  Future<void> updateJob(Job job) async {
+    // Optimistic update with rollback on error
+    final previousState = state;
+    
+    state.whenData((jobs) {
+      state = AsyncValue.data([
+        for (final j in jobs)
+          if (j.id == job.id) job else j
+      ]);
+    });
+
+    try {
+      final updatedJob = await _jobsApi.updateJob(
+        jobId: job.id,
+        parsedKeywords: job.parsedKeywords,
+        status: job.status,
+        applicationStatus: job.applicationStatus,
+      );
+      
+      state.whenData((jobs) {
+        state = AsyncValue.data([
+          for (final j in jobs)
+            if (j.id == updatedJob.id) updatedJob else j
+        ]);
+      });
+      
+      ref.invalidate(selectedJobProvider(job.id));
+    } catch (e) {
+      state = previousState;
+      rethrow;
+    }
+  }
+
+  Future<void> deleteJob(String jobId) async {
+    final previousState = state;
+    
+    state.whenData((jobs) {
+      state = AsyncValue.data(jobs.where((j) => j.id != jobId).toList());
+    });
+
+    try {
+      await _jobsApi.deleteJob(jobId);
+    } catch (e) {
+      state = previousState;
+      rethrow;
+    }
+  }
+}
+```
 
 ```dart
 class JobsNotifier extends StateNotifier<JobsState> {

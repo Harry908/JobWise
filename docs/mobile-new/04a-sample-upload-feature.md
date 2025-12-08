@@ -53,10 +53,33 @@ The Sample Upload feature allows users to upload sample resumes and cover letter
 
 ## Screens
 
-### 1. SampleUploadScreen
+**Note**: Sample upload is integrated into the profile and generation workflows rather than having dedicated screens.
 
-**Route**: `/samples`
-**File**: `lib/screens/samples/sample_upload_screen.dart`
+### Sample Upload Integration
+
+**Locations**:
+- Profile settings area
+- Job generation tab (upload samples prompt)
+- Settings screen
+
+**File Upload Flow**:
+```dart
+import 'package:file_picker/file_picker.dart';
+
+final result = await FilePicker.platform.pickFiles(
+  type: FileType.custom,
+  allowedExtensions: ['txt'],
+);
+
+if (result != null) {
+  final file = result.files.single;
+  await ref.read(samplesProvider.notifier).uploadSample(
+    documentType: 'resume', // or 'cover_letter'
+    fileName: file.name,
+    fileBytes: await file.bytes!,
+  );
+}
+```
 
 **Context**: User navigates here from ProfileViewScreen or GenerationOptionsScreen
 
