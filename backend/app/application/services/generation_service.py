@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from typing import Optional, List, Dict
 from datetime import datetime
 import logging
+import json
 
 from app.infrastructure.adapters.llm.groq_adapter import GroqAdapter
 from app.infrastructure.repositories.generation_repository import GenerationRepository
@@ -210,6 +211,14 @@ class GenerationService:
         
         resume_text = "\n".join(resume_parts)
         
+        # Build structured content for export templates
+        content_structured = self._build_structured_resume(
+            profile=profile,
+            ranked_exps=ranked_exps,
+            ranked_projs=ranked_projs,
+            summary=summary if include_summary else None
+        )
+        
         # Calculate ATS score using LLM
         ats_result = await self._calculate_ats_score(resume_text, job)
         
@@ -221,6 +230,7 @@ class GenerationService:
             ranking_id=ranking.id,
             document_type=DocumentType.RESUME,
             content_text=resume_text,
+            content_structured=json.dumps(content_structured),
             status=GenerationStatus.COMPLETED,
             ats_score=ats_result["score"],
             ats_feedback=ats_result.get("analysis", ""),
@@ -350,6 +360,14 @@ class GenerationService:
             max_paragraphs=max_paragraphs
         )
         
+        # Build structured content for export templates
+        content_structured = self._build_structured_cover_letter(
+            profile=profile,
+            cover_letter_text=cover_letter_text,
+            company_name=company_name or job.company,
+            job_title=job.title
+        )
+        
         # Calculate ATS score using LLM
         ats_result = await self._calculate_ats_score(cover_letter_text, job)
         
@@ -361,6 +379,7 @@ class GenerationService:
             ranking_id=ranking.id,
             document_type=DocumentType.COVER_LETTER,
             content_text=cover_letter_text,
+            content_structured=json.dumps(content_structured),
             status=GenerationStatus.COMPLETED,
             ats_score=ats_result["score"],
             ats_feedback=ats_result.get("analysis", ""),
@@ -388,6 +407,206 @@ class GenerationService:
             limit=limit,
             offset=offset
         )
+    
+    def _build_structured_resume(self, profile, ranked_exps, ranked_projs, summary) -> Dict:
+        """Build structured JSON content for resume export templates."""
+        # Calculate total years of experience
+        total_years = 0
+        if ranked_exps:
+            for exp in ranked_exps:
+                try:
+                    start = datetime.fromisoformat(exp.start_date)
+                    end = datetime.fromisoformat(exp.end_date) if exp.end_date else datetime.now()
+                    total_years += (end - start).days / 365.25
+                except (ValueError, AttributeError):
+                    pass
+        
+        # Build header with ALL personal info fields
+        header = {
+            "name": profile.personal_info.full_name,
+            "title": ranked_exps[0].title if ranked_exps else "Professional",
+            "email": profile.personal_info.email,
+            "phone": profile.personal_info.phone or "",
+            "location": profile.personal_info.location or "",
+            "linkedin": profile.personal_info.linkedin or "",
+            "github": profile.personal_info.github or "",
+            "website": profile.personal_info.website or ""
+        }
+        
+        # Build sections
+        sections = []
+        
+        # Professional Summary
+        if summary:
+            sections.append({
+                "type": "professional_summary",
+                "content": summary
+            })
+        
+        # Skills section with ALL categories
+        skills_categories = []
+        
+        # Technical skills
+        if profile.skills and profile.skills.technical:
+            skills_categories.append({
+                "name": "Technical Skills",
+                "items": profile.skills.technical
+            })
+        
+        # Soft skills
+        if profile.skills and profile.skills.soft:
+            skills_categories.append({
+                "name": "Soft Skills",
+                "items": profile.skills.soft
+            })
+        
+        # Languages
+        if profile.skills and profile.skills.languages:
+            skills_categories.append({
+                "name": "Languages",
+                "items": [
+                    {
+                        "name": lang.name,
+                        "proficiency": lang.proficiency
+                    }
+                    for lang in profile.skills.languages
+                ]
+            })
+        
+        # Certifications
+        if profile.skills and profile.skills.certifications:
+            skills_categories.append({
+                "name": "Certifications",
+                "items": [
+                    {
+                        "name": cert.name,
+                        "issuer": cert.issuer,
+                        "date_obtained": cert.date_obtained,
+                        "expiry_date": cert.expiry_date or "",
+                        "credential_id": cert.credential_id or ""
+                    }
+                    for cert in profile.skills.certifications
+                ]
+            })
+        
+        if skills_categories:
+            sections.append({
+                "type": "skills",
+                "categories": skills_categories
+            })
+        
+        # Experience section with ALL fields
+        if ranked_exps:
+            sections.append({
+                "type": "experience",
+                "entries": [
+                    {
+                        "id": str(exp.id),
+                        "title": exp.title,
+                        "company": exp.company,
+                        "location": exp.location or "",
+                        "start_date": exp.start_date,
+                        "end_date": exp.end_date or "Present",
+                        "is_current": exp.is_current,
+                        "description": exp.enhanced_description or exp.description or "",
+                        "bullets": [],  # Could parse from description if needed
+                        "achievements": exp.achievements or []
+                    }
+                    for exp in ranked_exps
+                ]
+            })
+        
+        # Projects section with ALL fields
+        if ranked_projs:
+            sections.append({
+                "type": "projects",
+                "entries": [
+                    {
+                        "id": str(proj.id),
+                        "name": proj.name,
+                        "description": proj.enhanced_description or proj.description or "",
+                        "technologies": proj.technologies or [],
+                        "url": proj.url or "",
+                        "start_date": proj.start_date or "",
+                        "end_date": proj.end_date or ""
+                    }
+                    for proj in ranked_projs
+                ]
+            })
+        
+        # Education section with ALL fields
+        if profile.education:
+            sections.append({
+                "type": "education",
+                "entries": [
+                    {
+                        "id": str(edu.id),
+                        "degree": edu.degree,
+                        "field_of_study": edu.field_of_study,
+                        "institution": edu.institution,
+                        "start_date": edu.start_date,
+                        "end_date": edu.end_date or "",
+                        "gpa": edu.gpa or 0.0,
+                        "honors": edu.honors or []
+                    }
+                    for edu in profile.education
+                ]
+            })
+        
+        # Metadata
+        metadata = {
+            "total_years_experience": round(total_years, 1),
+            "top_skills": profile.skills.technical[:10] if profile.skills and profile.skills.technical else [],
+            "industries": list(set(exp.company for exp in ranked_exps[:5])) if ranked_exps else [],
+            "total_projects": len(profile.projects),
+            "total_certifications": len(profile.skills.certifications) if profile.skills and profile.skills.certifications else 0
+        }
+        
+        return {
+            "header": header,
+            "sections": sections,
+            "metadata": metadata
+        }
+    
+    def _build_structured_cover_letter(self, profile, cover_letter_text, company_name, job_title) -> Dict:
+        """Build structured JSON content for cover letter export templates."""
+        # Parse cover letter into paragraphs
+        paragraphs = [p.strip() for p in cover_letter_text.split("\n\n") if p.strip()]
+        
+        # Build header with ALL personal info fields
+        header = {
+            "name": profile.personal_info.full_name,
+            "title": job_title,
+            "email": profile.personal_info.email,
+            "phone": profile.personal_info.phone or "",
+            "location": profile.personal_info.location or "",
+            "linkedin": profile.personal_info.linkedin or "",
+            "github": profile.personal_info.github or "",
+            "website": profile.personal_info.website or ""
+        }
+        
+        # Build sections
+        sections = [
+            {
+                "type": "cover_letter",
+                "company": company_name,
+                "paragraphs": paragraphs
+            }
+        ]
+        
+        # Metadata
+        metadata = {
+            "word_count": len(cover_letter_text.split()),
+            "paragraph_count": len(paragraphs),
+            "company": company_name,
+            "position": job_title
+        }
+        
+        return {
+            "header": header,
+            "sections": sections,
+            "metadata": metadata
+        }
     
     async def _calculate_ats_score(self, text: str, job) -> Dict:
         """Calculate ATS score using LLM analysis."""

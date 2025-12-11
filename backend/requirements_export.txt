@@ -1,0 +1,17 @@
+# Export System Dependencies
+
+# Template engine
+Jinja2>=3.1.2
+
+# PDF generation
+WeasyPrint>=62.3
+
+# DOCX generation
+python-docx>=1.1.0
+
+# S3 (already in project)
+# boto3>=1.26.0
+
+# Async SQLAlchemy (already in project)
+# sqlalchemy[asyncio]>=2.0.0
+# aiosqlite>=0.19.0

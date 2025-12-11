@@ -19,7 +19,8 @@
 **Key Field / Property Semantics**
 - `Generation.id` ↔ `generation_id`/`id`: Single generation run identifier used by history and exports.
 - `Generation.documentType` ↔ `document_type`: `"resume"` or `"cover_letter"`; controls UI labels and export options.
-- `Generation.contentText` ↔ `resume_text` / `cover_letter_text` / `content_text`: The actual generated body.
+- `Generation.contentText` ↔ `resume_text` / `cover_letter_text` / `content_text`: The plain text version for display.
+- `Generation.contentStructured` ↔ `content_structured`: **NEW** Structured JSON for export templates (header, sections, metadata).
 - `Generation.atsScore` / `atsFeedback`: Maps to backend ATS metrics; used by `ATSScoreBadge` and result screens.
 - `Ranking.id` ↔ backend `id`: Links UI state to `job_content_rankings` rows for a `job_id`.
 - `GenerationsState.progress` / `currentStage`: UI-only progress model that mirrors the backend pipeline stages.

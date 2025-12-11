@@ -207,6 +207,7 @@ class GenerationModel(Base):
     ranking_id = Column(String, ForeignKey("job_content_rankings.id"), nullable=True)
     document_type = Column(String, nullable=False)  # resume, cover_letter
     content_text = Column(Text, nullable=False)
+    content_structured = Column(Text, nullable=True)  # JSON string for export templates
     status = Column(String, default="pending")
     ats_score = Column(Float)
     ats_feedback = Column(Text)
@@ -216,6 +217,30 @@ class GenerationModel(Base):
     # Relationships
     user = relationship("UserModel", backref="generations")
     job = relationship("JobModel", backref="generations")
+
+
+class ExportModel(Base):
+    """Export database model for document exports (PDF/DOCX/ZIP)."""
+    __tablename__ = "exports"
+    
+    id = Column(String, primary_key=True)  # UUID as string
+    user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
+    generation_id = Column(String, ForeignKey("generations.id"), nullable=True, index=True)  # Null for batch exports
+    format = Column(String, nullable=False, index=True)  # pdf, docx, zip
+    template = Column(String, nullable=False)  # modern, classic, creative, ats_optimized
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)  # S3 key: exports/{user_id}/{export_id}.{format}
+    file_size_bytes = Column(INTEGER, nullable=False)
+    page_count = Column(INTEGER)  # For PDFs only
+    options = Column(JSON, default=dict)  # Template customization options
+    metadata = Column(JSON, default=dict)  # Additional metadata (generation_type, generation_ids for batch, etc.)
+    download_url = Column(String)  # Presigned S3 URL (regenerated on access)
+    expires_at = Column(DateTime, nullable=False)  # 30 days from creation
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = relationship("UserModel", backref="exports")
+    generation = relationship("GenerationModel", backref="exports")
 
 
 # Removed PromptTemplateModel - prompts are now stored in source code

@@ -39,21 +39,38 @@
 **Version**: 1.0
 **Base Path**: `/api/v1/exports`
 **Status**: 🔄 Planned (Design Complete)
+**Template Engine**: Jinja2 + WeasyPrint (PDF) + python-docx (DOCX)
+**Content Source**: Structured JSON from `generations.content_structured`
 
 ---
 
 ## Overview
 
-The Document Export API converts generated resume and cover letter text into professionally formatted PDF and DOCX files. It provides multiple templates, customization options, and file management capabilities.
+The Document Export API converts generated resume and cover letter **structured data** into professionally formatted PDF and DOCX files. It provides multiple templates, customization options, and file management capabilities.
+
+**Architecture**:
+```
+Generation Service → Structured JSON (content_structured)
+         ↓
+Export Service → Template Renderer (Jinja2 + HTML/CSS)
+         ↓
+WeasyPrint → PDF | python-docx → DOCX
+         ↓
+S3 Upload → Presigned URL → Client Download
+```
 
 **Key Features**:
-- **PDF Export**: High-quality PDF generation with ATS-friendly formatting
-- **DOCX Export**: Editable Microsoft Word documents
-- **Multiple Templates**: Modern, Classic, Creative, ATS-Optimized
+- **PDF Export**: High-quality PDF generation with ATS-friendly formatting (WeasyPrint)
+- **DOCX Export**: Editable Microsoft Word documents (python-docx)
+- **Multiple Templates**: Modern, Classic, Creative, ATS-Optimized (HTML/CSS + Jinja2)
 - **Customization**: Fonts, colors, spacing, margins
 - **Batch Export**: Export multiple generations at once
 - **File Management**: Download, list, and delete exported files
 - **Template Preview**: See how content looks before exporting
+
+**Content Storage**:
+- **Plain Text** (`content_text`): For search, display, backward compatibility
+- **Structured JSON** (`content_structured`): For template rendering, exports
 
 ---
 
@@ -976,8 +993,125 @@ curl -X POST http://localhost:8000/api/v1/exports/batch \
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: December 2025
 **API Version**: 1.0
 **Total Endpoints**: 9
 **Status**: Design Complete - Ready for Implementation
-**Recommended Libraries**: WeasyPrint (PDF), python-docx (DOCX)
+**Required Libraries**: 
+- **WeasyPrint** 62.3+ (HTML/CSS → PDF rendering)
+- **python-docx** 1.1.0+ (DOCX generation)
+- **Jinja2** 3.1.2+ (Template engine)
+- **boto3** 1.34+ (S3 uploads)
+
+**Template System**:
+- **Format**: HTML/CSS templates with Jinja2 templating
+- **Location**: `backend/app/infrastructure/templates/export/`
+- **Templates**: `modern.html`, `classic.html`, `creative.html`, `ats-optimized.html`
+- **Rendering**: Structured JSON → Jinja2 → HTML → WeasyPrint → PDF
+
+**Structured Content Schema** (stored in `generations.content_structured`):
+```json
+{
+  "header": {
+    "name": "string",
+    "title": "string",
+    "email": "string",
+    "phone": "string",
+    "location": "string",
+    "linkedin": "string",
+    "github": "string",
+    "website": "string"
+  },
+  "sections": [
+    {
+      "type": "professional_summary",
+      "content": "string"
+    },
+    {
+      "type": "skills",
+      "categories": [
+        {
+          "name": "Technical Skills",
+          "items": ["Python", "JavaScript", "AWS"]
+        },
+        {
+          "name": "Soft Skills",
+          "items": ["Leadership", "Communication", "Problem Solving"]
+        },
+        {
+          "name": "Languages",
+          "items": [
+            {"name": "English", "proficiency": "native"},
+            {"name": "Spanish", "proficiency": "conversational"}
+          ]
+        },
+        {
+          "name": "Certifications",
+          "items": [
+            {
+              "name": "AWS Certified Solutions Architect",
+              "issuer": "Amazon Web Services",
+              "date_obtained": "2024-03-15",
+              "expiry_date": "2027-03-15",
+              "credential_id": "AWS-12345"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "experience",
+      "entries": [
+        {
+          "id": "uuid",
+          "title": "string",
+          "company": "string",
+          "location": "string",
+          "start_date": "string",
+          "end_date": "string | null",
+          "is_current": "boolean",
+          "description": "string",
+          "bullets": ["string"],
+          "achievements": ["string"]
+        }
+      ]
+    },
+    {
+      "type": "projects",
+      "entries": [
+        {
+          "id": "uuid",
+          "name": "string",
+          "description": "string",
+          "technologies": ["string"],
+          "url": "string | null",
+          "start_date": "string | null",
+          "end_date": "string | null"
+        }
+      ]
+    },
+    {
+      "type": "education",
+      "entries": [
+        {
+          "id": "uuid",
+          "degree": "string",
+          "field_of_study": "string",
+          "institution": "string",
+          "start_date": "string",
+          "end_date": "string | null",
+          "gpa": "float | null",
+          "honors": ["string"]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total_years_experience": "int",
+    "top_skills": ["string"],
+    "industries": ["string"],
+    "total_projects": "int",
+    "total_certifications": "int"
+  }
+}
+```

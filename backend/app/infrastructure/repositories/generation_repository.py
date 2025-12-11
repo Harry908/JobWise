@@ -30,6 +30,7 @@ class GenerationRepository(GenerationRepositoryInterface):
             ranking_id=str(generation.ranking_id) if generation.ranking_id else None,
             document_type=generation.document_type.value,
             content_text=generation.content_text,
+            content_structured=generation.content_structured,
             status=generation.status.value,
             ats_score=generation.ats_score,
             ats_feedback=generation.ats_feedback,
@@ -62,6 +63,7 @@ class GenerationRepository(GenerationRepositoryInterface):
             ranking_id=UUID(model.ranking_id) if model.ranking_id else None,
             document_type=DocumentType(model.document_type),
             content_text=model.content_text,
+            content_structured=model.content_structured,
             status=GenerationStatus(model.status),
             ats_score=model.ats_score,
             ats_feedback=model.ats_feedback,
@@ -99,6 +101,7 @@ class GenerationRepository(GenerationRepositoryInterface):
                 ranking_id=UUID(model.ranking_id) if model.ranking_id else None,
                 document_type=DocumentType(model.document_type),
                 content_text=model.content_text,
+                content_structured=model.content_structured,
                 status=GenerationStatus(model.status),
                 ats_score=model.ats_score,
                 ats_feedback=model.ats_feedback,
@@ -121,6 +124,7 @@ class GenerationRepository(GenerationRepositoryInterface):
             raise ValueError(f"Generation {generation.id} not found")
         
         model.content_text = generation.content_text
+        model.content_structured = generation.content_structured
         model.status = generation.status.value
         model.ats_score = generation.ats_score
         model.ats_feedback = generation.ats_feedback

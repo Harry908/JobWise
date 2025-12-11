@@ -24,7 +24,9 @@
 **Backend API**: [Document Export API](../api-services/05-document-export-api.md)
 **Base Path**: `/api/v1/exports`
 **Status**: 🔄 Design Complete - Implementation Pending
-**Last Updated**: November 2025
+**Last Updated**: December 2025
+**Template System**: Jinja2 + HTML/CSS → WeasyPrint (PDF) / python-docx (DOCX)
+**Content Source**: Structured JSON from backend (`generations.content_structured`)
 
 ---
 
