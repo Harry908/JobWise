@@ -233,7 +233,7 @@ class ExportModel(Base):
     file_size_bytes = Column(INTEGER, nullable=False)
     page_count = Column(INTEGER)  # For PDFs only
     options = Column(JSON, default=dict)  # Template customization options
-    metadata = Column(JSON, default=dict)  # Additional metadata (generation_type, generation_ids for batch, etc.)
+    export_metadata = Column(JSON, default=dict)  # Additional metadata (generation_type, generation_ids for batch, etc.)
     download_url = Column(String)  # Presigned S3 URL (regenerated on access)
     expires_at = Column(DateTime, nullable=False)  # 30 days from creation
     created_at = Column(DateTime, default=datetime.utcnow, index=True)

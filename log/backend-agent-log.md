@@ -1,5 +1,56 @@
 # Backend Agent Log
 
+## Log Entry: 4
+
+### User Request
+[Multiple server startup errors requiring fixes for SQLAlchemy reserved attribute conflict, missing enum imports, missing dependencies, and missing infrastructure components]
+
+### Response Summary
+Fixed six critical backend server startup errors to make the FastAPI application ready to run. Renamed the reserved SQLAlchemy attribute `metadata` to `export_metadata` across the Export entity, repository, and API endpoints. Removed non-existent `RankingStatus` enum import. Made WeasyPrint and python-docx imports optional with graceful fallbacks and informative warnings. Created placeholder S3StorageAdapter for development use. Added `get_session` alias for database connection compatibility. Fixed authentication import path from `app.core.auth.jwt_handler` to `app.core.dependencies`. Server now starts successfully with warnings about missing GTK+ libraries for PDF export (optional feature).
+
+### Actions Taken
+- **File:** `backend/app/infrastructure/database/models.py`
+  - **Change:** Renamed `metadata` column to `export_metadata` in ExportModel table definition
+  - **Reason:** SQLAlchemy reserves `metadata` attribute for internal use in Declarative API, causing "Attribute name 'metadata' is reserved" error
+
+- **File:** `backend/app/domain/entities/export.py`
+  - **Change:** Renamed `metadata` field to `export_metadata` in Export dataclass
+  - **Reason:** Maintain consistency with database model and avoid SQLAlchemy conflicts
+
+- **File:** `backend/app/infrastructure/repositories/export_repository.py`
+  - **Change:** Updated create() and _to_entity() methods to use `export_metadata` instead of `metadata`
+  - **Reason:** Map renamed field correctly between entity and database model
+
+- **File:** `backend/app/presentation/api/export.py`
+  - **Change:** Updated 5 API endpoint response mappings to use `export.export_metadata` instead of `export.metadata` in ExportResponse, BatchExportResponse, and list endpoints
+  - **Reason:** Ensure API responses correctly map renamed entity field to response schema
+
+- **File:** `backend/app/domain/enums/__init__.py`
+  - **Change:** Removed import and export of non-existent `RankingStatus` enum
+  - **Reason:** Module `ranking_status.py` doesn't exist, causing ModuleNotFoundError on server startup
+
+- **File:** `backend/app/application/services/export_renderer.py`
+  - **Change:** Made WeasyPrint and python-docx imports optional with try-except blocks, added WEASYPRINT_AVAILABLE and PYTHON_DOCX_AVAILABLE flags, added runtime checks in render_pdf() and render_docx() methods with informative error messages
+  - **Reason:** WeasyPrint requires GTK+ libraries not available by default on Windows; server should start even without PDF export capability
+
+- **File:** `backend/app/infrastructure/storage/s3_storage_adapter.py`
+  - **Change:** Created placeholder S3StorageAdapter class with upload_file(), generate_presigned_url(), delete_file(), file_exists(), get_file_size() methods that print warnings instead of performing actual S3 operations
+  - **Reason:** Export service requires S3 adapter dependency; placeholder allows development without AWS configuration
+
+- **File:** `backend/app/infrastructure/storage/__init__.py`
+  - **Change:** Created module initialization file exporting S3StorageAdapter
+  - **Reason:** Make storage adapters importable as a proper Python package
+
+- **File:** `backend/app/infrastructure/database/connection.py`
+  - **Change:** Added `get_session = get_db_session` alias after the get_db_session() function definition
+  - **Reason:** Export API imports `get_session` but only `get_db_session` was defined, causing ImportError
+
+- **File:** `backend/app/presentation/api/export.py`
+  - **Change:** Updated authentication import from `app.core.auth.jwt_handler` to `app.core.dependencies`
+  - **Reason:** get_current_user function is defined in dependencies module, not in non-existent auth.jwt_handler module
+
+---
+
 ## Log Entry: 3
 
 ### User Request

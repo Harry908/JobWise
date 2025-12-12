@@ -44,6 +44,10 @@ async def get_db_session():
     await engine.dispose()
 
 
+# Alias for compatibility
+get_session = get_db_session
+
+
 async def check_database_health() -> bool:
     """Check database connectivity."""
     try:

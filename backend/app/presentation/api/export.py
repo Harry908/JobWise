@@ -23,7 +23,7 @@ from app.infrastructure.storage.s3_storage_adapter import S3StorageAdapter
 from app.infrastructure.repositories.generation_repository import GenerationRepository
 from app.infrastructure.repositories.export_repository import ExportRepository
 from app.infrastructure.database.connection import get_session
-from app.core.auth.jwt_handler import get_current_user
+from app.core.dependencies import get_current_user
 from app.domain.entities.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -88,7 +88,7 @@ async def export_to_pdf(
             download_url=export.download_url,
             expires_at=export.expires_at,
             created_at=export.created_at,
-            metadata=export.metadata
+            metadata=export.export_metadata
         )
     
     except ValueError as e:
@@ -144,7 +144,7 @@ async def export_to_docx(
             download_url=export.download_url,
             expires_at=export.expires_at,
             created_at=export.created_at,
-            metadata=export.metadata
+            metadata=export.export_metadata
         )
     
     except ValueError as e:
@@ -196,8 +196,8 @@ async def batch_export(
             download_url=export.download_url,
             expires_at=export.expires_at,
             created_at=export.created_at,
-            file_count=export.metadata.get('file_count'),
-            metadata=export.metadata
+            file_count=export.export_metadata.get('file_count'),
+            metadata=export.export_metadata
         )
     
     except ValueError as e:
@@ -377,7 +377,7 @@ async def list_exports(
                 download_url=exp.download_url,
                 expires_at=exp.expires_at,
                 created_at=exp.created_at,
-                metadata=exp.metadata
+                metadata=exp.export_metadata
             )
             for exp in exports
         ]
@@ -430,7 +430,7 @@ async def get_download_url(
             download_url=export.download_url,
             expires_at=export.expires_at,
             created_at=export.created_at,
-            metadata=export.metadata
+            metadata=export.export_metadata
         )
     
     except Exception as e:

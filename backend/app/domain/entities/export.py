@@ -23,7 +23,7 @@ class Export:
     file_size_bytes: int
     page_count: Optional[int] = None  # PDF only
     options: Optional[str] = None  # JSON string
-    metadata: Optional[str] = None  # JSON string
+    export_metadata: Optional[str] = None  # JSON string
     download_url: Optional[str] = None
     expires_at: datetime = None
     created_at: datetime = None

@@ -43,7 +43,7 @@ class ExportRepository:
             file_size_bytes=export.file_size_bytes,
             page_count=export.page_count,
             options=export.options,
-            metadata=export.metadata,
+            export_metadata=export.export_metadata,
             download_url=export.download_url,
             expires_at=export.expires_at,
             created_at=export.created_at
@@ -170,7 +170,7 @@ class ExportRepository:
             file_size_bytes=model.file_size_bytes,
             page_count=model.page_count,
             options=model.options or {},
-            metadata=model.metadata or {},
+            export_metadata=model.export_metadata or {},
             download_url=model.download_url,
             expires_at=model.expires_at,
             created_at=model.created_at

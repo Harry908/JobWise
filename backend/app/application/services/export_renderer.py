@@ -11,10 +11,26 @@ from io import BytesIO
 import zipfile
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import HTML, CSS
-from docx import Document
-from docx.shared import Pt, Inches, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+# Optional imports for PDF/DOCX generation
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    WEASYPRINT_AVAILABLE = False
+    print(f"Warning: WeasyPrint not available: {e}")
+    print("PDF export will not be available. Install GTK+ libraries for Windows:")
+    print("https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows")
+
+try:
+    from docx import Document
+    from docx.shared import Pt, Inches, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    PYTHON_DOCX_AVAILABLE = True
+except ImportError as e:
+    PYTHON_DOCX_AVAILABLE = False
+    print(f"Warning: python-docx not available: {e}")
+    print("DOCX export will not be available.")
 
 from app.domain.enums.export_format import ExportFormat
 from app.domain.enums.template_type import TemplateType
@@ -50,6 +66,12 @@ class ExportRenderer:
         Returns:
             PDF bytes
         """
+        if not WEASYPRINT_AVAILABLE:
+            raise RuntimeError(
+                "PDF export is not available. WeasyPrint requires GTK+ libraries. "
+                "See: https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows"
+            )
+        
         # Render HTML from template
         html_content = self._render_html(structured_content, template, options)
         
@@ -75,6 +97,11 @@ class ExportRenderer:
         Returns:
             DOCX bytes
         """
+        if not PYTHON_DOCX_AVAILABLE:
+            raise RuntimeError(
+                "DOCX export is not available. Install python-docx: pip install python-docx"
+            )
+        
         doc = Document()
         
         # Apply template-specific styling
