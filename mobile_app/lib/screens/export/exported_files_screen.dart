@@ -307,7 +307,7 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
     }
   }
 
-  void _downloadFile(ExportedFile file) async {
+  Future<void> _downloadFile(ExportedFile file) async {
     try {
       // If cache is valid, open directly
       final isCacheValid = await file.isCacheValid();

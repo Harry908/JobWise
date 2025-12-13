@@ -164,13 +164,32 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
     try {
       final response = await _apiClient.getJobExports(jobId: jobId);
       
+      // Build a map of cached exports from current state
+      final cachedExports = <String, ExportedFile>{};
+      for (final file in state.files) {
+        if (file.localCachePath != null) {
+          cachedExports[file.exportId] = file;
+        }
+      }
+      
       // Parse exports_by_date from response
       final exportsByDateJson = response['exports_by_date'] as Map<String, dynamic>? ?? {};
       final exportsByDate = <String, List<ExportedFile>>{};
       
       exportsByDateJson.forEach((date, exportsJson) {
         final exports = (exportsJson as List? ?? [])
-            .map((json) => ExportedFile.fromJson(json))
+            .map((json) {
+              final file = ExportedFile.fromJson(json);
+              // Preserve cached info if available
+              if (cachedExports.containsKey(file.exportId)) {
+                final cached = cachedExports[file.exportId]!;
+                return file.copyWithCache(
+                  localCachePath: cached.localCachePath!,
+                  cacheExpiresAt: cached.cacheExpiresAt!,
+                );
+              }
+              return file;
+            })
             .toList();
         exportsByDate[date] = exports;
       });

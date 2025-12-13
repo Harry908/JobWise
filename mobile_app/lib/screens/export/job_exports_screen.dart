@@ -264,6 +264,10 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
       }
 
       if (!mounted) return;
+      
+      // Reload exports to update UI with downloaded state
+      await _loadExports();
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Download completed')),
       );
@@ -495,49 +499,51 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
               tooltip: (export.localCachePath != null && export.cacheExpiresAt != null && DateTime.now().isBefore(export.cacheExpiresAt!)) ? 'Open' : 'Download',
             ),
             PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'open':
-                _openExport(export);
-                break;
-              case 'share':
-                _shareExport(export);
-                break;
-              case 'delete':
-                _deleteExport(export);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'open',
-              child: Row(
-                children: [
-                  Icon(Icons.open_in_new),
-                  SizedBox(width: 8),
-                  Text('Open'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'share',
-              child: Row(
-                children: [
-                  Icon(Icons.share),
-                  SizedBox(width: 8),
-                  Text('Share'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
-                ],
-              ),
+              onSelected: (value) {
+                switch (value) {
+                  case 'open':
+                    _openExport(export);
+                    break;
+                  case 'share':
+                    _shareExport(export);
+                    break;
+                  case 'delete':
+                    _deleteExport(export);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'open',
+                  child: Row(
+                    children: [
+                      Icon(Icons.open_in_new),
+                      SizedBox(width: 8),
+                      Text('Open'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'share',
+                  child: Row(
+                    children: [
+                      Icon(Icons.share),
+                      SizedBox(width: 8),
+                      Text('Share'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
