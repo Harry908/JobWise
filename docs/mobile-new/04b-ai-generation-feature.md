@@ -19,7 +19,8 @@
 **Key Field / Property Semantics**
 - `Generation.id` ↔ `generation_id`/`id`: Single generation run identifier used by history and exports.
 - `Generation.documentType` ↔ `document_type`: `"resume"` or `"cover_letter"`; controls UI labels and export options.
-- `Generation.contentText` ↔ `resume_text` / `cover_letter_text` / `content_text`: The actual generated body.
+- `Generation.contentText` ↔ `resume_text` / `cover_letter_text` / `content_text`: The plain text version for display.
+- `Generation.contentStructured` ↔ `content_structured`: **NEW** Structured JSON for export templates (header, sections, metadata).
 - `Generation.atsScore` / `atsFeedback`: Maps to backend ATS metrics; used by `ATSScoreBadge` and result screens.
 - `Ranking.id` ↔ backend `id`: Links UI state to `job_content_rankings` rows for a `job_id`.
 - `GenerationsState.progress` / `currentStage`: UI-only progress model that mirrors the backend pipeline stages.
@@ -56,10 +57,40 @@ The AI Generation feature is the core AI-powered functionality of JobWise. It al
 
 ## Screens
 
-### 1. GenerationOptionsScreen
+**Note**: AI generation UI is integrated into `JobDetailScreen` via the `JobGenerationTab` widget.
 
-**Route**: `/generate`
-**File**: `lib/screens/generation/generation_options_screen.dart`
+### JobGenerationTab Widget
+
+**File**: `lib/widgets/job_generation_tab.dart`
+**Context**: Second tab in JobDetailScreen
+
+**Features**:
+- Resume generation with customizable options
+- Cover letter generation with company/hiring manager fields
+- Real-time progress dialogs during generation
+- Generation history list for the current job
+- Copy to clipboard functionality
+- ATS score display (when available)
+
+**UI Sections**:
+
+1. **Resume Generation**:
+   - Max experiences slider (1-10)
+   - Max projects slider (1-5)
+   - Include summary toggle
+   - Generate button
+
+2. **Cover Letter Generation**:
+   - Company name (pre-filled from job)
+   - Hiring manager name (optional)
+   - Max paragraphs slider (1-5)
+   - Generate button
+
+3. **Generation History**:
+   - List of past generations for this job
+   - Document type badges
+   - Created date
+   - View/copy actions
 
 **Context**: User navigates here from JobDetailScreen or HomeScreen
 
@@ -555,11 +586,102 @@ class Ranking {
 
 ## State Management
 
-### GenerationsProvider (`generations_provider.dart`)
-
-Handles document generation requests, progress tracking, and generation history.
+### GenerationsProvider (StateNotifier)
 
 **File**: `lib/providers/generations_provider.dart`
+
+Uses traditional `StateNotifier` pattern.
+
+```dart
+class GenerationsState {
+  final bool isEnhancing;
+  final bool isGenerating;
+  final double progress;
+  final String? currentStage;
+  final String? errorMessage;
+  final Map<String, dynamic>? lastGeneration;
+  final List<Map<String, dynamic>> history;
+}
+
+class GenerationsNotifier extends StateNotifier<GenerationsState> {
+  final GenerationsApiClient _apiClient;
+
+  Future<bool> enhanceProfile({
+    required String profileId,
+    String? customPrompt,
+  }) async {
+    state = state.copyWith(isEnhancing: true, errorMessage: null);
+    try {
+      await _apiClient.enhanceProfile(
+        profileId: profileId,
+        customPrompt: customPrompt,
+      );
+      state = state.copyWith(isEnhancing: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isEnhancing: false,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> generateResume({
+    required String jobId,
+    int maxExperiences = 5,
+    int maxProjects = 3,
+    bool includeSummary = true,
+  }) async {
+    state = state.copyWith(
+      isGenerating: true,
+      progress: 0.0,
+      currentStage: 'Starting...',
+    );
+
+    try {
+      // Check/create rankings
+      state = state.copyWith(
+        progress: 0.2,
+        currentStage: 'Analyzing job requirements...',
+      );
+      
+      try {
+        await _apiClient.getRankingsForJob(jobId);
+      } catch (e) {
+        await _apiClient.createRankings(jobId: jobId);
+      }
+
+      // Generate resume
+      state = state.copyWith(
+        progress: 0.6,
+        currentStage: 'Generating resume...',
+      );
+      
+      final generation = await _apiClient.generateResume(
+        jobId: jobId,
+        maxExperiences: maxExperiences,
+        maxProjects: maxProjects,
+        includeSummary: includeSummary,
+      );
+
+      state = state.copyWith(
+        isGenerating: false,
+        progress: 1.0,
+        lastGeneration: generation,
+      );
+
+      return generation;
+    } catch (e) {
+      state = state.copyWith(
+        isGenerating: false,
+        errorMessage: e.toString(),
+      );
+      return null;
+    }
+  }
+}
+```
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';

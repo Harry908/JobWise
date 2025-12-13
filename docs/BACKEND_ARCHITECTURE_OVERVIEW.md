@@ -1,8 +1,9 @@
 # JobWise Backend Architecture Overview
 
-**Version**: 1.2  
+**Version**: 1.3  
 **Scope**: API Specs 01-06 (Auth, Profile, Job, Sample Upload, Generation, Export/Schema)  
-**Status**: Code cleanup complete; design kept authoritative for all APIs
+**Status**: Active implementation (APIs 01-04b deployed); design kept authoritative for all APIs  
+**Last Updated**: December 2025
 
 ---
 
@@ -316,51 +317,75 @@ backend/
 
 ### 3.2 Presentation (`app/presentation/api/`)
 
-| Router | Base Path | Responsibilities |
-|--------|-----------|------------------|
-| `auth.py` | `/api/v1/auth` | Register, login, refresh, logout, password reset |
-| `profile.py` | `/api/v1/profiles` | Profile CRUD, bulk ops, analytics |
-| `job.py` | `/api/v1/jobs` | Job CRUD, browse, status transitions |
+| Router | Base Path | Responsibilities | Status |
+|--------|-----------|------------------|--------|
+| `auth.py` | `/api/v1/auth` | Register, login, refresh, logout, password reset | ✅ Active |
+| `profile.py` | `/api/v1/profiles` | Profile CRUD, bulk ops, analytics | ✅ Active |
+| `job.py` | `/api/v1/jobs` | Job CRUD, browse, status transitions | ✅ Active |
+| `v1/samples.py` | `/api/v1/samples` | Sample upload, list, get, delete | ✅ Active |
+| `generation.py` | `/api/v1/generations` | AI resume/cover letter generation, rankings | ✅ Active |
 
 ### 3.3 Application (`app/application/services/`)
 
-| Service | Orchestrates |
-|---------|--------------|
-| `auth_service.py` | User creation, credential validation, token issuance |
-| `profile_service.py` | Profile + nested entity management, analytics computation |
-| `job_service.py` | Job persistence, mock feed loading, status workflows |
+| Service | Orchestrates | Status |
+|---------|--------------|--------|
+| `auth_service.py` | User creation, credential validation, token issuance | ✅ Active |
+| `profile_service.py` | Profile + nested entity management, analytics computation | ✅ Active |
+| `job_service.py` | Job persistence, mock feed loading, status workflows | ✅ Active |
+| `sample_service.py` | Sample document upload, validation, storage | ✅ Active |
+| `generation_service.py` | AI resume/cover letter generation orchestration | ✅ Active |
+| `ranking_service.py` | Job content ranking and relevance scoring | ✅ Active |
+| `enhancement_service.py` | Profile enhancement with AI | ✅ Active |
+| `style_extraction_service.py` | Writing style extraction from samples | ✅ Active |
+| `export_service.py` | PDF/DOCX export orchestration, S3 management | 📋 Planned |
 
 ### 3.4 Domain (`app/domain/entities/`)
 
-| Entity | Core Logic |
-|--------|------------|
-| `user.py` | Email/password validation, role definitions |
-| `profile.py` | Personal info, experiences, education, projects, skills |
-| `job.py` | Title/company rules, status enums, application state machine |
+| Entity | Core Logic | Status |
+|--------|------------|--------|
+| `user.py` | Email/password validation, role definitions | ✅ Active |
+| `profile.py` | Personal info, experiences, education, projects, skills | ✅ Active |
+| `job.py` | Title/company rules, status enums, application state machine | ✅ Active |
+| `sample_document.py` | Sample document validation, type handling | ✅ Active |
+| `writing_style.py` | Writing style metadata and extraction rules | ✅ Active |
+| `job_content_ranking.py` | Ranking logic and relevance scoring | ✅ Active |
+| `generation.py` | Generation status, ATS scoring, document types | ✅ Active |
 
 ### 3.5 Infrastructure (`app/infrastructure/`)
 
-| Component | Responsibility |
-|-----------|----------------|
-| `database/connection.py` | Async SQLAlchemy engine, session factory, lifespan management |
-| `database/models.py` | ORM table classes mirroring `06-database-schema.md` |
-| `repositories/*` | CRUD operations, query builders, transaction handling |
+| Component | Responsibility | Status |
+|-----------|----------------|--------|
+| `database/connection.py` | Async SQLAlchemy engine, session factory, lifespan management | ✅ Active |
+| `database/models/` | ORM table classes mirroring `06-database-schema.md` | ✅ Active |
+| `repositories/user_repository.py` | Users CRUD operations | ✅ Active |
+| `repositories/profile_repository.py` | Profiles + nested entities CRUD | ✅ Active |
+| `repositories/job_repository.py` | Jobs CRUD, filtering, pagination | ✅ Active |
+| `repositories/sample_repository.py` | Sample documents CRUD | ✅ Active |
+| `repositories/writing_style_repository.py` | Writing styles management | ✅ Active |
+| `repositories/ranking_repository.py` | Job content rankings CRUD | ✅ Active |
+| `repositories/generation_repository.py` | Generations CRUD, history | ✅ Active |
+| `repositories/export_repository.py` | Exports CRUD, storage tracking | 📋 Planned |
+| `adapters/llm/` | LLM integration (Groq) | ✅ Active |
+| `adapters/storage/` | AWS S3 storage with presigned URLs | 📋 Planned |
 
 ---
 
 ## 4. Backend Responsibilities
 
-The design intentionally tracks every API specification (`docs/api-services/01-06`) even though some services are paused in code. The responsibilities are split into:
+The design intentionally tracks every API specification (`docs/api-services/01-06`) with most services actively deployed. The responsibilities are split into:
 
-- **01 - Authentication**: Secure signup/login, password resets, refresh rotation, and session validation.
-- **02 - Profiles**: Master profile CRUD, nested experiences/education/projects, analytics, and bulk mutations.
-- **03 - Jobs**: Saved job intake, mock browsing, application status lifecycle, and analytics hooks.
-- **04a - Sample Upload**: Text-only resume/cover-letter ingestion, stats collection, and active-sample management.
-- **04b - AI Generation**: Profile enhancement, ranking, resume compilation, cover-letter LLM orchestration, and history retrieval.
-- **05 - Document Export**: PDF/DOCX/ZIP export, S3 metadata management, download/cleanup flows.
-- **06 - Database Schema**: Canonical mapping of tables/entities that back every API.
+- **01 - Authentication** ✅: Secure signup/login, password resets, refresh rotation, and session validation.
+- **02 - Profiles** ✅: Master profile CRUD, nested experiences/education/projects, analytics, and bulk mutations.
+- **03 - Jobs** ✅: Saved job intake, mock browsing, application status lifecycle, and analytics hooks.
+- **04a - Sample Upload** ✅: Text-only resume/cover-letter ingestion, stats collection, and active-sample management.
+- **04b - AI Generation** ✅: Profile enhancement, ranking, resume compilation, cover-letter LLM orchestration, and history retrieval.
+- **05 - Document Export** 📋: PDF/DOCX/ZIP export with **AWS S3 storage**, presigned URLs, cross-platform access, and secure user-scoped authorization (design complete, S3 adapter implemented).
+- **06 - Database Schema** ✅: Canonical mapping of tables/entities that back every API.
 
-While the active deployment currently exposes only APIs 01-03, this overview preserves the end-to-end architecture so future re-enablement of 04-05 requires minimal rediscovery.
+**Current Deployment Status**:
+- **Active APIs**: 01 (Auth), 02 (Profiles), 03 (Jobs), 04a (Samples), 04b (AI Generation)
+- **Planned**: 05 (Document Export)
+- **Architecture**: Complete design documentation for all APIs to ensure seamless future expansion
 
 ---
 

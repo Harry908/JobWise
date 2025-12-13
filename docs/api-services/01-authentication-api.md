@@ -92,6 +92,24 @@ The Authentication API handles user registration, login, token management, and a
 
 ---
 
+## Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/register` | Create new user account |
+| POST | `/login` | Authenticate user |
+| POST | `/refresh` | Refresh access token |
+| GET | `/me` | Get current user profile |
+| POST | `/logout` | Logout user |
+| POST | `/change-password` | Change password |
+| POST | `/forgot-password` | Request password reset |
+| POST | `/reset-password` | Reset password with token |
+| GET | `/check-email` | Check email availability |
+
+**Total Endpoints**: 9
+
+---
+
 ## Endpoints
 
 ### 1. Register User
@@ -609,6 +627,47 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> int:
         return user_id
     except JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
+```
+
+---
+
+### 9. Check Email Availability
+
+Check if an email address is available for registration.
+
+**Endpoint**: `GET /api/v1/auth/check-email`
+
+**Authentication**: Not required
+
+**Query Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `email` | string (email) | Yes | Email address to check |
+
+**Example Request**:
+```bash
+GET /api/v1/auth/check-email?email=user@example.com
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "available": false
+}
+```
+
+**Response Schema**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `available` | boolean | True if email is available, false if already taken |
+
+**Error Responses**:
+
+**422 Unprocessable Entity** (Invalid email format):
+```json
+{
+  "detail": "Invalid email address"
+}
 ```
 
 ---

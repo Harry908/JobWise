@@ -60,3 +60,13 @@ class StorageException(HTTPException):
         super().__init__(status_code=500, detail=detail)
 
 
+class StorageError(Exception):
+    """Base exception for storage operations (non-HTTP)."""
+    pass
+
+
+class AuthorizationError(HTTPException):
+    """Exception raised for authorization failures."""
+
+    def __init__(self, detail: str = "Access denied"):
+        super().__init__(status_code=403, detail=detail)

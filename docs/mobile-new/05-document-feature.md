@@ -2,29 +2,37 @@
 
 **At a Glance (For AI Agents)**
 - **Feature Name**: Document Export (Flutter front-end)
-- **Primary Role**: Let users choose templates, customize options, call export APIs, and manage/download S3-backed files.
+- **Primary Role**: Let users export generated documents from job detail screen, choose templates, customize options, and manage job-specific exports with local caching.
 - **Key Files**: `lib/providers/exports/exports_notifier.dart`, `lib/providers/exports/exports_state.dart`, `lib/services/api/exports_api_client.dart`, `lib/models/exported_file.dart`, `lib/models/template.dart`
-- **Backend Contract**: `../api-services/05-document-export-api.md` (PDF/DOCX/ZIP + S3-only storage)
-- **Main Screens**: `TemplateSelectionScreen`, `ExportOptionsScreen`, `ExportedFilesScreen`
+- **Backend Contract**: `../api-services/05-document-export-api.md` (PDF/DOCX/ZIP + S3 storage + job-specific filtering)
+- **Main Screens**: `ExportOptionsScreen`, `JobExportsScreen` (job-specific storage view)
+- **Navigation Context**: Accessed from `JobDetailScreen` → `JobGenerationTab` → Generation card "Export" button
 
 **Related Docs (Navigation Hints)**
 - Backend Export API: `../api-services/05-document-export-api.md`
-- Mobile Generation Feature: `04-generation-feature.md`, `04b-ai-generation-feature.md` (sources for `generation_id`)
-- Backend architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (S3 storage model)
+- Mobile Generation Feature: `04b-ai-generation-feature.md` (source of generated documents)
+- Job Detail Screen: `03-job-browsing-feature.md` (parent navigation context)
+- Backend architecture: `../BACKEND_ARCHITECTURE_OVERVIEW.md` (S3 storage + caching model)
 
 **Key Field / Property Semantics**
 - `ExportedFile.exportId` ↔ backend `export_id`: Used for download/delete and correlates to `exports.id`.
 - `ExportedFile.generationId` ↔ `generation_id`: Foreign key to a generation; used to link export to source doc.
+- `ExportedFile.jobId` ↔ `job_id`: Denormalized job reference for efficient job-specific queries.
 - `ExportedFile.format` / `template`: Must align with backend enum-like strings (`"pdf"`, `"docx"`, `"zip"`, template ids).
 - `ExportedFile.downloadUrl`: Backend route or pre-signed URL wrapper; always treated as opaque by the app.
+- `ExportedFile.localCachePath`: Platform-specific local file path for cached export (avoids repeated S3 downloads).
+- `ExportedFile.cacheExpiresAt`: Local cache expiration timestamp (7 days default).
 - `Template.id` / `Template.atsScore` / `Template.industries`: Mirror backend template catalog and drive filtering/UX.
 - `ExportsState.storageUsedBytes` / `storageLimitBytes`: Reflect backend storage usage and free-tier limits.
-- `ExportsApiClient` methods: Map directly to `/exports/pdf`, `/exports/docx`, `/exports/batch`, `/exports/templates*`, `/exports/preview`, `/exports/files*`.
+- `ExportsApiClient` methods: Map directly to `/exports/pdf`, `/exports/docx`, `/exports/batch`, `/exports/templates*`, `/exports/preview`, `/exports/files*`, `/exports/files/job/{job_id}`.
 
 **Backend API**: [Document Export API](../api-services/05-document-export-api.md)
 **Base Path**: `/api/v1/exports`
 **Status**: 🔄 Design Complete - Implementation Pending
-**Last Updated**: November 2025
+**Last Updated**: December 2025
+**Template System**: Jinja2 + HTML/CSS → WeasyPrint (PDF) / python-docx (DOCX)
+**Content Source**: Structured JSON from backend (`generations.content_structured`)
+**Local Caching**: Enabled (7-day cache for downloaded exports to reduce S3 calls)
 
 ---
 
@@ -32,43 +40,89 @@
 
 The Document Export feature converts generated resumes and cover letters from plain text to professionally formatted PDF and DOCX files using multiple ATS-optimized templates.
 
+### Key Design Changes (Dec 2025)
+
+**New Navigation Flow**:
+1. User generates document in `JobGenerationTab` (on `JobDetailScreen`)
+2. Each generation card displays an "Export" button
+3. Tapping "Export" navigates directly to `ExportOptionsScreen` with `generation_id` and `job_id`
+4. After export, user is returned to generation tab
+5. Job Detail Screen has a "Storage" icon button → navigates to `JobExportsScreen` showing all exports for that specific job
+
+**Job-Specific Storage**:
+- Each job has its own exports view accessed from job detail screen
+- Exports are grouped by export date for easy browsing
+- All queries filtered by `job_id` for efficient retrieval
+- No global exports list - exports are always tied to a specific job context
+
+**Local Caching Strategy**:
+- Downloaded files are cached locally for 7 days
+- Reduces S3 bandwidth and improves performance
+- Automatic cache invalidation after expiration
+- User can manually clear cache in settings
+
 ### User Stories
 
 **As a user**, I want to:
-- Export my generated resume to PDF with professional formatting
-- Export my cover letter to DOCX for easy editing
-- Choose from multiple templates optimized for different industries
-- Preview templates before exporting
-- Download exported files to my device
+- Export generated documents directly from the generation card in job detail view
+- Choose from multiple professional templates optimized for different industries
+- Customize export settings (template, format, options)
+- View all exported documents for a specific job grouped by date
+- Access recently downloaded exports instantly from local cache
+- Download exported files to my device without waiting for S3
 - Share exported files via email or messaging apps
-- Export resume + cover letter as a package (batch export)
 - See ATS compatibility scores for each template
+- Manage storage space by viewing and deleting old exports
 
 ---
 
 ## Screens
 
-### 1. TemplateSelectionScreen
+### 1. ExportOptionsScreen
 
-**Route**: `/export/templates`
-**File**: `lib/screens/export/template_selection_screen.dart`
+**Route**: `/export/options`
+**File**: `lib/screens/export/export_options_screen.dart`
 
-**Context**: User navigates here from GenerationResultScreen after tapping "Export to PDF"
+**Context**: User navigates here from `JobGenerationTab` by tapping "Export" button on a generation card
+
+**Parameters**:
+- `generation_id` (required): The generation to export
+- `job_id` (required): The job this generation belongs to
 
 **UI Components**:
-- Document preview header:
-  - Document type (Resume / Cover Letter)
-  - Job title reference
-- Template cards grid (2 columns):
-  - Template preview thumbnail
-  - Template name
-  - ATS score badge
-  - Industry tags
-  - "Select" button
-- Template filters:
-  - All templates
-  - High ATS score (90%+)
-  - By industry (Tech, Corporate, Creative)
+- **Document Header**:
+  - Document type badge (Resume / Cover Letter)
+  - Job title and company
+  - ATS score from generation
+  - Generation date
+
+- **Template Selection Section**:
+  - Grid of 4 template cards (2x2 or horizontal scroll)
+  - Each template card shows:
+    - Template preview thumbnail
+    - Template name
+    - ATS score badge
+    - "Select" radio button
+  - Quick filters: High ATS (90%+), Tech, Corporate, Creative
+
+- **Export Format**:
+  - Segmented control: PDF (default) / DOCX
+  - Format description text
+
+- **Template Customization** (collapsible):
+  - Font family dropdown (if supported by template)
+  - Accent color picker (Modern/Creative only)
+  - Line spacing slider (Tight, Normal, Relaxed)
+  - Margins slider (Narrow, Normal, Wide)
+
+- **File Options**:
+  - Custom filename text field (pre-filled with job title + company)
+  - Include metadata toggle
+
+- **Action Buttons**:
+  - "Preview" button (shows preview modal)
+  - "Export" button (primary action)
+  - "Cancel" button
 
 **Template Options**:
 
@@ -76,57 +130,43 @@ The Document Export feature converts generated resumes and cover letters from pl
    - ATS Score: 85%
    - Industries: Tech, Startups, Software
    - Style: Clean, minimalist, sans-serif fonts
-   - Colors: Accent color for headers
+   - Customizable: Accent color
 
 2. **Classic Template**
    - ATS Score: 95%
    - Industries: Corporate, Finance, Legal
    - Style: Traditional, serif fonts, conservative
-   - Colors: Black and white only
+   - Customizable: Font family
 
 3. **Creative Template**
    - ATS Score: 75%
    - Industries: Design, Marketing, Media
    - Style: Bold headers, creative layout
-   - Colors: Customizable color schemes
+   - Customizable: Accent color, font family
 
 4. **ATS-Optimized Template**
    - ATS Score: 98%
    - Industries: Enterprise, Government
    - Style: Ultra-simple, maximum parsability
-   - Colors: Black text only, no graphics
+   - Customizable: None (fixed for maximum ATS compatibility)
 
 **User Flow**:
 ```
-1. User taps "Export to PDF" on GenerationResultScreen
-2. Navigate to TemplateSelectionScreen
-3. Display 4 template options with previews
-4. User taps template card to preview
-5. User taps "Select" → navigate to ExportOptionsScreen
+1. User navigates from JobGenerationTab → Taps "Export" on generation card
+2. ExportOptionsScreen opens with generation_id and job_id
+3. User selects template (default: Modern)
+4. User chooses format (default: PDF)
+5. User customizes options (optional)
+6. User taps "Preview" → modal shows rendered preview (optional)
+7. User taps "Export" button:
+   - Show loading indicator
+   - Call export API (POST /api/v1/exports/pdf or /exports/docx)
+   - Backend creates export, uploads to S3, returns download URL
+   - App downloads file to local cache
+   - Show success message
+8. Navigate back to JobGenerationTab
+9. User can now access export via "Storage" button on job detail screen
 ```
-
-### 2. ExportOptionsScreen
-
-**Route**: `/export/options`
-**File**: `lib/screens/export/export_options_screen.dart`
-
-**UI Components**:
-- Selected template preview
-- Export format selector:
-  - PDF (default)
-  - DOCX
-- Template customization (collapsible):
-  - Font family dropdown (if supported by template)
-  - Accent color picker (Modern/Creative only)
-  - Line spacing slider (Normal, Tight, Relaxed)
-  - Margins slider (Narrow, Normal, Wide)
-- File options:
-  - Custom filename text field
-  - Include generation metadata toggle
-- Action buttons:
-  - "Preview" button (shows preview modal)
-  - "Export" button (primary action)
-  - "Back" button
 
 **Customization Options**:
 ```dart
@@ -153,62 +193,133 @@ class ExportOptions {
 }
 ```
 
-**User Flow**:
-```
-1. Display selected template and export options
-2. User customizes options (optional)
-3. User taps "Preview" → show preview modal
-4. User taps "Export" button
-5. Show loading overlay
-6. Call export API
-7. On success:
-   - Download file to device
-   - Show success message with "Open" and "Share" buttons
-   - Navigate to ExportedFilesScreen
-8. On error:
-   - Show error dialog
-   - Offer retry
-```
+**Success Handling**:
+- After successful export, file is downloaded to local cache
+- Cache path stored in `ExportedFile.localCachePath`
+- Cache expires in 7 days (`cacheExpiresAt`)
+- Backend stores metadata including job title/company for display
+- User is navigated back to `JobGenerationTab`
+- Success snackbar: "Document exported successfully! View in Storage."
 
-### 3. ExportedFilesScreen
+---
 
-**Route**: `/export/files`
-**File**: `lib/screens/export/exported_files_screen.dart`
+### 2. JobExportsScreen (Job-Specific Storage)
+
+**Route**: `/job/:jobId/exports`
+**File**: `lib/screens/export/job_exports_screen.dart`
+
+**Context**: User navigates here from `JobDetailScreen` app bar "Storage" button
+
+**Parameters**:
+- `job_id` (required): The job to show exports for
 
 **UI Components**:
-- Sort/filter controls:
-  - Sort by: Recent, Oldest, Name
-  - Filter by: PDF, DOCX
-- File list cards:
-  - File icon (PDF/DOCX)
-  - Filename
-  - Document type badge (Resume / Cover Letter)
-  - Job title
-  - File size
-  - Export date
-  - ATS score (from generation)
-  - Actions:
-    - Open file
-    - Share file
-    - Delete file
-- Storage usage indicator:
-  - "X MB used of 100 MB free tier"
-- Empty state ("No exported files yet")
+- **Header**:
+  - Job title and company
+  - Total exports count
+  - Total storage used (MB)
+  - "Export More" button → navigates back to generation tab
+
+- **Exports Grouped by Date**:
+  - Section headers: "Today", "Yesterday", "Nov 15, 2025", etc.
+  - Each export card shows:
+    - Document type icon (Resume / Cover Letter)
+    - Template badge (Modern, Classic, etc.)
+    - Format badge (PDF / DOCX)
+    - Filename
+    - File size
+    - ATS score
+    - Export timestamp
+    - **Cache status**: "Cached" badge if locally cached and not expired
+  - Action buttons:
+    - "Open" button (opens from cache if available, downloads if needed)
+    - "Share" button (share menu)
+    - "Delete" button (with confirmation)
+
+- **Empty State**:
+  - Icon: Document with cloud upload
+  - Message: "No exports yet for this job"
+  - CTA: "Generate and export a document to get started"
+
+- **Storage Indicator**:
+  - Progress bar showing usage (this job only)
+  - "X MB used for this job"
 
 **User Flow**:
 ```
-1. Display list of exported files
-2. User taps "Open" → open file with system viewer
-3. User taps "Share" → open system share sheet
-4. User taps "Delete" → confirm → delete file
-5. Pull to refresh
+1. User taps "Storage" icon on JobDetailScreen app bar
+2. Navigate to JobExportsScreen with job_id
+3. Load exports for this job: GET /api/v1/exports/files/job/{job_id}
+4. Group results by date (backend returns pre-grouped)
+5. Display export cards by date section
+6. User taps "Open":
+   - Check if local cache exists and is valid (cacheExpiresAt > now)
+   - If cached: Open file instantly from localCachePath
+   - If not cached or expired:
+     - Download from S3 via backend download URL
+     - Save to local cache
+     - Update localCachePath and cacheExpiresAt
+     - Open file
+7. User taps "Share" → open system share sheet with cached file
+8. User taps "Delete" → confirm dialog → DELETE /api/v1/exports/files/{export_id}
+9. Pull to refresh reloads exports list
 ```
+
+**Caching Logic**:
+```dart
+Future<void> openExport(ExportedFile export) async {
+  // Check cache validity
+  final isCacheValid = export.localCachePath != null &&
+                       export.cacheExpiresAt != null &&
+                       export.cacheExpiresAt!.isAfter(DateTime.now()) &&
+                       await File(export.localCachePath!).exists();
+
+  if (isCacheValid) {
+    // Open from cache (instant)
+    await OpenFile.open(export.localCachePath!);
+    return;
+  }
+
+  // Cache invalid or missing - download from S3
+  showDownloadingDialog();
+  final cachePath = await exportsService.downloadAndCache(export.exportId);
+  hideDownloadingDialog();
+
+  // Open downloaded file
+  await OpenFile.open(cachePath);
+}
+```
+
+**Performance Optimization**:
+- Uses composite index on (`user_id`, `job_id`, `created_at`) for fast queries
+- Backend pre-groups results by date (no client-side grouping)
+- Metadata includes job title/company (no additional job lookup needed)
+- Local cache eliminates repeated S3 downloads for frequently accessed files
+- Cache expiration (7 days) balances performance and storage
 
 ---
 
 ## Backend API Integration
 
-### API Endpoints (9 total)
+### API Endpoints (10 total - includes job-specific filtering)
+
+**Export Creation** (3 endpoints):
+1. POST `/api/v1/exports/pdf` - Export to PDF
+2. POST `/api/v1/exports/docx` - Export to DOCX  
+3. POST `/api/v1/exports/batch` - Batch export
+
+**Template Management** (3 endpoints):
+4. GET `/api/v1/exports/templates` - List templates
+5. GET `/api/v1/exports/templates/{id}` - Get template details
+6. POST `/api/v1/exports/preview` - Preview export
+
+**File Management** (4 endpoints):
+7. GET `/api/v1/exports/files` - List all exports (with optional job_id filter)
+8. **GET `/api/v1/exports/files/job/{job_id}`** - **NEW**: List exports for specific job (optimized, pre-grouped by date)
+9. GET `/api/v1/exports/files/{export_id}/download` - Download file
+10. DELETE `/api/v1/exports/files/{export_id}` - Delete file
+
+**Note**: The new job-specific endpoint (8) uses a composite index and denormalized job_id for efficient querying without JOINs.
 
 #### 1. POST /api/v1/exports/pdf - Export to PDF
 
@@ -562,37 +673,51 @@ Response: `204 No Content`
 class ExportedFile {
   final String exportId;
   final String generationId;
+  final String jobId; // Denormalized job reference
   final String format; // 'pdf', 'docx', 'zip'
   final String template;
   final String filename;
   final int fileSizeBytes;
   final String downloadUrl;
+  final String? localCachePath; // Local cached file path (null if not cached)
+  final DateTime? cacheExpiresAt; // Cache expiration (7 days from download)
   final DateTime createdAt;
-  final DateTime expiresAt;
+  final DateTime expiresAt; // S3 expiration (30 days)
+  final Map<String, dynamic>? metadata; // Includes job title, company, ATS score
 
   ExportedFile({
     required this.exportId,
     required this.generationId,
+    required this.jobId,
     required this.format,
     required this.template,
     required this.filename,
     required this.fileSizeBytes,
     required this.downloadUrl,
+    this.localCachePath,
+    this.cacheExpiresAt,
     required this.createdAt,
     required this.expiresAt,
+    this.metadata,
   });
 
   factory ExportedFile.fromJson(Map<String, dynamic> json) {
     return ExportedFile(
       exportId: json['export_id'],
       generationId: json['generation_id'],
+      jobId: json['job_id'],
       format: json['format'],
       template: json['template'],
       filename: json['filename'],
       fileSizeBytes: json['file_size_bytes'],
       downloadUrl: json['download_url'],
+      localCachePath: json['local_cache_path'],
+      cacheExpiresAt: json['cache_expires_at'] != null
+          ? DateTime.parse(json['cache_expires_at'])
+          : null,
       createdAt: DateTime.parse(json['created_at']),
       expiresAt: DateTime.parse(json['expires_at']),
+      metadata: json['metadata'],
     );
   }
 
@@ -606,6 +731,38 @@ class ExportedFile {
   }
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
+
+  bool get isCacheValid {
+    if (localCachePath == null || cacheExpiresAt == null) {
+      return false;
+    }
+    return DateTime.now().isBefore(cacheExpiresAt!);
+  }
+
+  String get jobTitle => metadata?['job_title'] ?? 'Unknown Job';
+  String get company => metadata?['company'] ?? 'Unknown Company';
+  double? get atsScore => metadata?['ats_score']?.toDouble();
+
+  ExportedFile copyWith({
+    String? localCachePath,
+    DateTime? cacheExpiresAt,
+  }) {
+    return ExportedFile(
+      exportId: exportId,
+      generationId: generationId,
+      jobId: jobId,
+      format: format,
+      template: template,
+      filename: filename,
+      fileSizeBytes: fileSizeBytes,
+      downloadUrl: downloadUrl,
+      localCachePath: localCachePath ?? this.localCachePath,
+      cacheExpiresAt: cacheExpiresAt ?? this.cacheExpiresAt,
+      createdAt: createdAt,
+      expiresAt: expiresAt,
+      metadata: metadata,
+    );
+  }
 }
 ```
 
@@ -1102,8 +1259,16 @@ test('ExportsNotifier exports to PDF successfully', () async {
 ---
 
 **Status**: 🔄 Design Complete - Implementation Pending
-**Screens**: 3 (Template Selection, Export Options, Exported Files)
-**API Endpoints**: 9 endpoints
-**Templates**: 4 professional templates
+**Screens**: 2 (ExportOptionsScreen with template selection, JobExportsScreen for job-specific storage)
+**API Endpoints**: 10 endpoints (includes new job-specific filtering endpoint)
+**Templates**: 4 professional templates (Modern, Classic, Creative, ATS-Optimized)
+**Local Caching**: Enabled (7-day cache for downloads, reduces S3 bandwidth)
+**Job Association**: All exports tied to job_id for efficient job-specific queries
 **Dependencies**: dio, open_file, share_plus, path_provider, cached_network_image
-**Last Updated**: November 2025
+**Last Updated**: December 2025
+
+**Key Architecture Decisions**:
+- **Navigation**: Export button on generation cards → ExportOptionsScreen → back to generation tab
+- **Storage View**: Job-specific exports accessed via "Storage" button on JobDetailScreen
+- **Performance**: Denormalized job_id + composite index + local caching for optimal speed
+- **User Experience**: Instant access to cached files, grouped by date, job context always visible

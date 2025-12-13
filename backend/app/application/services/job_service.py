@@ -231,16 +231,17 @@ class JobService:
         )
         return len(jobs)
     
-    async def get_by_id(self, job_id: str) -> Optional[Job]:
+    async def get_by_id(self, job_id: str, user_id: int) -> Optional[Job]:
         """Get job by ID.
         
         Args:
             job_id: Job ID
+            user_id: User ID for authorization
             
         Returns:
             Job entity or None
         """
-        return await self.repository.get_by_id(job_id)
+        return await self.repository.get_by_id(job_id, user_id)
     
     async def update_job(self, job_id: str, **kwargs) -> Optional[Job]:
         """Update job details.

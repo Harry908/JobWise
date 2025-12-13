@@ -27,7 +27,8 @@
 - `ranking_id` (string): Foreign key to `job_content_rankings.id`; links a generation to the cached ranking used.
 - `document_type` (string): Either `"resume"` or `"cover_letter"`; controls generation path and template.
 - `status` (string): Lifecycle for both rankings and generations; typical values `"completed"`, `"pending"`, `"failed"` (see error handling).
-- `content_text` (text): Final generated document body (resume or cover letter) stored in `generations`.
+- `content_text` (text): Plain text version of generated document (for search, display, backward compatibility).
+- `content_structured` (JSON): **NEW** Structured JSON representation for export templates (header, sections, metadata).
 - `llm_metadata` (JSON/text): Raw LLM call metadata (model, tokens, latency, prompts/trace) for observability.
 - `ranked_experience_ids` / `ranked_project_ids` (JSON arrays): Ordered IDs used as input when generating documents.
 - `ats_score` / `ats_feedback`: Numeric score and explanation for ATS-readiness of generated content.
@@ -50,6 +51,7 @@ The AI Generation API provides AI-powered resume and cover letter generation usi
 - **Resume Generation**: Pure logic compilation using ranked content (<1 second)
 - **Cover Letter Generation**: AI-powered personalized letters (~3-5 seconds)
 - **Generation History**: Track all generated documents with ATS scores
+- **Structured Content**: Generates both plain text AND structured JSON for export templates
 
 **Related APIs**:
 - [Sample Upload API](04a-sample-upload-api.md) - Upload sample documents used by this API
@@ -113,6 +115,7 @@ Prerequisites: User has uploaded samples via Sample Upload API
 | 4 | POST | `/generations/cover-letter` | Generate cover letter | 70b-versatile | ~3-5s |
 | 5 | GET | `/rankings/job/{job_id}` | Get job rankings | None | <100ms |
 | 6 | GET | `/generations/history` | Get generation history | None | <200ms |
+| 7 | DELETE | `/generations/{generation_id}` | Delete generation | None | <100ms |
 
 ---
 
@@ -354,9 +357,118 @@ Generate a tailored resume for a specific job using ranked content.
 2. Select top N experiences based on ranking
 3. Select top M projects based on ranking
 4. Use enhanced descriptions if available
-5. Compile resume using template (pure logic)
-6. Calculate ATS compatibility score
-7. Return formatted resume text
+5. Build structured JSON content (header, sections, metadata)
+6. Compile plain text resume for display
+7. Calculate ATS compatibility score
+8. Store both `content_text` AND `content_structured` in database
+9. Return formatted resume text + metadata
+
+**Structured Content Generated**:
+```json
+{
+  "header": {
+    "name": "John Doe",
+    "title": "Senior Software Engineer",
+    "email": "john@example.com",
+    "phone": "+1-555-0100",
+    "location": "Seattle, WA",
+    "linkedin": "https://linkedin.com/in/johndoe",
+    "github": "https://github.com/johndoe",
+    "website": "https://johndoe.dev"
+  },
+  "sections": [
+    {
+      "type": "professional_summary",
+      "content": "Results-driven Senior Software Engineer with 8+ years..."
+    },
+    {
+      "type": "skills",
+      "categories": [
+        {
+          "name": "Technical Skills",
+          "items": ["Python", "JavaScript", "TypeScript", "AWS", "Docker"]
+        },
+        {
+          "name": "Soft Skills",
+          "items": ["Leadership", "Communication", "Problem Solving", "Team Collaboration"]
+        },
+        {
+          "name": "Languages",
+          "items": [
+            {"name": "English", "proficiency": "native"},
+            {"name": "Spanish", "proficiency": "conversational"}
+          ]
+        },
+        {
+          "name": "Certifications",
+          "items": [
+            {
+              "name": "AWS Certified Solutions Architect",
+              "issuer": "Amazon Web Services",
+              "date_obtained": "2024-03-15",
+              "expiry_date": "2027-03-15",
+              "credential_id": "AWS-SAA-12345"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "experience",
+      "entries": [
+        {
+          "id": "exp-uuid",
+          "title": "Senior Software Engineer",
+          "company": "TechCorp Inc.",
+          "location": "Seattle, WA",
+          "start_date": "January 2020",
+          "end_date": "Present",
+          "is_current": true,
+          "description": "Enhanced description...",
+          "bullets": ["Led team of 5 engineers", "Improved performance by 40%"],
+          "achievements": ["Shipped 5 major products", "Reduced costs by $200K"]
+        }
+      ]
+    },
+    {
+      "type": "projects",
+      "entries": [
+        {
+          "id": "proj-uuid",
+          "name": "JobWise",
+          "description": "AI-powered resume generator...",
+          "technologies": ["Python", "FastAPI", "Flutter"],
+          "url": "https://github.com/johndoe/jobwise",
+          "start_date": "2024-01-15",
+          "end_date": null
+        }
+      ]
+    },
+    {
+      "type": "education",
+      "entries": [
+        {
+          "id": "edu-uuid",
+          "degree": "Bachelor of Science",
+          "field_of_study": "Computer Science",
+          "institution": "University of Washington",
+          "start_date": "2013-09-01",
+          "end_date": "2017-06-15",
+          "gpa": 3.85,
+          "honors": ["Summa Cum Laude", "Dean's List"]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total_years_experience": 8,
+    "top_skills": ["Python", "AWS", "React", "Leadership"],
+    "industries": ["Tech", "Software", "Cloud"],
+    "total_projects": 4,
+    "total_certifications": 1
+  }
+}
+```
 
 **Performance**: <1 second (no LLM call)
 
@@ -523,6 +635,45 @@ curl -X GET "http://localhost:8000/api/v1/generations/history?document_type=resu
 
 ---
 
+### 7. Delete Generation
+
+Delete a generation permanently.
+
+**Endpoint**: `DELETE /api/v1/generations/{generation_id}`
+
+**Authentication**: Required
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `generation_id` | UUID | Yes | Generation unique identifier |
+
+**Request Example**:
+```bash
+curl -X DELETE http://localhost:8000/api/v1/generations/990e8400-e29b-41d4-a716-446655440004 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success Response** (204 No Content): No body
+
+**Error Responses**:
+
+**404 Not Found**:
+```json
+{
+  "detail": "Generation not found"
+}
+```
+
+**403 Forbidden**:
+```json
+{
+  "detail": "Not authorized to delete this generation"
+}
+```
+
+---
+
 ## Database Schema
 
 ### job_content_rankings Table
@@ -559,7 +710,8 @@ CREATE TABLE generations (
     profile_id VARCHAR NOT NULL,
     ranking_id VARCHAR,
     document_type VARCHAR NOT NULL,  -- 'resume' or 'cover_letter'
-    content_text TEXT NOT NULL,
+    content_text TEXT NOT NULL,  -- Plain text for display/search
+    content_structured TEXT,  -- NEW: JSON for export templates
     ats_score REAL,
     ats_feedback TEXT,
     llm_metadata TEXT NOT NULL,  -- JSON
@@ -571,6 +723,8 @@ CREATE TABLE generations (
     FOREIGN KEY (ranking_id) REFERENCES job_content_rankings(id)
 );
 ```
+
+**Note**: `content_structured` stores JSON with header, sections, and metadata for export template rendering.
 
 ---
 

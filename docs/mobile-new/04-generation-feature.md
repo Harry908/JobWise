@@ -50,10 +50,42 @@ The Generation feature is the core AI-powered functionality of JobWise. It allow
 
 ## Screens
 
-### 1. GenerationOptionsScreen
+**Note**: Generation UI is integrated into `JobDetailScreen` via the `JobGenerationTab` widget rather than separate screens.
 
-**Route**: `/generate`
-**File**: `lib/screens/generation/generation_options_screen.dart`
+### JobGenerationTab Widget
+
+**File**: `lib/widgets/job_generation_tab.dart`
+**Context**: Tab within JobDetailScreen
+
+**UI Components**:
+- Resume generation section:
+  - Max experiences slider (1-10, default 5)
+  - Max projects slider (1-5, default 3)
+  - Include summary toggle
+  - "Generate Resume" button
+- Cover letter generation section:
+  - Company name field (pre-filled)
+  - Hiring manager name field (optional)
+  - Max paragraphs slider (1-5, default 3)
+  - "Generate Cover Letter" button
+- Generation history list:
+  - Filter by document type
+  - Shows recent generations for this job
+  - Click to view/copy generated content
+
+**User Flow**:
+```
+1. User navigates to job detail screen
+2. Switch to "AI Generation" tab
+3. Configure generation options
+4. Tap "Generate Resume" or "Generate Cover Letter"
+5. Progress dialog shows with stages
+6. On completion, result dialog shows with:
+   - Generated content
+   - Copy to clipboard button
+   - ATS score (if available)
+7. Generation added to history list
+```
 
 **Context**: User navigates here from JobDetailScreen or HomeScreen
 
@@ -768,13 +800,106 @@ class RankedItem {
 
 ## State Management
 
-**Architecture**: Separated providers for focused responsibilities
+### GenerationsProvider (StateNotifier)
 
-### SamplesProvider (`samples_provider.dart`)
+**File**: `lib/providers/generations_provider.dart`
 
-Manages sample document uploads (resumes and cover letters) for teaching AI writing style.
+Uses traditional `StateNotifier` pattern (not code generation).
+
+```dart
+class GenerationsState {
+  final bool isEnhancing;
+  final bool isGenerating;
+  final double progress;
+  final String? currentStage;
+  final String? errorMessage;
+  final Map<String, dynamic>? lastGeneration;
+  final List<Map<String, dynamic>> history;
+  
+  const GenerationsState({
+    this.isEnhancing = false,
+    this.isGenerating = false,
+    this.progress = 0.0,
+    this.currentStage,
+    this.errorMessage,
+    this.lastGeneration,
+    this.history = const [],
+  });
+}
+
+class GenerationsNotifier extends StateNotifier<GenerationsState> {
+  final GenerationsApiClient _apiClient;
+
+  Future<bool> enhanceProfile({
+    required String profileId,
+    String? customPrompt,
+  }) async { /* ... */ }
+
+  Future<Map<String, dynamic>?> generateResume({
+    required String jobId,
+    int maxExperiences = 5,
+    int maxProjects = 3,
+    bool includeSummary = true,
+  }) async { /* ... */ }
+
+  Future<Map<String, dynamic>?> generateCoverLetter({
+    required String jobId,
+    String? companyName,
+    String? hiringManagerName,
+    int maxParagraphs = 4,
+  }) async { /* ... */ }
+}
+
+final generationsProvider =
+    StateNotifierProvider<GenerationsNotifier, GenerationsState>(
+  (ref) => GenerationsNotifier(ref.watch(generationsApiClientProvider)),
+);
+```
+
+### SamplesProvider (StateNotifier)
 
 **File**: `lib/providers/samples_provider.dart`
+
+Manages sample document uploads (resumes and cover letters).
+
+```dart
+class SamplesState {
+  final List<Sample> samples;
+  final bool isLoading;
+  final String? errorMessage;
+
+  List<Sample> get resumes => 
+      samples.where((s) => s.documentType == 'resume').toList();
+  
+  List<Sample> get coverLetters =>
+      samples.where((s) => s.documentType == 'cover_letter').toList();
+  
+  Sample? get activeResumeSample =>
+      resumes.where((s) => s.isActive).firstOrNull;
+  
+  Sample? get activeCoverLetterSample =>
+      coverLetters.where((s) => s.isActive).firstOrNull;
+}
+
+class SamplesNotifier extends StateNotifier<SamplesState> {
+  final SamplesApiClient _apiClient;
+
+  Future<void> loadSamples() async { /* ... */ }
+  
+  Future<void> uploadSample({
+    required String documentType,
+    required String fileName,
+    required List<int> fileBytes,
+  }) async { /* ... */ }
+  
+  Future<void> deleteSample(String sampleId) async { /* ... */ }
+}
+
+final samplesProvider =
+    StateNotifierProvider<SamplesNotifier, SamplesState>(
+  (ref) => SamplesNotifier(ref.watch(samplesApiClientProvider)),
+);
+```
 
 ```dart
 class SamplesState {

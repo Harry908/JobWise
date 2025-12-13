@@ -20,6 +20,7 @@ class Generation:
     document_type: DocumentType
     content_text: str
     status: GenerationStatus
+    content_structured: Optional[str] = None
     ats_score: Optional[float] = None
     ats_feedback: Optional[str] = None
     llm_metadata: Optional[str] = None

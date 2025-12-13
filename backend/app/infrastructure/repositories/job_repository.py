@@ -62,16 +62,20 @@ class JobRepository:
         
         return self._model_to_entity(job_model)
 
-    async def get_by_id(self, job_id: str) -> Optional[Job]:
-        """Get job by ID.
+    async def get_by_id(self, job_id: str, user_id: int) -> Optional[Job]:
+        """Get job by ID with user authorization.
         
         Args:
             job_id: Job ID
+            user_id: User ID (for authorization)
             
         Returns:
-            Job entity or None if not found
+            Job entity or None if not found or doesn't belong to user
         """
-        stmt = select(JobModel).where(JobModel.id == job_id)
+        stmt = select(JobModel).where(
+            JobModel.id == job_id,
+            JobModel.user_id == user_id
+        )
         result = await self.db.execute(stmt)
         job_model = result.scalar_one_or_none()
         

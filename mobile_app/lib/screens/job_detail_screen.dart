@@ -111,6 +111,22 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen>
         title: const Text('Job Details'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: jobAsync.hasValue && jobAsync.value != null
+                ? () {
+                    final job = jobAsync.value!;
+                    context.push(
+                      '/exports/${widget.jobId}',
+                      extra: {
+                        'jobTitle': job.title,
+                        'companyName': job.company,
+                      },
+                    );
+                  }
+                : null,
+            tooltip: 'Storage',
+          ),
+          IconButton(
             icon: const Icon(Icons.delete),
             onPressed: jobAsync.hasValue ? () => _deleteJob(context) : null,
             tooltip: 'Delete Job',

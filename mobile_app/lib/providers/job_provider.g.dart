@@ -317,7 +317,7 @@ final filteredUserJobsProvider = AutoDisposeProvider<List<Job>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FilteredUserJobsRef = AutoDisposeProviderRef<List<Job>>;
-String _$userJobsHash() => r'be01e6e2cac3485537241cce9a4d9c15d16dadf5';
+String _$userJobsHash() => r'38e27c67f476f2d3d5e1d573f22c082d30937e5a';
 
 /// See also [UserJobs].
 @ProviderFor(UserJobs)
@@ -333,7 +333,7 @@ final userJobsProvider =
     );
 
 typedef _$UserJobs = AutoDisposeAsyncNotifier<List<Job>>;
-String _$jobActionsHash() => r'44ed47d707a3beaaea2e8e6b4c79b08552ad010b';
+String _$jobActionsHash() => r'ff7d0a31abf723d247af7f5b9b64ba5a4854e5f9';
 
 /// See also [JobActions].
 @ProviderFor(JobActions)

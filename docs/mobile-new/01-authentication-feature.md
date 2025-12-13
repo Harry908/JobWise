@@ -54,7 +54,7 @@ The Authentication feature provides user registration, login, password managemen
 ### 1. LoginScreen
 
 **Route**: `/login`
-**File**: `lib/screens/auth/login_screen.dart`
+**File**: `lib/screens/auth_screens.dart`
 
 **UI Components**:
 - Email text field with validation
@@ -91,7 +91,9 @@ The Authentication feature provides user registration, login, password managemen
 ### 2. RegisterScreen
 
 **Route**: `/register`
-**File**: `lib/screens/auth/register_screen.dart`
+**File**: `lib/screens/auth_screens.dart`
+
+**Note**: Both `LoginScreen` and `RegisterScreen` are in the same file for simplicity.
 
 **UI Components**:
 - Full name text field

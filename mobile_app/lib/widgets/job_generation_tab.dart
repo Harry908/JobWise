@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/job.dart';
 import '../providers/generations_provider.dart';
 import 'package:intl/intl.dart';
@@ -546,7 +547,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
     final documentType = generation['document_type'] as String?;
     final createdAt = generation['created_at'] as String?;
     final atsScore = generation['ats_score'] as num?;
-    final generationId = generation['generation_id'] as String?;
+    final generationId = generation['id'] as String? ?? generation['generation_id'] as String?;
 
     final isResume = documentType == 'resume';
     final timestamp = createdAt != null ? DateTime.tryParse(createdAt) : null;
@@ -616,6 +617,17 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
                   ),
                 ),
               const SizedBox(width: 8),
+              // Export Button
+              FilledButton.tonalIcon(
+                onPressed: () => _navigateToExport(generationId, documentType),
+                icon: const Icon(Icons.upload_file, size: 18),
+                label: const Text('Export'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () => _deleteGeneration(generationId, documentType),
@@ -626,6 +638,30 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
           ),
         ),
       ),
+    );
+  }
+
+  void _navigateToExport(String? generationId, String? documentType) {
+    if (generationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to export: Generation ID not found')),
+      );
+      return;
+    }
+
+    // Use the provided document type or default to 'resume'
+    final docType = documentType ?? 'resume';
+
+    // Navigate to export options screen with generation_id and job_id
+    context.push(
+      '/export/options',
+      extra: {
+        'generationId': generationId,
+        'jobId': widget.job.id,
+        'jobTitle': widget.job.title,
+        'company': widget.job.company,
+        'documentType': docType,
+      },
     );
   }
 

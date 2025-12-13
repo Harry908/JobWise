@@ -807,6 +807,59 @@ class Certification {
 
 ## State Management
 
+### Profile Provider (Riverpod Code Generation)
+
+**File**: `lib/providers/profile_provider.dart`
+
+The profile feature uses **Riverpod with code generation** for state management.
+
+```dart
+@Riverpod(keepAlive: true)
+class Profile extends _$Profile {
+  ProfilesApiClient get _api => ref.read(profilesApiClientProvider);
+
+  @override
+  Future<model.Profile?> build() async {
+    final authState = ref.watch(authProvider);
+    if (authState.valueOrNull == null) {
+      return null;
+    }
+
+    try {
+      return await _api.getCurrentUserProfile();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> createProfile(model.Profile profile) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return _api.createProfile(profile);
+    });
+  }
+
+  Future<void> updateProfile(model.Profile profile) async {
+    final currentValue = state.value;
+    if (currentValue == null) return;
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final profileId = currentValue.id;
+      return _api.updateProfile(profileId, profile);
+    });
+  }
+}
+```
+
+**Key Features**:
+- Auto-refreshes when auth state changes
+- Gracefully handles 404 for new users
+- Bulk operations for experiences, education, projects
+- Optimistic updates with error rollback
+
 ### ProfileState
 
 **File**: `lib/providers/profile/profile_state.dart`

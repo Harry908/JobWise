@@ -71,6 +71,7 @@ class GenerationResponse(BaseModel):
     document_type: str
     status: str
     content_text: str
+    content_structured: Optional[str] = None
     ats_score: Optional[float] = None
     ats_feedback: Optional[str] = None
     llm_metadata: Optional[Dict[str, Any]] = None
