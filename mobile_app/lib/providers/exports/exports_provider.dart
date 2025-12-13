@@ -182,12 +182,26 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
   }
 
   /// Download an export and save to local cache
-  Future<void> downloadExport(String exportId, String savePath) async {
+  Future<void> downloadExport(String exportId, String savePath, {Function(double)? onProgress}) async {
     try {
       await _apiClient.downloadFile(
         exportId: exportId,
         savePath: savePath,
+        onProgress: onProgress,
       );
+
+      // Update cached path in state and set cache expiry (7 days)
+      final updatedFiles = state.files.map((f) {
+        if (f.exportId == exportId) {
+          return f.copyWithCache(
+            localCachePath: savePath,
+            cacheExpiresAt: DateTime.now().add(const Duration(days: 7)),
+          );
+        }
+        return f;
+      }).toList();
+
+      state = state.copyWith(files: updatedFiles);
     } catch (e) {
       rethrow;
     }

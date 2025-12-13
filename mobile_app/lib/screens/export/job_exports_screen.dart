@@ -60,58 +60,22 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
 
   Future<void> _openExport(ExportedFile export) async {
     try {
-      // Check if cache is valid
+      // Check if cache is valid and open only if it is cached
       final isCacheValid = await export.isCacheValid();
 
-      String filePath;
-      if (isCacheValid) {
-        // Open from cache instantly
-        filePath = export.localCachePath!;
-      } else {
-        // Download and cache
+      if (!isCacheValid) {
         if (!mounted) return;
-        
-        // Show downloading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text('Downloading...'),
-              ],
-            ),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File is not downloaded. Please download first.')),
         );
-
-        // Download file
-        final directory = await getApplicationDocumentsDirectory();
-        final cachePath = '${directory.path}/exports/${export.exportId}.${export.format}';
-        
-        // Create directory if needed
-        final cacheDir = Directory('${directory.path}/exports');
-        if (!await cacheDir.exists()) {
-          await cacheDir.create(recursive: true);
-        }
-
-        // Download using API client
-        await ref
-            .read(exportsNotifierProvider.notifier)
-            .downloadExport(export.exportId, cachePath);
-
-        if (!mounted) return;
-        Navigator.of(context).pop(); // Close downloading dialog
-
-        filePath = cachePath;
+        return;
       }
 
-      // Open file
+      final filePath = export.localCachePath!;
+
+      // Open file from cache
       final result = await OpenFile.open(filePath);
-      
       if (!mounted) return;
-      
       if (result.type != ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -122,12 +86,6 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      
-      // Close downloading dialog if open
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error opening file: $e'),
@@ -247,6 +205,72 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
           content: Text('Failed to delete export: $e'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
+      );
+    }
+  }
+
+  Future<void> _downloadExportOnly(ExportedFile export) async {
+    try {
+      // If already cached, notify
+      final isCacheValid = await export.isCacheValid();
+      if (isCacheValid) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File already downloaded')),
+        );
+        return;
+      }
+
+      // Build cache path
+      final directory = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${directory.path}/exports');
+      if (!await cacheDir.exists()) {
+        await cacheDir.create(recursive: true);
+      }
+      final cachePath = '${cacheDir.path}/${export.exportId}.${export.format}';
+
+      final progressNotifier = ValueNotifier<double>(0.0);
+      final dialogFuture = showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text('Downloading ${export.filename}'),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (context, value, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(value: value),
+                const SizedBox(height: 12),
+                Text('${(value * 100).round()}%'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      try {
+        await ref.read(exportsNotifierProvider.notifier).downloadExport(
+              export.exportId,
+              cachePath,
+              onProgress: (p) {
+                progressNotifier.value = p;
+              },
+            );
+      } finally {
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        progressNotifier.dispose();
+        await dialogFuture;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Download completed')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download failed: $e')),
       );
     }
   }
@@ -427,46 +451,50 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         leading: CircleAvatar(
+          radius: 22,
           child: Text(export.formatIcon),
         ),
         title: Text(
           export.filename,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${export.templateDisplayName} • ${export.formattedFileSize}'),
-            FutureBuilder<bool>(
-              future: export.isCacheValid(),
-              builder: (context, snapshot) {
-                if (snapshot.data == true) {
-                  return Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Cached',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+            Row(
+              children: [
+                Expanded(child: Text('${export.templateDisplayName} • ${export.formattedFileSize}')),
+                if (export.localCachePath != null && export.cacheExpiresAt != null && DateTime.now().isBefore(export.cacheExpiresAt!)) ...[
+                  const SizedBox(width: 8),
+                  Chip(
+                    label: const Text('Downloaded'),
+                    backgroundColor: Colors.green[50],
+                    labelStyle: TextStyle(color: Colors.green[800], fontSize: 12),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
-        trailing: PopupMenuButton<String>(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon((export.localCachePath != null && export.cacheExpiresAt != null && DateTime.now().isBefore(export.cacheExpiresAt!)) ? Icons.open_in_new : Icons.download),
+              onPressed: () {
+                if (export.localCachePath != null && export.cacheExpiresAt != null && DateTime.now().isBefore(export.cacheExpiresAt!)) {
+                  _openExport(export);
+                } else {
+                  _downloadExportOnly(export);
+                }
+              },
+              tooltip: (export.localCachePath != null && export.cacheExpiresAt != null && DateTime.now().isBefore(export.cacheExpiresAt!)) ? 'Open' : 'Download',
+            ),
+            PopupMenuButton<String>(
           onSelected: (value) {
             switch (value) {
               case 'open':

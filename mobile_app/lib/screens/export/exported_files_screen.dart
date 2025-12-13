@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'dart:io';
+
 import '../../models/exported_file.dart';
 import '../../providers/exports/exports_provider.dart';
+import '../../providers/job_provider.dart';
+import '../../models/job.dart';
 import '../../widgets/error_display.dart';
 import 'export_actions_sheet.dart';
 import 'export_options_screen.dart';
@@ -142,18 +149,70 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
         ? files.where((file) => file.format == _selectedFormat).toList()
         : files;
 
+    // Group files by job
+    final groupedFiles = <String, List<ExportedFile>>{};
+    for (final file in filteredFiles) {
+      final jobKey = file.jobId ?? 'no-job';
+      if (!groupedFiles.containsKey(jobKey)) {
+        groupedFiles[jobKey] = [];
+      }
+      groupedFiles[jobKey]!.add(file);
+    }
+
+    // Preload job details for groups (so we can show job titles when metadata is missing)
+    final jobDetails = <String, AsyncValue<Job?>>{};
+    for (final jobId in groupedFiles.keys) {
+      if (jobId == 'no-job') continue;
+      jobDetails[jobId] = ref.watch(selectedJobProvider(jobId));
+    }
+
     return RefreshIndicator(
       onRefresh: () => ref
           .read(exportsNotifierProvider.notifier)
           .loadExportedFiles(jobId: widget.jobId),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: filteredFiles.length,
+        itemCount: groupedFiles.keys.length,
         itemBuilder: (context, index) {
-          final file = filteredFiles[index];
-          return _ExportedFileCard(
-            file: file,
-            onTap: () => _showFileActions(file),
+          final jobId = groupedFiles.keys.elementAt(index);
+          final jobFiles = groupedFiles[jobId]!;
+          
+          // Get job title from metadata (use first file's metadata)
+          // Prefer API job title if available, then exported metadata, then fallback
+          final metadataTitle = jobFiles.first.metadata?['job_title'] as String?;
+          final metadataCompany = jobFiles.first.metadata?['company'] as String?;
+          String jobTitle = metadataTitle ?? (jobId != 'no-job' ? jobId : 'Untitled Job');
+          String? company = metadataCompany;
+
+          if (jobId != 'no-job') {
+            final maybeJob = jobDetails[jobId];
+            if (maybeJob != null) {
+              maybeJob.maybeWhen(
+                data: (job) {
+                  if (job != null) {
+                    jobTitle = job.title ?? jobTitle;
+                    company = job.company ?? company;
+                  }
+                },
+                orElse: () {},
+              );
+            }
+          }
+          
+          return _JobExportsGroup(
+            jobId: jobId == 'no-job' ? null : jobId,
+            jobTitle: jobTitle,
+            company: company,
+            files: jobFiles,
+            onFileTap: _showFileActions,
+            onFileOpen: (f) async {
+              final isDownloaded = f.localCachePath != null && f.cacheExpiresAt != null && DateTime.now().isBefore(f.cacheExpiresAt!);
+              if (isDownloaded) {
+                await _openFile(f);
+              } else {
+                await _downloadFile(f);
+              }
+            },
           );
         },
       ),
@@ -222,20 +281,99 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
     );
   }
 
+  Future<void> _openFile(ExportedFile file) async {
+    try {
+      final isCacheValid = await file.isCacheValid();
+      if (!isCacheValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File is not downloaded. Please download first.')),
+        );
+        return;
+      }
+
+      final filePath = file.localCachePath!;
+      final result = await OpenFile.open(filePath);
+      if (!context.mounted) return;
+      if (result.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to open file')),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open file: $e')),
+      );
+    }
+  }
+
   void _downloadFile(ExportedFile file) async {
     try {
-      // Show download progress
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Downloading ${file.filename}...')),
+      // If cache is valid, open directly
+      final isCacheValid = await file.isCacheValid();
+      if (isCacheValid) {
+        final cachePath = file.localCachePath!;
+        final result = await OpenFile.open(cachePath);
+        if (!context.mounted) return;
+        if (result.type != ResultType.done) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to open cached file')),
+          );
+        }
+        return;
+      }
+
+      // Build cache path and prepare directory
+      final directory = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${directory.path}/exports');
+      if (!await cacheDir.exists()) {
+        await cacheDir.create(recursive: true);
+      }
+      final cachePath = '${cacheDir.path}/${file.exportId}.${file.format}';
+
+      final progressNotifier = ValueNotifier<double>(0.0);
+      final dialogFuture = showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text('Downloading ${file.filename}'),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (context, value, _) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(value: value),
+                  const SizedBox(height: 12),
+                  Text('${(value * 100).round()}%'),
+                ],
+              );
+            },
+          ),
+        ),
       );
 
-      // TODO: Implement actual download with progress tracking
-      // await ref.read(exportsNotifierProvider.notifier).downloadFile(file);
+      try {
+        await ref.read(exportsNotifierProvider.notifier).downloadExport(
+              file.exportId,
+              cachePath,
+              onProgress: (p) {
+                progressNotifier.value = p;
+              },
+            );
+      } finally {
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        progressNotifier.dispose();
+        await dialogFuture;
+      }
 
+      // Mark as downloaded — do not open automatically
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Download completed!')),
+        const SnackBar(content: Text('Download completed')),
       );
+      return;
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Download failed: $e')),
       );
@@ -323,37 +461,161 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
+class _JobExportsGroup extends StatelessWidget {
+  final String jobTitle;
+  final String? company;
+  final String? jobId;
+  final List<ExportedFile> files;
+  final void Function(ExportedFile) onFileTap;
+  final void Function(ExportedFile) onFileOpen;
+
+  const _JobExportsGroup({
+    required this.jobTitle,
+    this.company,
+    this.jobId,
+    required this.files,
+    required this.onFileTap,
+    required this.onFileOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Job header (clickable, navigates to job detail if available)
+          InkWell(
+            onTap: jobId == null || jobId == 'no-job'
+                ? null
+                : () => context.push('/jobs/$jobId'),
+            child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+                child: Row(
+              children: [
+                Icon(
+                  Icons.work_outline,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        jobTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (company != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          company!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${files.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            ),
+          ),
+          // Files list
+          ...files.map((file) => _ExportedFileCard(
+                file: file,
+                onTap: () => onFileTap(file),
+                onOpen: () => onFileOpen(file),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExportedFileCard extends StatelessWidget {
   final ExportedFile file;
   final VoidCallback onTap;
+  final VoidCallback onOpen;
 
   const _ExportedFileCard({
     required this.file,
     required this.onTap,
+    required this.onOpen,
   });
+
+  bool get _isDownloaded {
+    return file.localCachePath != null && file.cacheExpiresAt != null && DateTime.now().isBefore(file.cacheExpiresAt!);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         leading: Icon(
           _getFormatIcon(file.format),
           color: _getFormatColor(file.format),
-          size: 32,
+          size: 38,
         ),
         title: Text(
           file.filename,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${file.formattedFileSize} • ${file.template} • ${DateFormat.yMMMd().format(file.createdAt)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${file.formattedFileSize} • ${file.template} • ${DateFormat.yMMMd().format(file.createdAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_isDownloaded) ...[
+                  const SizedBox(width: 8),
+                  Chip(
+                    label: const Text('Downloaded'),
+                    backgroundColor: Colors.green[50],
+                    labelStyle: TextStyle(color: Colors.green[800], fontSize: 12),
+                  ),
+                ],
+              ],
             ),
             if (file.isExpired) ...[
               const SizedBox(height: 4),
@@ -367,9 +629,19 @@ class _ExportedFileCard extends StatelessWidget {
             ],
           ],
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: onTap,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(_isDownloaded ? Icons.open_in_new : Icons.download),
+              onPressed: onOpen,
+              tooltip: _isDownloaded ? 'Open' : 'Download',
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: onTap,
+            ),
+          ],
         ),
         onTap: onTap,
       ),

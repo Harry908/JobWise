@@ -201,6 +201,27 @@ Fixed all 23 Flutter analysis errors by correcting syntax issues, import paths, 
 
 ---
 
+## Log Entry: 9
+
+### User Request
+log this conversation
+
+### Response Summary
+Appended a summary of the recent frontend changes and feature implementations related to exports: grouped exported documents by job, displayed job titles (prefer API job data and fallback to export metadata or job ID), added clickable job headers that navigate to job details, implemented robust download handling using the API with progress updates and local caching, introduced a 'Downloaded' badge and quick Open/Download actions on export cards, stopped automatic opening after download, and increased card size for better filename display.
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/export/exported_files_screen.dart`
+  - **Change:** Grouped exports by `jobId`, pre-fetch job titles via `selectedJobProvider`, added job title/company fallback from metadata and jobId, added clickable job headers navigating to `/jobs/{jobId}`, implemented download flow with progress dialog (ValueNotifier), caching, stopped automatic open after download, added `_openFile`, increased card size and added `Downloaded` badge and quick open/download button.
+  - **Reason:** Improve export navigation, clarity, and UX; enable robust download and caching behavior with progress indicators.
+- **File:** `mobile_app/lib/screens/export/job_exports_screen.dart`
+  - **Change:** Implemented per-export open/download quick action and 'Downloaded' Chip, added `_downloadExportOnly` method for non-auto opening downloads, updated `_openExport` to only open cached files, added ValueNotifier progress dialog for downloads, and increased card size/title wrap.
+  - **Reason:** Match the same UX improvements for job-specific export view; avoid accidental auto-open and show explicit download state.
+- **File:** `mobile_app/lib/providers/exports/exports_provider.dart`
+  - **Change:** Added `onProgress` callback to `downloadExport`, update export state (`localCachePath`, `cacheExpiresAt`) on successful download (7-day expiry), maintain list consistency when downloads complete.
+  - **Reason:** Allow UI to show real-time progress and track local cached files for quick actions.
+
+---
+
 ## Log Entry: 1
 
 ### User Request
