@@ -1,403 +1,127 @@
 # JobWise - AI-Powered Job Application Assistant
 
-## Course: CptS 483 Special Topic - Coding with Agentic AI
-## Student: Harry Ky
-## Track: Mobile Development
-## Project Phase: Weeks 8-14 (Individual Project)
+**CptS 483 - Coding with Agentic AI | Harry Ky | Mobile Development Track**
+
+## 📋 Overview
+
+**JobWise** automates the job application workflow through AI-powered resume and cover letter generation. Built with Flutter and FastAPI, it provides mobile-first job search, profile management, and document export capabilities with Groq LLM integration.
+
+### Core Features
+- **Authentication & Profiles**: JWT-based auth, master resume CRUD with AI enhancement
+- **Job Management**: Save jobs via text parsing, 8-status application tracking
+- **AI Generation**: Profile enhancement, content ranking, resume/cover letter generation (<3s resumes, 5-8s cover letters)
+- **Document Export**: Professional PDF/DOCX templates with AWS S3 cloud storage
+- **Sample Learning**: Upload existing documents for AI writing style extraction
+
+**Status**: Production-ready core workflow | **Sprint 6**: Document export system complete ✅
 
 ---
 
-## 📋 Project Overview
+## ✅ Implemented Features (Sprints 1-6)
 
-Searching and applying for jobs is repetitive and time-consuming. Job seekers, especially students and early-career professionals, spend hours tailoring resumes and cover letters for each posting—an inefficient process that discourages personalization and slows down applications.
+### Feature 01: Authentication & User Management
+**Backend**: 9 JWT-based endpoints (register, login, refresh, password management)  
+**Mobile**: Material Design screens, secure token storage, automatic refresh
 
-**JobWise** is a Flutter mobile application that automates this process through **AI-generated resume and cover letter tailoring**. Users can search and browse job postings, save positions of interest, then receive AI-generated application documents tailored to each specific role. Each document remains editable, allowing users to review, refine, and export as professional PDFs ready for submission.
+### Feature 02: Profile Management  
+**Backend**: 24 CRUD endpoints for comprehensive master resume  
+**Mobile**: Multi-step form, CRUD dialogs, tag-based skills input, completeness tracking  
+**Content**: Personal info, experiences, education, skills, projects, custom fields  
+**Testing**: 58 backend tests passing
 
-The project emphasizes the **job search to application workflow**, with focus on AI-tailored document generation, prompt design, context management, and responsible AI use. During development, multiple **Agentic AI assistants** coordinate to accelerate designing, coding, testing, and documentation while maintaining quality.
+### Feature 03: Job Management & Application Tracking
+**Backend**: Job CRUD, text parsing with AI, 8-status pipeline tracking  
+**Mobile**: Browse/list/detail/paste screens, status filters, keyword highlighting  
+**Workflow**: not_applied → preparing → applied → interviewing → offer/rejected/accepted/withdrawn
 
-### Target Users
-- University students and graduates applying for internships or entry-level roles
-- Early-career professionals managing multiple job applications
-- Mobile-first users seeking efficient, AI-assisted job search preparation
-- Career changers needing tailored resumes for different industries
+### Feature 04: AI Generation & Sample Management
+**Groq LLM**: llama-3.3-70b-versatile for enhancement and generation  
+**Capabilities**:
+- Profile enhancement (professional summary, experiences, projects)
+- Content ranking (keyword matching, no embeddings)
+- Resume generation (<3s, template-based)
+- Cover letter generation (5-8s, LLM-powered)
+- Writing style extraction from uploaded samples
 
-### Core Use Cases
-1. **Profile Management:** Create and maintain master resume with work experience, education, skills, and projects
-2. **AI Enhancement:** Use AI to enrich profile content with professional language and better descriptions
-3. **Job Management:** Save job postings from text input, track application status pipeline
-4. **Sample Upload:** Upload existing resume/cover letter samples to teach AI your writing style
-5. **AI Generation:** Generate tailored resumes and cover letters using Groq LLM (llama-3.3-70b-versatile)
-6. **Document Export:** Export professional PDFs ready for submission (Sprint 6)
+**Mobile**: 5 screens (options, progress, result, history, samples)  
+**Performance**: ATS scores 70-95%, 10 V3 generation endpoints
 
----
-
-## 🎯 Working Features (Sprints 1-5 Complete)
-
-### ✅ Feature 01: Authentication & User Management
-**Status**: Fully Implemented | **Quality**: Production-Ready
-
-**Backend Capabilities**:
-- JWT-based authentication with access and refresh tokens
-- User registration with email validation and secure password hashing
-- Login with automatic token refresh on expiration
-- Token management (refresh, logout, change password)
-- Password reset flow (forgot password, reset with token)
-
-**Mobile Capabilities**:
-- Professional login/register screens with Material Design
-- Form validation with real-time feedback
-- Secure token storage using flutter_secure_storage
-- Automatic token refresh interceptor
-- User-friendly error messages with 422 validation error extraction
-
-**Key Files**:
-- Backend: `backend/app/presentation/api/auth.py` (9 endpoints)
-- Mobile: `mobile_app/lib/screens/auth/login_screen.dart`, `register_screen.dart`
-- Docs: `docs/api-services/01-authentication-api.md`, `docs/mobile-new/01-authentication-feature.md`
+### Feature 05: Document Export & Cloud Storage (Sprint 6)
+**Templates**: 4 professional templates (Modern 85% ATS, Classic 95% ATS, Creative 75% ATS, ATS-Optimized 98% ATS)  
+**Export**: PDF/DOCX generation with styling, batch export (resume + cover letter ZIP)  
+**Storage**: AWS S3 integration with presigned URLs, 100MB free tier  
+**Mobile**: Template selection, export configuration, download/share, file management  
+**Backend**: 9 API endpoints, WeasyPrint + python-docx generation
 
 ---
 
-### ✅ Feature 02: Profile Management
-**Status**: Fully Implemented | **Quality**: Production-Ready
+## 🎯 Project Status
 
-**Backend Capabilities**:
-- Comprehensive CRUD for master resume profiles
-- Bulk operations for experiences, education, and projects
-- Granular skills management (add/remove individual skills)
-- Custom fields with dynamic key-value storage
-- Profile analytics with completeness scoring
-- 24 endpoints covering all profile operations
+### Completion Summary
+- ✅ **Sprints 1-5**: Core workflow (auth, profiles, jobs, AI generation, samples)
+- ✅ **Sprint 6**: Document export system with 4 templates and S3 storage
+- ⚠️ **Web Platform**: Incomplete (network configuration issues)
 
-**Mobile Capabilities**:
-- Multi-step profile creation form (Personal Info, Experience, Education, Skills, Projects)
-- Minimal profile creation (only name + email required)
-- CRUD dialogs for experience, education, and project items
-- Tag-based skills input widget
-- Date pickers with configurable format (US/European/ISO)
-- Profile completeness indicator
-- Settings screen for user preferences
+### Performance Metrics
+- Resume Generation: <3s
+- Cover Letter: 5-8s  
+- ATS Scores: 70-95%
+- Backend Tests: 77+ passing
+- API Response: <2s (non-LLM)
 
-**Key Features**:
-- **Personal Info**: Name, email, phone, location, LinkedIn, GitHub, website, professional summary
-- **Experiences**: Title, company, location, dates, description, achievements, employment type
-- **Education**: Institution, degree, field of study, dates, GPA, honors
-- **Skills**: Technical skills, soft skills, languages, certifications
-- **Projects**: Name, description, technologies, URL, dates
-
-**Key Files**:
-- Backend: `backend/app/presentation/api/profile.py` (24 endpoints)
-- Mobile: `mobile_app/lib/screens/profile/profile_edit_screen.dart`, `profile_view_screen.dart`
-- Docs: `docs/api-services/02-profile-api.md`, `docs/mobile-new/02-profile-management-feature.md`
-
-**Testing**: 58 backend tests passing (17 core + 9 bulk + 13 granular + 19 service)
+### Known Limitations
+- Job browsing uses mock JSON data (manual paste still works)
+- UI/UX has room for improvement (functionality prioritized)
+- SQLite database (PostgreSQL required for production)
+- Web platform incomplete (network configuration issues)
 
 ---
 
-### ✅ Feature 03: Job Management & Application Tracking
-**Status**: Fully Implemented | **Quality**: Production-Ready
+## 🚀 Quick Start
 
-**Backend Capabilities**:
-- Job CRUD operations with user ownership
-- Text-based job parsing with AI (extract company, title, description, requirements)
-- URL-based job scraping (future capability, endpoint ready)
-- Application status tracking with 8-status pipeline
-- Job visibility control (active, archived, draft)
-- Query filters (status, application_status, source, pagination)
-
-**Mobile Capabilities**:
-- **Job Browse Screen**: Search mock jobs, infinite scroll, save functionality
-- **Job List Screen**: User's saved jobs with status/source filters, pull-to-refresh
-- **Job Detail Screen**: Full job display with status picker, keyword highlighting
-- **Job Paste Screen**: Raw text input for backend AI parsing
-- Interactive status picker dialog with color-coded badges
-- Application pipeline tracking (not applied → preparing → applied → interviewing → offer/rejected/accepted/withdrawn)
-
-**Key Features**:
-- **Dual Status System**:
-  - `status`: Job visibility (active, archived, draft) - controls list filtering
-  - `application_status`: Application progress tracking (8 values) - user's pipeline stage
-- **Employment Types**: full_time, part_time, contract, temporary, internship
-- **Job Sources**: user_created, text_parsed, url_scraped, mock
-- **Parsed Data**: Company, title, location, salary, description, requirements, qualifications, keywords
-
-**Key Files**:
-- Backend: `backend/app/presentation/api/job.py` (5 endpoints)
-- Mobile: `mobile_app/lib/screens/jobs/` (4 screens)
-- Models: `mobile_app/lib/models/job.dart` (Freezed models with JSON serialization)
-- Docs: `docs/api-services/03-job-api.md`, `docs/mobile-new/03-job-browsing-feature.md`
-
-**Testing**: 38 backend tests passing, end-to-end status persistence validated
-
----
-
-### ✅ Feature 04: AI Generation & Sample Management
-**Status**: Fully Implemented | **Quality**: Production-Ready
-
-**AI Generation Capabilities**:
-- **Profile Enhancement**: AI enrichment of professional summary, experience descriptions, project descriptions
-  - Uses Groq llama-3.3-70b-versatile model
-  - Extracts writing style from uploaded sample documents
-  - Preserves user's tone while improving clarity and professionalism
-  
-- **Content Ranking**: Smart relevance scoring
-  - Keyword matching between profile content and job requirements
-  - Embeddings-free algorithm (fast, no external API)
-  - Scores experiences, education, projects, and skills
-  
-- **Resume Generation**: Template-free resume creation
-  - Uses ranked content to select most relevant items
-  - Customizable (max experiences, education, projects, skills)
-  - Generation speed: <3 seconds (no LLM, pure templating)
-  - ATS score calculation with keyword density analysis
-  
-- **Cover Letter Generation**: Personalized cover letters
-  - LLM-powered using Groq llama-3.3-70b-versatile
-  - Writing style extraction from user's sample cover letter
-  - Job-specific customization with company research
-  - Generation speed: 5-8 seconds (includes 2 LLM calls)
-  - ATS score with keyword matching
-
-**Sample Document Management**:
-- Upload resume and cover letter samples (.txt format)
-- Automatic writing style extraction for AI generation
-- Sample CRUD (list, get details, delete)
-- Active sample tracking (one resume, one cover letter)
-- File storage with full_text content for LLM prompts
-
-**Mobile UI**:
-- **Generation Options Screen**: Job context, sample status, profile enhancement, customization options
-- **Progress Tracking Screen**: Real-time stage updates (4-stage pipeline visualization)
-- **Result Display Screen**: Generated content with ATS score badges, keyword highlighting
-- **History Screen**: View past generations, regenerate, copy to clipboard
-- **Sample Upload Screen**: File picker, sample cards, delete functionality
-
-**Key Features**:
-- **Real LLM Integration**: Live Groq API calls (not mock)
-- **Dual Generation Modes**: Fast resumes (<3s) vs. quality cover letters (5-8s)
-- **Sample-Based Style**: AI learns from user's existing documents
-- **ATS Optimization**: Keyword density + compliance validation
-- **Generation History**: Track all past generations by job
-- **Regeneration**: Create new versions with updated content
-
-**Key Files**:
-- Backend: `backend/app/presentation/api/generation.py`, `samples.py`
-- Mobile: `mobile_app/lib/screens/generation/`, `samples/`
-- Services: `backend/app/application/services/generation_service.py`, `ai_service.py`
-- Docs: `docs/api-services/04-v3-generation-api.md`, `04b-ai-generation-api.md`, `04a-sample-upload-api.md`
-
-**API Endpoints**: 10 V3 Generation endpoints (samples, enhance, rankings, resume, cover letter, history)
-
-**Testing**: Live Groq LLM integration tested with real profile and job data
-
----
-
-## 🎯 Project Goals & Success Criteria
-
-### Feature Completion Status
-
-**Implemented (Sprints 1-5)** ✅
-- [✅] User authentication and session management (Backend + Mobile complete)
-- [✅] Profile management with AI enhancement (39 tests passing, 0.98/1.0 quality)
-- [✅] Job management with application tracking (8-status pipeline, dual status fields)
-- [✅] Sample document upload and management (resume + cover letter)
-- [✅] AI-powered profile enhancement (Groq LLM integration)
-- [✅] Content ranking with keyword matching (embeddings-free)
-- [✅] Resume generation with ATS scoring (<3s generation)
-- [✅] Cover letter generation with style extraction (5-8s generation)
-- [✅] Generation history and regeneration
-- [✅] Comprehensive documentation (12 API/feature docs)
-
-**Sprint 6 Planned (Document Export & Cloud Storage)** 📋
-- [ ] Professional PDF export with templates (Classic, Modern, ATS-Optimized)
-- [ ] DOCX export for further editing
-- [ ] AWS S3 storage integration with versioning
-- [ ] Document library UI with download/share
-- [ ] Batch export for multiple jobs
-- [ ] Email integration
-
-**Future Enhancements** 🔮
-- [ ] Integration with real job APIs (Indeed, LinkedIn, RemoteOK)
-- [ ] Advanced ATS optimization with ML scoring
-- [ ] Application analytics and insights
-- [ ] Cloud sync and cross-device support
-- [ ] Browser extension for one-click job save
-
-### Success Metrics
-- **Functional Completeness**: Seamless workflow from job search to PDF export with AI generation quality validated across diverse job types
-- **Multi-Agent Coordination**: Effective collaboration between Architecture, Frontend, Backend, and Integration agents with documented handoffs in ADRs and logs
-- **Professional Quality**: ATS-compatible PDFs, <30s generation time, responsive UI with offline support, comprehensive error handling
-- **Portfolio Readiness**: Production-quality mobile app demonstrating AI integration, prompt engineering, and full-stack development skills
-
----
-
-## Recent Updates (December 1, 2025)
-
-**Sprint 1-5 Complete: Full AI Generation Pipeline** ✅
-**Groq LLM Integration: Live AI-Powered Generation** 🤖
-**All Core Features: Working End-to-End** ✅
-**Sprint 6 Ready: Document Export & S3 Storage** 📋
-
-### Sprint Summary (Sprints 1-5)
-
-**Sprint 1 Complete** ✅ - Backend APIs + Mobile UI Foundation
-- Backend: Auth API (9 endpoints), Profile API (24 endpoints), Job API (5 endpoints)
-- Mobile: Authentication screens, Profile management (multi-step form), Settings
-- Testing: 77 backend tests passing, clean architecture with domain-driven design
-- Documentation: 12 comprehensive API and mobile feature specifications
-
-**Sprint 2 Complete** ✅ - Generation API & AI Pipeline (Mock)
-- Generation domain models and value objects
-- 5-stage mock AI pipeline (Job Analyzer → Profile Compiler → Content Generator → Quality Validator → Export Preparation)
-- Document export API with ReportLab PDF generation
-- 3 professional resume templates (Professional, Modern, Creative)
-- 53 new tests covering pipeline and export functionality
-
-**Sprint 3 Complete** ✅ - Job Management & Application Tracking
-- Complete job CRUD with text parsing and URL scraping (ready)
-- 8-status application pipeline (not_applied → preparing → applied → interviewing → offer/rejected/accepted/withdrawn)
-- 4 mobile screens (Browse, List, Detail, Paste)
-- Dual status system (job visibility + application progress)
-- Database migration adding application_status column
-
-**Sprint 4 Complete** ✅ - Real AI Generation & Sample Upload
-- **Groq LLM Integration**: Replaced mock pipeline with real llama-3.3-70b-versatile and llama-3.1-8b-instant models
-- **Profile Enhancement**: AI enrichment of professional summary, experiences, and projects
-- **Sample Management**: Upload resume/cover letter samples for writing style extraction
-- **Content Ranking**: Smart keyword matching scoring profile items against job requirements
-- **Resume Generation**: Template-free creation using ranked content (<3s)
-- **Cover Letter Generation**: LLM-powered personalized letters (5-8s)
-- **V3 Generation API**: 10 endpoints for complete generation workflow
-- **Mobile UI**: 5 screens (Options, Progress, Result, History, Samples)
-
-**Sprint 5 Complete** ✅ - Integration, Testing & Documentation
-- **End-to-End Validation**: Complete user workflows tested (Profile → Enhance → Samples → Jobs → Generate)
-- **Comprehensive Testing**: 77+ backend tests, integration tests, manual mobile testing
-- **Documentation Sync**: All 12 docs updated with Dec 1, 2025 implementation notes
-- **UI/UX Polish**: Material Design, loading states, error handling, success feedback
-- **Production Ready**: Live Groq API integration, proper error recovery, performance targets met
-
-### Current Status (December 1, 2025)
-
-**Working Features** ✅
-1. **Authentication**: Registration, login, token refresh, password management
-2. **Profile Management**: Master resume CRUD with AI enhancement
-3. **Job Management**: Save jobs, track application status, text parsing
-4. **Sample Upload**: Resume and cover letter samples for style extraction
-5. **AI Generation**: Profile enhancement, resume generation, cover letter generation
-6. **Generation History**: View past generations, regenerate, copy to clipboard
-
-**Performance Metrics** 📊
-- Resume Generation: <3 seconds (template-based, no LLM)
-- Cover Letter Generation: 5-8 seconds (includes 2 LLM calls)
-- Profile Enhancement: ~3 seconds (1 LLM call for all content)
-- Backend Tests: 77+ passing tests across all features
-- API Response Time: <2s for all non-LLM endpoints
-- ATS Score Range: 70-95% with keyword matching
-
-**Next Up: Sprint 6** 📋
-- Professional PDF export with 3 templates
-- DOCX export for further editing
-- AWS S3 storage integration
-- Document library UI
-- Batch export and email integration
-
-### Quick Start
-
-**Backend Server**
+**Backend Server**:
 ```powershell
 cd backend
-.\start-server.bat
-
-# API Documentation: http://localhost:8000/docs
-# Server runs on: http://0.0.0.0:8000
-
-# Run profile tests (58 tests)
-pytest tests/profile -v
-
-# Run all tests with coverage
-pytest --cov=. --cov-report=html
+pip install -r requirements.txt
+python init_database.py
+uvicorn app.main:app --reload
+# API Docs: http://localhost:8000/docs
 ```
 
-**Flutter Mobile App**
+**Flutter Mobile App**:
 ```powershell
 cd mobile_app
 flutter pub get
 flutter run
+# Android emulator: 10.0.2.2:8000
+# iOS simulator: localhost:8000
+```
 
-# For Android emulator (10.0.2.2 maps to localhost)
-# For iOS simulator (localhost works directly)
+**Testing**:
+```powershell
+# Backend tests
+pytest tests/ -v --cov
 
-# Run tests
+# Flutter tests  
 flutter test
-
-# Code analysis
 flutter analyze
-```
-
-
-## 🏗️ Technical Architecture
-
-### Technology Stack
-- **Mobile Framework**: Flutter 3.x (Dart)
-- **Backend Framework**: Python FastAPI
-- **Database**: SQLite (dev), PostgreSQL (prod)
-- **Cache**: In-memory (dev), Redis (prod)
-- **LLM Provider**: OpenAI GPT-3.5-turbo (dev), GPT-4/Claude 3 (prod)
-- **PDF Generation**: Flutter `pdf` package, Puppeteer (backend fallback)
-- **Job Data**: Mock JSON (dev), Indeed/LinkedIn API (prod)
-- **State Management**: Provider or Riverpod (TBD in Sprint 2)
-- **API Integration**: http/dio packages
-
-### Multi-Agent System Design
-
-#### Agent 1: Business Analyst Agent
-- **Primary Responsibility**: Requirements analysis, user story creation, business rule definition, acceptance criteria validation
-- **Input**: Project objectives, user feedback, market research, stakeholder requirements
-- **Output**: Requirements specifications, user stories, acceptance criteria, business rules, use case documentation
-- **AI Tool**: Claude 3.5 Sonnet (primary), ChatGPT-4 (alternative)
-- **Coordination**: Initiates development cycles, hands off to Solutions Architect Agent
-
-#### Agent 2: Solutions Architect Agent  
-- **Primary Responsibility**: Technical architecture design, ADR creation, system integration planning, API contract definition
-- **Input**: Requirements from Business Analyst, technical constraints, performance targets, scalability needs
-- **Output**: Architecture Decision Records (ADRs), system architecture diagrams, API specifications, technical implementation guides
-- **AI Tool**: ChatGPT-4 (primary), Claude 3.5 Sonnet (alternative)
-- **Coordination**: Receives requirements from BA, distributes technical specs to development agents
-
-#### Agent 3: Mobile Developer Agent
-- **Primary Responsibility**: Flutter UI implementation, state management, mobile-specific features, offline capabilities
-- **Input**: UI/UX specifications, API contracts, technical requirements from Solutions Architect
-- **Output**: Flutter widgets, screens, navigation logic, state management, mobile app implementation
-- **AI Tool**: GitHub Copilot (primary), Claude 3.5 Sonnet (complex logic)
-- **Coordination**: Receives specs from SA, coordinates with Backend Developer, delivers to QA Engineer
-
-#### Agent 4: Backend Developer Agent
-- **Primary Responsibility**: FastAPI endpoints, AI generation pipeline, database design, external service integration
-- **Input**: API specifications, data models, business logic requirements from Solutions Architect
-- **Output**: REST APIs, AI pipeline services, database schemas, service integrations, API documentation
-- **AI Tool**: GitHub Copilot (primary), Claude 3.5 Sonnet (complex business logic)
-- **Coordination**: Receives specs from SA, coordinates with Mobile Developer, delivers to QA Engineer
-
-#### Agent 5: QA Engineer Agent
-- **Primary Responsibility**: Integration testing, quality validation, performance testing, bug reporting, acceptance verification
-- **Input**: Implemented features from development agents, acceptance criteria from BA, technical specs from SA
-- **Output**: Test reports, performance metrics, bug reports, quality assessments, feedback for architecture improvements
-- **AI Tool**: GitHub Copilot (test automation), ChatGPT (test strategy)
-- **Coordination**: Receives implementations from developers, provides feedback to Solutions Architect, validates against BA requirements
-
-### Architecture Diagram
-See `docs/architecture-diagram.md` for complete system architecture with development/production environment mappings.
-
-**AI Generation Pipeline**:
-```
-Writing style → Profile enhancement → Job Analyzer → Profile component ranking → Profile compiler → PDF Exporter
 ```
 
 ---
 
-## 📅 Sprint Progress
+## 🏗️ Architecture
 
-### Sprint 1: Backend APIs + Mobile UI Foundation ✅ **COMPLETED** (Weeks 8-10)
+**Stack**: Flutter + FastAPI + SQLite + Groq LLM + AWS S3  
+**AI Models**: llama-3.3-70b-versatile (generation), llama-3.1-8b-instant (enhancement)  
+**Design**: Clean architecture, domain-driven design, async FastAPI
+
+**Agentic Workflow**:
+1. **Solutions Architect** → System design, API contracts
+2. **Backend Developer** → FastAPI endpoints, AI services  
+3. **Mobile Developer** → Flutter UI, state management
+4. **Testing & Integration** → End-to-end validation
+
+**Documentation**: `docs/` folder contains 15+ comprehensive specifications
 **Status**: **SUCCESS** | **Completion Date**: October 27, 2025  
 **Goal**: Establish development infrastructure, build core backend APIs, and implement mobile UI foundation
 
@@ -673,208 +397,54 @@ All five agents successfully coordinated with context7 best practices integratio
 - **API Endpoints**: 10 new endpoints for V3 Generation API
 - **LLM Integration**: 2 Groq models (llama-3.3-70b-versatile for quality, llama-3.1-8b-instant for speed)
 - **Generation Speed**: Resume <3s, Cover Letter 5-8s (meets performance targets)
-- **UI Screens**: 5 generation screens (options, progress, result, history, samples)
-- **Database Tables**: 3 new tables (sample_documents, job_content_rankings, generations)
-- **Documentation**: 6 comprehensive API/feature docs with field semantics
+## 📅 Sprint History
 
-#### Key Technical Achievements
-- **Real AI Integration**: Replaced mock pipeline with actual Groq LLM API calls
-- **Profile Enhancement**: AI enriches all profile content (summary, experiences, projects) using sample writing style
-- **Smart Ranking**: Embeddings-free keyword matching scoring profile items against job requirements
-- **Dual Generation Modes**: Fast resume generation (<3s) vs. quality cover letters (5-8s with LLM)
-- **Sample-Based Style**: Extracts writing patterns from user's existing documents
-- **ATS Optimization**: Keyword density analysis and formatting compliance validation
+### Sprints 1-5: Core Features ✅ (Weeks 8-14)
+- **Sprint 1**: Backend APIs (Auth, Profile, Job) + Mobile UI foundation
+- **Sprint 2**: Mock AI pipeline + basic PDF generation
+- **Sprint 3**: Job management + 8-status application tracking
+- **Sprint 4**: Real Groq LLM integration + sample upload
+- **Sprint 5**: End-to-end testing + documentation sync
 
-#### Challenges Overcome
-- **LLM Prompt Engineering**: Crafted effective system prompts for profile enhancement and cover letter generation
-- **Performance Optimization**: Achieved <3s resume generation by avoiding LLM for template-based content
-- **Error Recovery**: Graceful handling of LLM API failures with retry logic and fallbacks
-- **State Synchronization**: Coordinated profile enhancement across multiple components
-- **File Upload**: Implemented multipart/form-data handling for sample document uploads
+**Key Achievements**:
+- 77+ backend tests passing
+- Live AI integration with Groq (llama-3.3-70b-versatile)
+- Complete mobile workflow (auth → profile → jobs → generation)
+- Comprehensive documentation (15+ specs)
 
----
+### Sprint 6: Document Export & S3 Storage ✅ **COMPLETED** (Week 15)
+**Goal**: Professional document formatting with cloud storage
 
-### Sprint 5: End-to-End Integration & Testing ✅ **COMPLETED**
-**Status**: **SUCCESS** | **Completion Date**: December 1, 2025  
-**Goal**: Complete end-to-end workflow validation, comprehensive testing, and production readiness
-
-#### Sprint 5 Achievements
-
-**🔄 Complete User Workflow (100% Validated)**
-- ✅ **Profile Creation → Enhancement → Samples Upload → Job Save → Generation → Export**
-- ✅ **Authentication Flow** - Registration, login, token refresh, session management
-- ✅ **Profile Management** - Create, edit, enhance with AI, view completeness score
-- ✅ **Job Management** - Browse, save, update status, track application pipeline
-- ✅ **Sample Management** - Upload resume/cover letter samples, manage active samples
-- ✅ **AI Generation** - Profile enhancement, content ranking, resume and cover letter generation
-- ✅ **Result Management** - View generated documents, copy to clipboard, regenerate
-
-**🧪 Comprehensive Testing (100% Complete)**
-- ✅ **Backend Tests** - 77+ passing tests (auth, profile, jobs, generation, samples)
-- ✅ **Integration Tests** - End-to-end API workflow validation
-- ✅ **Mobile Testing** - Manual testing of all screens and user flows
-- ✅ **LLM Testing** - Groq API integration with real profile and job data
-- ✅ **Error Scenarios** - Network failures, validation errors, LLM API failures
-- ✅ **Performance Testing** - Generation speed targets met (<3s resume, 5-8s cover letter)
-
-**📚 Complete Documentation (100% Complete)**
-- ✅ **API Documentation** - 6 comprehensive API specs (Auth, Profile, Job, V3 Generation, AI Generation, Sample Upload)
-- ✅ **Mobile Documentation** - 6 feature docs (API Config, Auth, Profile, Job, Generation, Samples, AI Generation)
-- ✅ **Field Semantics** - Backend ↔ Mobile field mappings documented (snake_case ↔ camelCase)
-- ✅ **Recent Changes** - All docs updated with December 1, 2025 implementation notes
-- ✅ **Architecture** - Clean separation of concerns, domain-driven design
-
-**🎨 UI/UX Polish (100% Complete)**
-- ✅ **Material Design** - Consistent theming, proper Material 3 components
-- ✅ **Loading States** - Progress indicators during API calls and LLM generation
-- ✅ **Error Handling** - User-friendly error messages with actionable guidance
-- ✅ **Success Feedback** - SnackBar notifications for successful operations
-- ✅ **Navigation Flow** - Intuitive routing with proper back button behavior
-
-#### Sprint 5 Metrics
-- **Total Backend Tests**: 77+ passing tests across all features
-- **API Coverage**: 100% of endpoints tested (Auth, Profile, Job, Generation, Samples)
-- **Mobile Screens**: 15+ complete screens with navigation
-- **Documentation Files**: 12 comprehensive docs (6 API + 6 mobile feature specs)
-- **End-to-End Workflows**: 3 complete user journeys validated
-- **LLM Integration**: Production-ready with Groq API key management
-
-#### Key Technical Achievements
-- **Complete Feature Set**: All Sprint 1-5 features working end-to-end
-- **Real AI Integration**: Live Groq LLM calls with profile enhancement and cover letter generation
-- **Production Backend**: FastAPI with clean architecture, async operations, proper error handling
-- **Production Mobile**: Flutter app with Riverpod state management, Material Design, offline-ready
-- **Comprehensive Docs**: Every feature documented with field semantics and API contracts
-
-#### Challenges Overcome
-- **Enhanced Description Handling**: Fixed profile update truncating enhanced descriptions
-- **Sample Upload Flow**: Implemented file picker with proper MIME type validation
-- **LLM Prompt Design**: Crafted effective prompts for consistent, high-quality output
-- **State Management**: Proper profile refresh after enhancement to show updated descriptions
-- **Documentation Sync**: Kept all docs aligned with actual implementation (dual status fields, field mappings)
-
----
-
-### Sprint 6: Document Export & S3 Storage (Week 15)
-**Goal**: Professional document formatting, PDF/DOCX export, cloud storage integration
-
-**Status**: **PLANNED** | **Dates**: December 2-8, 2025
-
-**Planned Features**:
-- [ ] **Document Format Templates** 
-  - Professional resume templates (Classic, Modern, ATS-Optimized)
-  - Cover letter templates matching resume styles
-  - Customizable sections and layouts
-  - Font and color scheme options
-  
-- [ ] **PDF Export**
-  - High-quality PDF generation from generated content
-  - Template-based formatting with proper typography
-  - ATS-compatible PDF structure (text-based, no images)
-  - Metadata embedding (author, title, keywords)
-  
-- [ ] **DOCX Export**
-  - Microsoft Word format generation
-  - Editable format for further customization
-  - Style preservation and formatting
-  
-- [ ] **S3 Storage Integration**
-  - AWS S3 bucket setup for document storage
-  - Secure document upload with presigned URLs
-  - Document versioning and history
-  - Download links with expiration
-  
-- [ ] **Document Management UI**
-  - Export options dialog (format, template selection)
-  - Document library screen (past exports)
-  - Download and share functionality
-  - Delete and regenerate options
-  
-- [ ] **Advanced Features**
-  - Batch export (multiple jobs)
-  - Email integration (send to self/employer)
-  - Print preview
-  - Document comparison (versions)
+**Implemented Features**:
+- ✅ **4 Professional Templates** (Modern, Classic, Creative, ATS-Optimized with 75-98% ATS scores)
+- ✅ **PDF/DOCX Export** (WeasyPrint + python-docx with HTML templating)
+- ✅ **AWS S3 Integration** (Cloud storage with presigned URLs, 100MB free tier)
+- ✅ **Mobile Export UI** (Template selection, export config, download/share, file history)
+- ✅ **9 API Endpoints** (Templates, export PDF/DOCX/batch, file management, download)
+- ✅ **Batch Export** (Resume + cover letter as ZIP)
+- ✅ **Template Customization** (Fonts, colors, spacing, margins)
 
 **Technical Stack**:
-- **Backend**: Python `reportlab` for PDF, `python-docx` for DOCX
-- **Storage**: AWS S3 with boto3 client
-- **Mobile**: Flutter `flutter_downloader` for file downloads
-- **Templates**: Jinja2 for dynamic content rendering
+- Backend: WeasyPrint (PDF), python-docx (DOCX), HTML templates, boto3 (S3)
+- Mobile: Flutter download, share, file system integration
+- Storage: AWS S3 with 30-day auto-delete
 
-**Success Criteria**:
-- Professional PDF output matching industry standards
-- ATS compatibility score >90% on Jobscan
-- S3 upload/download speed <3 seconds
-- Mobile download with proper file system integration
-- Template selection with live preview
+**Sprint 6 Metrics**:
+- PDF Generation: <2s per document
+- S3 Upload: <1s average
+- Template Variety: 4 styles with customization
+- Mobile Integration: Download + share functionality
+- Storage: 100MB free tier with usage tracking
+
+**Challenges Overcome**:
+- HTML-based templating for professional formatting
+- S3 CORS configuration for presigned URLs
+- Flutter platform-specific file storage
+- Template inheritance system for styling
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-- **Flutter SDK**: Version 3.x or higher ([Install Flutter](https://docs.flutter.dev/get-started/install))
-- **Dart SDK**: Included with Flutter
-- **Python**: Version 3.9+ for backend
-- **Git**: For version control
-- **Android Studio** or **Xcode**: For mobile emulators/simulators
-- **OpenAI API Key**: For LLM integration (set in `.env`)
-- **Code Editor**: VS Code recommended with Flutter and Dart extensions
-
-### Installation
-
-#### 1. Clone Repository
-```powershell
-git clone https://github.com/WSU-CptS483/course-project-Harry908.git
-cd course-project-Harry908
-```
-
-#### 2. Frontend Setup (Flutter)
-```powershell
-# Create Flutter project (if not exists)
-flutter create mobile_app
-cd mobile_app
-
-# Install dependencies
-flutter pub get
-
-# Run on emulator/simulator
-flutter run
-
-# Or specify platform
-flutter run -d chrome        # Web
-flutter run -d android       # Android
-flutter run -d ios           # iOS (macOS only)
-```
-
-#### 3. Backend Setup (Python FastAPI)
-```powershell
-# Create backend directory and navigate
-mkdir backend
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-.\venv\Scripts\activate      # Windows PowerShell
-
-# Install dependencies (after creating requirements.txt)
-pip install -r requirements.txt
-
-# Run development server
-uvicorn main:app --reload
-```
-
-#### 4. Environment Configuration
-```powershell
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your configuration
-# Required: OPENAI_API_KEY, DATABASE_URL, etc.
-```
+## 📂 Repository Structure
 
 ### Project Structure
 
@@ -1027,152 +597,71 @@ Additional references:
 - **`gitignore-templates/`**: .gitignore templates for Flutter, Python, and other frameworks
 - **`assignment-instructions/`**: Course requirements and sprint workshop guidance
 
----
+```
+backend/
+├── app/
+│   ├── presentation/api/     # 9 API routers (50+ endpoints)
+│   ├── application/services/  # Business logic (AI, generation, ranking)
+│   ├── domain/models/         # Domain entities (Profile, Job, Generation)
+│   └── infrastructure/        # Database, storage (S3), external APIs
+├── tests/                     # 77+ tests
+└── docs/                      # 15+ API specifications
 
-## 🤖 AI Coordination Summary
+mobile_app/
+├── lib/
+│   ├── screens/              # 20+ screens (auth, profile, jobs, generation, export)
+│   ├── providers/            # Riverpod state management
+│   ├── services/             # API clients, storage
+│   └── models/               # Freezed data classes with JSON
+└── test/                     # Widget and unit tests
 
-### Primary Development Agent
-**Tool**: GitHub Copilot (VS Code Extension)  
-**Used For**: Code generation, autocomplete, inline suggestions, test generation
-
-### Architecture & Design Agent
-**Tool**: ChatGPT (OpenAI)  
-**Used For**: System design, ADR creation, feature epic generation, architectural decisions
-
-### Code Review & Refinement Agent
-**Tool**: Claude (via Cursor IDE)  
-**Used For**: Code review, optimization suggestions, documentation enhancement, complex problem-solving
-
-### Integration & Testing Strategy
-**Tool**: GitHub Copilot + ChatGPT  
-**Used For**: Test strategy design, integration planning, debugging, quality assurance
-
-**Coordination Approach**: 
-Event-driven pipeline where agents hand off context through structured artifacts (ADRs, implementation summaries, test reports). Architecture Agent initiates cycles, Development Agents implement in parallel, Integration Agent validates and provides feedback for next iteration. See `docs/ai-coordination-log.md` for detailed interaction logs and prompt evolution.
-
----
-
-## 🔑 Key Features & Technical Highlights
-
-### Backend API Implementation
-- **Profile API**: Comprehensive master resume management with 58 tests passing
-  - Core CRUD with JWT-based ownership validation
-  - Bulk operations for experiences, education, projects (add/update/delete multiple items)
-  - Granular skills management (add/remove individual technical/soft skills)
-  - Custom fields with dynamic key-value storage
-  - Profile analytics with completeness scoring and recommendations
-- **Authentication API**: JWT-based auth with automatic token refresh
-  - Secure password hashing with bcrypt
-  - Token expiration and refresh mechanism
-  - User registration with validation
-- **Database**: Async SQLAlchemy with repository pattern
-  - Clean separation of concerns
-  - Relationship management with eager loading
-  - Transaction support for atomic operations
-
-### Mobile UI Implementation (Flutter + Riverpod)
-- **Authentication Screens**: Professional login/register UI
-  - Email validation and error handling
-  - Secure token storage with flutter_secure_storage
-  - Automatic token refresh interceptor
-  - 422 validation error extraction and display
-  - HTTP request/response logging for debugging
-  
-- **Profile Management**: Multi-step form with comprehensive features
-  - **Minimal Creation**: Only name + email required (progressive enhancement)
-  - **Step 0 - Personal Info**: Name, email, phone, location, LinkedIn, GitHub, website, summary
-  - **Step 1 - Experience**: CRUD dialogs with date pickers, achievements list, employment type
-  - **Step 2 - Education & Skills**: Institution details with tag-based skills input
-  - **Step 3 - Projects**: Portfolio items with technologies, highlights, repository URLs
-  
-- **State Management**: Riverpod best practices
-  - StateNotifier pattern with no public properties beyond state
-  - Immutable data classes with proper equality operators
-  - Sophisticated error handling with DioException parsing
-  - Proper state transitions using copyWith
-  
-- **UI Components**: Reusable widget library
-  - Card widgets for displaying profile items (Experience, Education, Project)
-  - Dialog widgets for CRUD operations with validation
-  - TagInput widget for skills management
-  - Date pickers with configurable format (US MM/dd/yyyy, European dd/MM/yyyy, ISO yyyy-MM-dd)
-  - Settings screen for user preferences
-  
-- **Navigation & UX**: Intuitive user experience
-  - Proper routing with go_router
-  - Back button support using context.push for secondary screens
-  - Form validation with user-friendly error messages
-  - Loading overlays during API operations
-  - Success/error snackbar notifications
+docs/
+├── api-services/             # Backend API documentation
+├── mobile-new/               # Mobile feature specifications
+└── sprint*/                  # Sprint planning and retrospectives
+```
 
 ---
 
-## 📊 Development Metrics & Targets
+## 🔗 Key Documentation
 
-- **Generation Speed**: <30 seconds for resume + cover letter
-- **API Response Time**: <2s for job search
-- **ATS Compatibility Score**: >85% (validated with Jobscan/Resume Worded)
-- **Test Coverage**: >80% for backend services, >70% for Flutter widgets
-- **Code Quality**: ESLint/Dart Analyzer passing with zero errors
-- **Token Usage**: <$5/day during development (GPT-3.5-turbo)
-
----
-
-## 🎤 Week 15: Live Presentation (5 minutes)
-
-**Format**: Live demonstration during class
-- 30 seconds: Project overview and problem statement
-- 2-3 minutes: Core functionality demo (search → save → generate → edit → export)
-- 1 minute: AI coordination approach and multi-agent workflow
-- 30 seconds: Reflection, learning outcomes, and future enhancements
+- **[Report.md](Report.md)**: Sprint 6 project report with all submission requirements
+- **[Presentation.md](Presentation.md)**: Sprint 5 presentation overview
+- **Backend Architecture**: `docs/BACKEND_ARCHITECTURE_OVERVIEW.md`
+- **Export System**: `docs/PHASE_3_EXPORT_SYSTEM_SUMMARY.md`
+- **API Docs**: `docs/api-services/` (15+ specifications)
+- **Session Logs**: `session-logs/sprint*-log/` (agent interaction transcripts)
 
 ---
 
-## 🚧 Known Issues & Current Status
+## 🎓 Learning Outcomes
 
-**Sprint 1 Complete (✅)**
-- Backend: Authentication and Profile APIs fully implemented with 58 tests passing
-- Mobile: Authentication and Profile UI complete with Riverpod state management
-- Integration: Frontend-backend communication working with proper error handling
+### Agentic AI Development
+- Multi-agent coordination with role-based specialization (SA → BE → FE workflow)
+- Prompt engineering for LLM-powered profile enhancement and generation
+- Context management across agent handoffs using structured documentation
+- VS Code Copilot Agent Mode with MCP tool integration
 
-**Sprint 2 Starting (Oct 28, 2025)**
-- Generation API: Not yet implemented (5-stage AI pipeline pending)
-- Document Export: Not yet implemented (PDF generation pending)
-- Job Search UI: Not yet implemented (swipeable cards pending)
-- Document Editing: Not yet implemented (preview and edit pending)
+### Technical Skills
+- **Backend**: FastAPI, async SQLAlchemy, clean architecture, domain-driven design
+- **AI/ML**: Groq LLM integration, prompt engineering, content ranking algorithms
+- **Mobile**: Flutter, Riverpod, Material Design, platform-specific features
+- **Cloud**: AWS S3, presigned URLs, cloud storage patterns
+- **DevOps**: Testing strategies, CI/CD concepts, environment management
 
-**Technical Debt**
-- Mobile: Add unit tests for ProfileNotifier state transitions (priority: high)
-- Mobile: Implement offline caching for profile data
-- Backend: Add integration tests for end-to-end workflows
-- Both: Increase test coverage (current: ~50% backend, 0% mobile)
-
----
-
-## 📝 License
-
-This project is created for educational purposes as part of CptS 483 Special Topic - Coding with Agentic AI at Washington State University. All rights reserved.
+### Software Engineering
+- Clean separation of concerns (presentation → application → domain → infrastructure)
+- Repository pattern with dependency injection
+- Immutable data models with proper serialization
+- Comprehensive error handling and validation
+- Documentation-driven development
 
 ---
 
-## 👤 Contact
+## 📄 License
 
-**Harry Kyaw**  
-Washington State University  
-Course: CptS 483 Special Topic - Coding with Agentic AI  
-Semester: Fall 2025
-
-**Repository**: [WSU-CptS483/course-project-Harry908](https://github.com/WSU-CptS483/course-project-Harry908)
+Educational project for CptS 483 - Washington State University, Fall 2025
 
 ---
 
-## 🙏 Acknowledgments
-
-- **Course Instructor**: For guidance on multi-agent AI coordination patterns
-- **OpenAI**: GPT models powering the generation pipeline
-- **Flutter Team**: Excellent mobile development framework
-- **FastAPI**: High-performance Python backend framework
-
----
-
-**Last Updated**: December 1, 2025 (Sprints 1-5 Complete: Full AI Generation Pipeline with Groq LLM | Sprint 6 Ready: Document Export & S3 Storage)
+**Last Updated**: December 12, 2025 | **Sprint 6 Complete** ✅
