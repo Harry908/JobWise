@@ -4,6 +4,7 @@ import '../../models/exported_file.dart';
 class ExportActionsSheet extends StatelessWidget {
   final ExportedFile file;
   final VoidCallback onDownload;
+  final VoidCallback? onSaveAs;
   final VoidCallback onDelete;
   final VoidCallback onShare;
 
@@ -11,6 +12,7 @@ class ExportActionsSheet extends StatelessWidget {
     super.key,
     required this.file,
     required this.onDownload,
+    this.onSaveAs,
     required this.onDelete,
     required this.onShare,
   });
@@ -51,6 +53,17 @@ class ExportActionsSheet extends StatelessWidget {
               onDownload();
             },
           ),
+
+          if (onSaveAs != null) ...[
+            ListTile(
+              leading: const Icon(Icons.save_alt),
+              title: const Text('Save As...'),
+              onTap: () {
+                Navigator.of(context).pop();
+                onSaveAs!();
+              },
+            ),
+          ],
 
           if (!file.isExpired) ...[
             ListTile(

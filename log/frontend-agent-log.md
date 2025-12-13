@@ -1,5 +1,36 @@
 # Frontend Agent Log
 
+## Log Entry: 10
+
+### User Request
+Multiple requests in this session: (1) Fix syntax errors in job_exports_screen.dart and exported_files_screen.dart, (2) Fix download logic not updating after download in job_exports_screen, (3) Fix download persistence so files remain marked as downloaded after page reload, add file picker to select save location, (4) Fix "Save failed: Bytes are required" error on Android/iOS, also update exported_files_screen with same changes, (5) Fix cache system glitching for All Exports screen (working for job screen), (6) Log this entire conversation.
+
+### Response Summary
+Fixed multiple issues across the export system: (1) Fixed syntax errors (missing brackets in job_exports_screen.dart, void return type in exported_files_screen.dart), (2) Added reload after download in job_exports_screen, (3) Created ExportCacheService to persist download metadata to local JSON file so downloads survive app restarts, integrated it into exports_provider.dart for both loadJobExports and downloadExport, added "Save As..." feature with file picker, (4) Fixed FilePicker.saveFile on Android/iOS by reading file bytes first before calling saveFile with bytes parameter, (5) Updated loadExportedFiles in exports_provider to also use the cache service (was missing), added reload after download in exported_files_screen. Both export screens now properly persist and display download state.
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/export/job_exports_screen.dart`
+  - **Change:** Fixed bracket/indentation issues in `_buildExportCard` PopupMenuButton, added file_picker and ExportCacheService imports, added `_saveAs()` method with bytes-based file saving, added "Save As..." to popup menu, added reload after download
+  - **Reason:** Fix syntax errors, enable save-to-location feature, ensure UI updates after download
+
+- **File:** `mobile_app/lib/screens/export/exported_files_screen.dart`
+  - **Change:** Changed `void _downloadFile` to `Future<void> _downloadFile`, added file_picker and ExportCacheService imports, added `_saveAs()` method, updated `_showFileActions` to pass `onSaveAs`, added reload after download
+  - **Reason:** Fix void expression error, add save-as feature, ensure UI updates after download
+
+- **File:** `mobile_app/lib/services/export_cache_service.dart`
+  - **Change:** Created new file with ExportCacheService class to persist cache metadata (localPath, downloadedAt, expiresAt, userSavePath) to JSON file, includes loadCacheMetadata, saveCacheInfo, getCacheInfo, isCacheValid, removeCacheInfo, cleanupExpiredCache methods
+  - **Reason:** Downloads were lost on app restart because cache info was only in Riverpod memory state; needed persistent local storage
+
+- **File:** `mobile_app/lib/providers/exports/exports_provider.dart`
+  - **Change:** Added ExportCacheService import, updated `downloadExport` to persist cache metadata after successful download, updated `loadJobExports` and `loadExportedFiles` to load persisted cache and merge with API response
+  - **Reason:** Both load methods need to check local cache to restore download state after app restart
+
+- **File:** `mobile_app/lib/screens/export/export_actions_sheet.dart`
+  - **Change:** Added optional `onSaveAs` callback parameter, added "Save As..." ListTile with save_alt icon
+  - **Reason:** Support save-as action from the actions bottom sheet
+
+---
+
 ## Log Entry: 4
 
 ### User Request

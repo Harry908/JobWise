@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
@@ -6,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/exported_file.dart';
 import '../../providers/exports/exports_provider.dart';
+import '../../services/export_cache_service.dart';
 
 /// Screen showing all exports for a specific job, grouped by date
 class JobExportsScreen extends ConsumerStatefulWidget {
@@ -279,6 +281,101 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
     }
   }
 
+  Future<void> _saveAs(ExportedFile export) async {
+    try {
+      // First ensure file is downloaded to cache
+      final isCacheValid = await export.isCacheValid();
+      String sourcePath;
+
+      if (isCacheValid) {
+        sourcePath = export.localCachePath!;
+      } else {
+        // Download to cache first
+        final directory = await getApplicationDocumentsDirectory();
+        final cacheDir = Directory('${directory.path}/exports');
+        if (!await cacheDir.exists()) {
+          await cacheDir.create(recursive: true);
+        }
+        final tempCachePath = '${cacheDir.path}/${export.exportId}.${export.format}';
+
+        final progressNotifier = ValueNotifier<double>(0.0);
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text('Downloading ${export.filename}'),
+            content: ValueListenableBuilder<double>(
+              valueListenable: progressNotifier,
+              builder: (context, value, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(value: value),
+                  const SizedBox(height: 12),
+                  Text('${(value * 100).round()}%'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        try {
+          await ref.read(exportsNotifierProvider.notifier).downloadExport(
+                export.exportId,
+                tempCachePath,
+                onProgress: (p) => progressNotifier.value = p,
+              );
+          sourcePath = tempCachePath;
+        } finally {
+          if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+          progressNotifier.dispose();
+        }
+        
+        // Reload to show downloaded state
+        await _loadExports();
+      }
+
+      // Read file bytes and use saveFile with bytes (required on Android/iOS)
+      final sourceFile = File(sourcePath);
+      final bytes = await sourceFile.readAsBytes();
+      
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save ${export.filename}',
+        fileName: export.filename,
+        type: FileType.any,
+        bytes: bytes,
+      );
+
+      if (result == null) {
+        return; // User cancelled
+      }
+
+      // Update persisted cache with user save path
+      final cacheService = ExportCacheService();
+      final existingInfo = await cacheService.getCacheInfo(export.exportId);
+      if (existingInfo != null) {
+        await cacheService.saveCacheInfo(
+          export.exportId,
+          CachedExportInfo(
+            localPath: existingInfo.localPath,
+            downloadedAt: existingInfo.downloadedAt,
+            expiresAt: existingInfo.expiresAt,
+            userSavePath: result,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved to: $result')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $e')),
+      );
+    }
+  }
+
   String _formatDate(String dateString) {
     final date = DateTime.parse(dateString);
     final now = DateTime.now();
@@ -504,6 +601,9 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
                   case 'open':
                     _openExport(export);
                     break;
+                  case 'save_as':
+                    _saveAs(export);
+                    break;
                   case 'share':
                     _shareExport(export);
                     break;
@@ -520,6 +620,16 @@ class _JobExportsScreenState extends ConsumerState<JobExportsScreen> {
                       Icon(Icons.open_in_new),
                       SizedBox(width: 8),
                       Text('Open'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'save_as',
+                  child: Row(
+                    children: [
+                      Icon(Icons.save_alt),
+                      SizedBox(width: 8),
+                      Text('Save As...'),
                     ],
                   ),
                 ),

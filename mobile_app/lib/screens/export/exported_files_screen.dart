@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../models/exported_file.dart';
 import '../../providers/exports/exports_provider.dart';
 import '../../providers/job_provider.dart';
 import '../../models/job.dart';
+import '../../services/export_cache_service.dart';
 import '../../widgets/error_display.dart';
 import 'export_actions_sheet.dart';
 import 'export_options_screen.dart';
@@ -275,6 +277,7 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
       builder: (context) => ExportActionsSheet(
         file: file,
         onDownload: () => _downloadFile(file),
+        onSaveAs: () => _saveAs(file),
         onDelete: () => _deleteFile(file),
         onShare: () => _shareFile(file),
       ),
@@ -367,7 +370,11 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
         await dialogFuture;
       }
 
+      // Reload exports to update UI with downloaded state
+      await ref.read(exportsNotifierProvider.notifier).loadExportedFiles(jobId: widget.jobId);
+
       // Mark as downloaded — do not open automatically
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Download completed')),
       );
@@ -421,6 +428,98 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Sharing feature coming soon!')),
     );
+  }
+
+  Future<void> _saveAs(ExportedFile file) async {
+    try {
+      // First ensure file is downloaded to cache
+      final isCacheValid = await file.isCacheValid();
+      String sourcePath;
+
+      if (isCacheValid) {
+        sourcePath = file.localCachePath!;
+      } else {
+        // Download to cache first
+        final directory = await getApplicationDocumentsDirectory();
+        final cacheDir = Directory('${directory.path}/exports');
+        if (!await cacheDir.exists()) {
+          await cacheDir.create(recursive: true);
+        }
+        final tempCachePath = '${cacheDir.path}/${file.exportId}.${file.format}';
+
+        final progressNotifier = ValueNotifier<double>(0.0);
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text('Downloading ${file.filename}'),
+            content: ValueListenableBuilder<double>(
+              valueListenable: progressNotifier,
+              builder: (context, value, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(value: value),
+                  const SizedBox(height: 12),
+                  Text('${(value * 100).round()}%'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        try {
+          await ref.read(exportsNotifierProvider.notifier).downloadExport(
+                file.exportId,
+                tempCachePath,
+                onProgress: (p) => progressNotifier.value = p,
+              );
+          sourcePath = tempCachePath;
+        } finally {
+          if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+          progressNotifier.dispose();
+        }
+      }
+
+      // Read file bytes and use saveFile with bytes (required on Android/iOS)
+      final sourceFile = File(sourcePath);
+      final bytes = await sourceFile.readAsBytes();
+      
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save ${file.filename}',
+        fileName: file.filename,
+        type: FileType.any,
+        bytes: bytes,
+      );
+
+      if (result == null) {
+        return; // User cancelled
+      }
+
+      // Update persisted cache with user save path
+      final cacheService = ExportCacheService();
+      final existingInfo = await cacheService.getCacheInfo(file.exportId);
+      if (existingInfo != null) {
+        await cacheService.saveCacheInfo(
+          file.exportId,
+          CachedExportInfo(
+            localPath: existingInfo.localPath,
+            downloadedAt: existingInfo.downloadedAt,
+            expiresAt: existingInfo.expiresAt,
+            userSavePath: result,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved to: $result')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $e')),
+      );
+    }
   }
 }
 

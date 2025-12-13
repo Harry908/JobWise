@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/exported_file.dart';
 import '../../models/template.dart';
 import '../../services/api/exports_api_client.dart';
+import '../../services/export_cache_service.dart';
 import '../auth_provider.dart';
 
 class ExportsState {
@@ -80,9 +81,29 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
   Future<void> loadExportedFiles({String? jobId}) async {
     state = state.copyWith(isLoading: true, error: null, selectedJobId: jobId);
     try {
+      // Load persisted cache metadata from local storage
+      final cacheService = ExportCacheService();
+      final persistedCache = await cacheService.loadCacheMetadata();
+      
       final response = await _apiClient.getExportedFiles(jobId: jobId);
       final files = (response['exports'] as List? ?? [])
-          .map((json) => ExportedFile.fromJson(json))
+          .map((json) {
+            final file = ExportedFile.fromJson(json);
+            
+            // Check persisted cache metadata
+            if (persistedCache.containsKey(file.exportId)) {
+              final cached = persistedCache[file.exportId]!;
+              // Only use if not expired
+              if (DateTime.now().isBefore(cached.expiresAt)) {
+                return file.copyWithCache(
+                  localCachePath: cached.localPath,
+                  cacheExpiresAt: cached.expiresAt,
+                );
+              }
+            }
+            
+            return file;
+          })
           .toList();
       state = state.copyWith(files: files, isLoading: false);
     } catch (e) {
@@ -164,7 +185,11 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
     try {
       final response = await _apiClient.getJobExports(jobId: jobId);
       
-      // Build a map of cached exports from current state
+      // Load persisted cache metadata from local storage
+      final cacheService = ExportCacheService();
+      final persistedCache = await cacheService.loadCacheMetadata();
+      
+      // Build a map of cached exports from current state (in-memory)
       final cachedExports = <String, ExportedFile>{};
       for (final file in state.files) {
         if (file.localCachePath != null) {
@@ -180,7 +205,8 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
         final exports = (exportsJson as List? ?? [])
             .map((json) {
               final file = ExportedFile.fromJson(json);
-              // Preserve cached info if available
+              
+              // First check in-memory state
               if (cachedExports.containsKey(file.exportId)) {
                 final cached = cachedExports[file.exportId]!;
                 return file.copyWithCache(
@@ -188,6 +214,19 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
                   cacheExpiresAt: cached.cacheExpiresAt!,
                 );
               }
+              
+              // Then check persisted cache metadata
+              if (persistedCache.containsKey(file.exportId)) {
+                final cached = persistedCache[file.exportId]!;
+                // Only use if not expired
+                if (DateTime.now().isBefore(cached.expiresAt)) {
+                  return file.copyWithCache(
+                    localCachePath: cached.localPath,
+                    cacheExpiresAt: cached.expiresAt,
+                  );
+                }
+              }
+              
               return file;
             })
             .toList();
@@ -201,7 +240,7 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
   }
 
   /// Download an export and save to local cache
-  Future<void> downloadExport(String exportId, String savePath, {Function(double)? onProgress}) async {
+  Future<void> downloadExport(String exportId, String savePath, {Function(double)? onProgress, String? userSavePath}) async {
     try {
       await _apiClient.downloadFile(
         exportId: exportId,
@@ -209,12 +248,26 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
         onProgress: onProgress,
       );
 
+      final expiresAt = DateTime.now().add(const Duration(days: 7));
+      
+      // Persist cache metadata locally
+      final cacheService = ExportCacheService();
+      await cacheService.saveCacheInfo(
+        exportId,
+        CachedExportInfo(
+          localPath: savePath,
+          downloadedAt: DateTime.now(),
+          expiresAt: expiresAt,
+          userSavePath: userSavePath,
+        ),
+      );
+
       // Update cached path in state and set cache expiry (7 days)
       final updatedFiles = state.files.map((f) {
         if (f.exportId == exportId) {
           return f.copyWithCache(
             localCachePath: savePath,
-            cacheExpiresAt: DateTime.now().add(const Duration(days: 7)),
+            cacheExpiresAt: expiresAt,
           );
         }
         return f;
