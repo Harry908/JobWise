@@ -36,6 +36,7 @@ class ExportRepository:
             id=export.id,
             user_id=export.user_id,
             generation_id=export.generation_id,
+            job_id=export.job_id,
             format=export.format.value,
             template=export.template.value,
             filename=export.filename,
@@ -45,6 +46,8 @@ class ExportRepository:
             options=export.options,
             export_metadata=export.export_metadata,
             download_url=export.download_url,
+            local_cache_path=export.local_cache_path,
+            cache_expires_at=export.cache_expires_at,
             expires_at=export.expires_at,
             created_at=export.created_at
         )
@@ -82,6 +85,7 @@ class ExportRepository:
         self,
         user_id: int,
         format: Optional[ExportFormat] = None,
+        job_id: Optional[str] = None,
         limit: int = 50,
         offset: int = 0
     ) -> List[Export]:
@@ -91,6 +95,7 @@ class ExportRepository:
         Args:
             user_id: User ID
             format: Optional format filter
+            job_id: Optional job ID filter
             limit: Maximum results
             offset: Pagination offset
         
@@ -98,6 +103,46 @@ class ExportRepository:
             List of export entities
         """
         stmt = select(ExportModel).where(ExportModel.user_id == user_id)
+        
+        if format:
+            stmt = stmt.where(ExportModel.format == format.value)
+        
+        if job_id:
+            stmt = stmt.where(ExportModel.job_id == job_id)
+        
+        stmt = stmt.order_by(ExportModel.created_at.desc()).limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        export_models = result.scalars().all()
+        
+        return [self._to_entity(model) for model in export_models]
+    
+    async def list_by_job(
+        self,
+        user_id: int,
+        job_id: str,
+        format: Optional[ExportFormat] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[Export]:
+        """
+        List all exports for a specific job, optimized with composite index.
+        
+        Args:
+            user_id: User ID (for authorization)
+            job_id: Job ID
+            format: Optional format filter
+            limit: Maximum results
+            offset: Pagination offset
+        
+        Returns:
+            List of export entities ordered by creation date (newest first)
+        """
+        # Uses composite index (user_id, job_id, created_at) for optimal performance
+        stmt = select(ExportModel).where(
+            ExportModel.user_id == user_id,
+            ExportModel.job_id == job_id
+        )
         
         if format:
             stmt = stmt.where(ExportModel.format == format.value)
@@ -163,6 +208,7 @@ class ExportRepository:
             id=model.id,
             user_id=model.user_id,
             generation_id=model.generation_id,
+            job_id=model.job_id,
             format=ExportFormat(model.format),
             template=TemplateType(model.template),
             filename=model.filename,
@@ -172,6 +218,8 @@ class ExportRepository:
             options=model.options or {},
             export_metadata=model.export_metadata or {},
             download_url=model.download_url,
+            local_cache_path=model.local_cache_path,
+            cache_expires_at=model.cache_expires_at,
             expires_at=model.expires_at,
             created_at=model.created_at
         )

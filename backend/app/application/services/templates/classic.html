@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ header.name|default('Resume') }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1in;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: {{ options.font_family|default('Times New Roman, serif') }};
+            font-size: {{ options.font_size|default(12) }}pt;
+            line-height: {{ options.line_height|default('1.6') }};
+            color: {{ options.text_color|default('#000000') }};
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 1.5em;
+        }
+        
+        .header h1 {
+            font-size: 20pt;
+            font-weight: bold;
+            margin-bottom: 0.5em;
+        }
+        
+        .contact-info {
+            font-size: 11pt;
+            margin-top: 0.3em;
+        }
+        
+        .contact-info span {
+            margin: 0 0.3em;
+        }
+        
+        .section {
+            margin-bottom: 1.2em;
+        }
+        
+        .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 0.5em;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 0.2em;
+        }
+        
+        .entry {
+            margin-bottom: 1em;
+        }
+        
+        .entry-header {
+            margin-bottom: 0.3em;
+        }
+        
+        .entry-title {
+            font-weight: bold;
+            display: inline;
+        }
+        
+        .entry-date {
+            float: right;
+            font-style: italic;
+        }
+        
+        .entry-subtitle {
+            font-style: italic;
+            margin-bottom: 0.3em;
+        }
+
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        ul {
+            margin-left: 1.5em;
+            margin-top: 0.3em;
+        }
+        
+        li {
+            margin-bottom: 0.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ header.name }}</h1>
+        <div class="contact-info">
+            {% if header.email %}<span>{{ header.email }}</span>{% endif %}
+            {% if header.phone %}<span>|</span><span>{{ header.phone }}</span>{% endif %}
+            {% if header.location %}<span>|</span><span>{{ header.location }}</span>{% endif %}
+            {% if header.linkedin %}<span>|</span><span>{{ header.linkedin }}</span>{% endif %}
+        </div>
+    </div>
+    
+    {% for section in sections %}
+    {% if section.type == 'professional_summary' %}
+    <div class="section">
+        <div class="section-title">Summary</div>
+        <p>{{ section.content }}</p>
+    </div>
+    {% endif %}
+    {% endfor %}
+    
+    {% for section in sections %}
+    {% if section.type == 'experience' %}
+    <div class="section">
+        <div class="section-title">Experience</div>
+        {% for job in section.entries %}
+        <div class="entry">
+            <div class="entry-header clearfix">
+                <span class="entry-title">{{ job.title }}</span>
+                <span class="entry-date">{{ job.start_date }} - {{ job.end_date|default('Present') }}</span>
+            </div>
+            <div class="entry-subtitle">{{ job.company }}{% if job.location %}, {{ job.location }}{% endif %}</div>
+            {% if job.description %}
+            <p>{{ job.description }}</p>
+            {% endif %}
+            {% if job.achievements %}
+            <ul>
+                {% for achievement in job.achievements %}
+                <li>{{ achievement }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    
+    {% for section in sections %}
+    {% if section.type == 'education' %}
+    <div class="section">
+        <div class="section-title">Education</div>
+        {% for edu in section.entries %}
+        <div class="entry">
+            <div class="entry-header clearfix">
+                <span class="entry-title">{{ edu.degree }}{% if edu.field %} in {{ edu.field }}{% endif %}</span>
+                <span class="entry-date">{{ edu.end_date }}</span>
+            </div>
+            <div class="entry-subtitle">{{ edu.institution }}{% if edu.location %}, {{ edu.location }}{% endif %}</div>
+            {% if edu.gpa %}<div>GPA: {{ edu.gpa }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    
+    {% for section in sections %}
+    {% if section.type == 'skills' %}
+    <div class="section">
+        <div class="section-title">Skills</div>
+        {% for category in section.categories %}
+        <div>
+            <strong>{{ category.name }}:</strong>
+            {% if category.items is iterable and category.items is not string %}
+                {% if category.items[0] is mapping %}
+                    {% for item in category.items %}{{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                {% else %}
+                    {{ category.items|join(', ') }}
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    
+    {% for section in sections %}
+    {% if section.type == 'projects' %}
+    <div class="section">
+        <div class="section-title">Projects</div>
+        {% for project in section.entries %}
+        <div class="entry">
+            <div class="entry-header clearfix">
+                <span class="entry-title">{{ project.name }}</span>
+                {% if project.end_date %}<span class="entry-date">{{ project.end_date }}</span>{% endif %}
+            </div>
+            {% if project.description %}<p>{{ project.description }}</p>{% endif %}
+            {% if project.technologies %}
+            <div><em>Technologies: {{ project.technologies|join(', ') }}</em></div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</body>
+</html>

@@ -1,5 +1,28 @@
 # Frontend Agent Log
 
+## Log Entry: 3
+
+### User Request
+for the frontend, i dont see the screen for managing and downloading export resume/coverletter
+
+### Response Summary
+Added navigation routes and UI access points for the export management screens that were already implemented but not accessible. Created routes for viewing all exports (/exports) and job-specific exports (/exports/:jobId), added a "My Exports" button to the HomeScreen for easy access to all exported files, and added a "View Exports" button (folder icon) to the JobDetailScreen app bar to access exports for specific jobs. All export management features including viewing, downloading, and deleting exported resumes/cover letters are now accessible through the mobile app navigation.
+
+### Actions Taken
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Added import for ExportedFilesScreen and created two new routes: '/exports' for all exports and '/exports/:jobId' for job-specific exports
+  - **Reason:** Export screens existed but had no routes configured, making them inaccessible via navigation
+
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Added "My Exports" button to HomeScreen navigation options that redirects to '/exports' route
+  - **Reason:** Provided users with a direct access point from the home screen to view all their exported documents
+
+- **File:** `mobile_app/lib/screens/job_detail_screen.dart`
+  - **Change:** Added folder icon button in JobDetailScreen app bar that navigates to job-specific exports at '/exports/:jobId'
+  - **Reason:** Enabled users to quickly access exports related to a specific job from the job details view
+
+---
+
 ## Log Entry: 2
 
 ### User Request

@@ -59,7 +59,7 @@ class GenerationService:
             raise ValueError("No profile found")
         
         # Get job for reference
-        job = await self.job_repo.get_by_id(str(job_id))
+        job = await self.job_repo.get_by_id(str(job_id), user_id)
         
         # Get ranked experiences
         experiences = await self.profile_repo.get_experiences_by_profile_id(profile.id)
@@ -263,7 +263,7 @@ class GenerationService:
             raise ValueError("No profile found")
         
         # Get job
-        job = await self.job_repo.get_by_id(str(job_id))
+        job = await self.job_repo.get_by_id(str(job_id), user_id)
         if not job:
             raise ValueError("Job not found")
         

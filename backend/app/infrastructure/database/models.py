@@ -226,6 +226,7 @@ class ExportModel(Base):
     id = Column(String, primary_key=True)  # UUID as string
     user_id = Column(INTEGER, ForeignKey("users.id"), nullable=False, index=True)
     generation_id = Column(String, ForeignKey("generations.id"), nullable=True, index=True)  # Null for batch exports
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=True, index=True)  # Denormalized for filtering
     format = Column(String, nullable=False, index=True)  # pdf, docx, zip
     template = Column(String, nullable=False)  # modern, classic, creative, ats_optimized
     filename = Column(String, nullable=False)
@@ -236,11 +237,14 @@ class ExportModel(Base):
     export_metadata = Column(JSON, default=dict)  # Additional metadata (generation_type, generation_ids for batch, etc.)
     download_url = Column(String)  # Presigned S3 URL (regenerated on access)
     expires_at = Column(DateTime, nullable=False)  # 30 days from creation
+    local_cache_path = Column(String)  # Mobile local cache path
+    cache_expires_at = Column(DateTime)  # Local cache expiration (7 days)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     
     # Relationships
     user = relationship("UserModel", backref="exports")
     generation = relationship("GenerationModel", backref="exports")
+    job = relationship("JobModel", backref="exports")
 
 
 # Removed PromptTemplateModel - prompts are now stored in source code

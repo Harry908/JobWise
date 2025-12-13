@@ -22,7 +22,7 @@ class ExportsApiClient {
       };
 
       final response = await _dio.post(
-        '/api/v1/exports/pdf',
+        '/exports/pdf',
         data: requestData,
         onSendProgress: (sent, total) {
           if (onProgress != null && total != -1) {
@@ -52,7 +52,7 @@ class ExportsApiClient {
       };
 
       final response = await _dio.post(
-        '/api/v1/exports/docx',
+        '/exports/docx',
         data: requestData,
         onSendProgress: (sent, total) {
           if (onProgress != null && total != -1) {
@@ -82,7 +82,7 @@ class ExportsApiClient {
       };
 
       final response = await _dio.post(
-        '/api/v1/exports/batch',
+        '/exports/batch',
         data: requestData,
       );
 
@@ -94,7 +94,7 @@ class ExportsApiClient {
 
   Future<List<template_models.Template>> getTemplates() async {
     try {
-      final response = await _dio.get('/api/v1/exports/templates');
+      final response = await _dio.get('/exports/templates');
 
       final templatesData = response.data['templates'] as List;
       return templatesData.map((json) => template_models.Template.fromJson(json)).toList();
@@ -105,7 +105,7 @@ class ExportsApiClient {
 
   Future<template_models.Template> getTemplate(String templateId) async {
     try {
-      final response = await _dio.get('/api/v1/exports/templates/$templateId');
+      final response = await _dio.get('/exports/templates/$templateId');
       return template_models.Template.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
@@ -128,8 +128,28 @@ class ExportsApiClient {
       if (format != null) queryParams['format'] = format;
 
       final response = await _dio.get(
-        '/api/v1/exports/files',
+        '/exports/files',
         queryParameters: queryParams,
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Get exports for a specific job (optimized query, pre-grouped by date)
+  Future<Map<String, dynamic>> getJobExports({
+    required String jobId,
+    String? format,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (format != null) queryParams['format'] = format;
+
+      final response = await _dio.get(
+        '/exports/files/job/$jobId',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       return response.data;
@@ -140,7 +160,7 @@ class ExportsApiClient {
 
   Future<String> getDownloadUrl(String exportId) async {
     try {
-      final response = await _dio.get('/api/v1/exports/files/$exportId/download');
+      final response = await _dio.get('/exports/files/$exportId/download');
       return response.data['download_url'];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -154,7 +174,7 @@ class ExportsApiClient {
   }) async {
     try {
       await _dio.download(
-        '/api/v1/exports/files/$exportId/download',
+        '/exports/files/$exportId/download',
         savePath,
         onReceiveProgress: (received, total) {
           if (onProgress != null && total != -1) {
@@ -169,7 +189,7 @@ class ExportsApiClient {
 
   Future<void> deleteFile(String exportId) async {
     try {
-      await _dio.delete('/api/v1/exports/files/$exportId');
+      await _dio.delete('/exports/files/$exportId');
     } on DioException catch (e) {
       throw _handleError(e);
     }

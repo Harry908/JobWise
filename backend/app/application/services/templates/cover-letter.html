@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ header.name|default('Cover Letter') }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1in;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: {{ options.font_family|default('Georgia, Times New Roman, serif') }};
+            font-size: {{ options.font_size|default(12) }}pt;
+            line-height: {{ options.line_height|default('1.6') }};
+            color: {{ options.text_color|default('#000000') }};
+        }
+        
+        .header {
+            margin-bottom: 2em;
+        }
+        
+        .sender-info {
+            margin-bottom: 1.5em;
+        }
+        
+        .sender-info p {
+            margin: 0;
+        }
+        
+        .date {
+            margin-bottom: 1.5em;
+        }
+        
+        .recipient {
+            margin-bottom: 1.5em;
+        }
+        
+        .salutation {
+            margin-bottom: 1em;
+        }
+        
+        .content {
+            margin-bottom: 1.5em;
+        }
+        
+        .content p {
+            margin-bottom: 1em;
+            text-align: justify;
+        }
+        
+        .closing {
+            margin-top: 1.5em;
+        }
+        
+        .signature {
+            margin-top: 3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="sender-info">
+            {% if header.name %}<p><strong>{{ header.name }}</strong></p>{% endif %}
+            {% if header.location %}<p>{{ header.location }}</p>{% endif %}
+            {% if header.email %}<p>{{ header.email }}</p>{% endif %}
+            {% if header.phone %}<p>{{ header.phone }}</p>{% endif %}
+        </div>
+        
+        <div class="date">
+            <p>{{ metadata.date|default('') }}</p>
+        </div>
+        
+        {% if metadata.recipient_name or metadata.company_name %}
+        <div class="recipient">
+            {% if metadata.recipient_name %}<p>{{ metadata.recipient_name }}</p>{% endif %}
+            {% if metadata.recipient_title %}<p>{{ metadata.recipient_title }}</p>{% endif %}
+            {% if metadata.company_name %}<p>{{ metadata.company_name }}</p>{% endif %}
+            {% if metadata.company_address %}<p>{{ metadata.company_address }}</p>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="salutation">
+        <p>{{ metadata.salutation|default('Dear Hiring Manager,') }}</p>
+    </div>
+    
+    <div class="content">
+        {% for section in sections %}
+        {% if section.type == 'cover_letter' %}
+            {% if section.paragraphs %}
+                {% for paragraph in section.paragraphs %}
+                <p>{{ paragraph }}</p>
+                {% endfor %}
+            {% endif %}
+        {% elif section.type == 'cover_letter_content' or section.type == 'professional_summary' %}
+            {% if section.content %}
+                {% for paragraph in section.content.split('\n\n') %}
+                <p>{{ paragraph }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+        {% endfor %}
+    </div>
+    
+    <div class="closing">
+        <p>{{ metadata.closing|default('Sincerely,') }}</p>
+    </div>
+    
+    <div class="signature">
+        <p><strong>{{ header.name }}</strong></p>
+    </div>
+</body>
+</html>

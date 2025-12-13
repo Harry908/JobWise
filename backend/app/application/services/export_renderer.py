@@ -5,6 +5,7 @@ Handles template rendering and document generation (PDF/DOCX).
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from io import BytesIO
@@ -12,21 +13,37 @@ import zipfile
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+# Add msys2 GTK libraries to PATH for WeasyPrint (Windows)
+if sys.platform == 'win32':
+    msys2_paths = [
+        r'C:\msys64\mingw64\bin',
+        r'C:\msys64\ucrt64\bin',
+        r'C:\msys64\clang64\bin',
+    ]
+    for msys_path in msys2_paths:
+        if os.path.exists(msys_path) and msys_path not in os.environ['PATH']:
+            os.environ['PATH'] = msys_path + os.pathsep + os.environ['PATH']
+            print(f"Added {msys_path} to PATH for WeasyPrint GTK support")
+            break
+
 # Optional imports for PDF/DOCX generation
 try:
     from weasyprint import HTML, CSS
     WEASYPRINT_AVAILABLE = True
+    print("✓ WeasyPrint loaded successfully - PDF export available")
 except (ImportError, OSError) as e:
     WEASYPRINT_AVAILABLE = False
     print(f"Warning: WeasyPrint not available: {e}")
     print("PDF export will not be available. Install GTK+ libraries for Windows:")
     print("https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows")
+    print("Or install msys2 and run: pacman -S mingw-w64-ucrt-x86_64-gtk3")
 
 try:
     from docx import Document
     from docx.shared import Pt, Inches, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     PYTHON_DOCX_AVAILABLE = True
+    print("✓ python-docx loaded successfully - DOCX export available")
 except ImportError as e:
     PYTHON_DOCX_AVAILABLE = False
     print(f"Warning: python-docx not available: {e}")
@@ -129,6 +146,8 @@ class ExportRenderer:
                 self._add_docx_projects(doc, section, style_config)
             elif section_type == 'education':
                 self._add_docx_education(doc, section, style_config)
+            elif section_type == 'cover_letter':
+                self._add_docx_cover_letter(doc, section, style_config)
         
         # Save to bytes
         buffer = BytesIO()
@@ -171,8 +190,16 @@ class ExportRenderer:
         # Parse structured content if string
         data = json.loads(structured_content) if isinstance(structured_content, str) else structured_content
         
+        # Check if this is a cover letter (use cover letter template regardless of selected template)
+        sections = data.get('sections', [])
+        is_cover_letter = any(s.get('type') == 'cover_letter' for s in sections)
+        
         # Select template file
-        template_file = f"{template.value}.html"
+        if is_cover_letter:
+            template_file = "cover-letter.html"
+        else:
+            template_file = f"{template.value}.html"
+        
         jinja_template = self.env.get_template(template_file)
         
         # Merge options with defaults
@@ -451,4 +478,12 @@ class ExportRenderer:
                 run = p.add_run(', '.join(edu['honors']))
                 run.italic = True
             
+    def _add_docx_cover_letter(self, doc: Document, section: Dict[str, Any], style: Dict[str, Any]):
+        """Add cover letter content."""
+        # Cover letter paragraphs
+        paragraphs = section.get('paragraphs', [])
+        for paragraph in paragraphs:
+            p = doc.add_paragraph(paragraph)
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            doc.add_paragraph()  # Spacing between paragraphs
             doc.add_paragraph()  # Spacing

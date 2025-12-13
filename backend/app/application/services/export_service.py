@@ -15,6 +15,7 @@ from app.application.services.export_renderer import ExportRenderer
 from app.infrastructure.storage.s3_storage_adapter import S3StorageAdapter
 from app.infrastructure.repositories.generation_repository import GenerationRepository
 from app.infrastructure.repositories.export_repository import ExportRepository
+from app.infrastructure.repositories.job_repository import JobRepository
 
 
 class ExportService:
@@ -25,17 +26,19 @@ class ExportService:
         export_renderer: ExportRenderer,
         s3_adapter: S3StorageAdapter,
         generation_repository: GenerationRepository,
-        export_repository: ExportRepository
+        export_repository: ExportRepository,
+        job_repository: JobRepository
     ):
         """Initialize export service with dependencies."""
         self.renderer = export_renderer
         self.s3_adapter = s3_adapter
         self.generation_repo = generation_repository
         self.export_repo = export_repository
+        self.job_repo = job_repository
     
     async def export_to_pdf(
         self,
-        user_id: str,
+        user_id: int,
         generation_id: str,
         template: TemplateType,
         options: Optional[Dict[str, Any]] = None
@@ -56,8 +59,12 @@ class ExportService:
             ValueError: If generation not found or has no structured content
         """
         # Fetch generation
-        generation = await self.generation_repo.get_by_id(generation_id, user_id)
+        generation = await self.generation_repo.get_by_id(generation_id)
         if not generation:
+            raise ValueError(f"Generation {generation_id} not found")
+        
+        # Verify ownership
+        if generation.user_id != user_id:
             raise ValueError(f"Generation {generation_id} not found")
         
         if not generation.content_structured:
@@ -97,6 +104,7 @@ class ExportService:
             id=export_id,
             user_id=user_id,
             generation_id=generation_id,
+            job_id=str(generation.job_id) if generation.job_id else None,
             format=ExportFormat.PDF,
             template=template,
             filename=filename,
@@ -104,9 +112,9 @@ class ExportService:
             file_size_bytes=file_size,
             page_count=page_count,
             options=options or {},
-            metadata={
-                'generation_type': generation.generation_type.value,
-                'created_from': generation.id
+            export_metadata={
+                'document_type': generation.document_type.value,
+                'created_from': str(generation.id)
             },
             download_url=download_url,
             expires_at=datetime.utcnow() + timedelta(days=30)
@@ -119,7 +127,7 @@ class ExportService:
     
     async def export_to_docx(
         self,
-        user_id: str,
+        user_id: int,
         generation_id: str,
         template: TemplateType,
         options: Optional[Dict[str, Any]] = None
@@ -137,8 +145,12 @@ class ExportService:
             Export entity with download URL
         """
         # Fetch generation
-        generation = await self.generation_repo.get_by_id(generation_id, user_id)
+        generation = await self.generation_repo.get_by_id(generation_id)
         if not generation:
+            raise ValueError(f"Generation {generation_id} not found")
+        
+        # Verify ownership
+        if generation.user_id != user_id:
             raise ValueError(f"Generation {generation_id} not found")
         
         if not generation.content_structured:
@@ -177,6 +189,7 @@ class ExportService:
             id=export_id,
             user_id=user_id,
             generation_id=generation_id,
+            job_id=str(generation.job_id) if generation.job_id else None,
             format=ExportFormat.DOCX,
             template=template,
             filename=filename,
@@ -184,9 +197,9 @@ class ExportService:
             file_size_bytes=file_size,
             page_count=None,  # DOCX doesn't have fixed pages
             options=options or {},
-            metadata={
-                'generation_type': generation.generation_type.value,
-                'created_from': generation.id
+            export_metadata={
+                'document_type': generation.document_type.value,
+                'created_from': str(generation.id)
             },
             download_url=download_url,
             expires_at=datetime.utcnow() + timedelta(days=30)
@@ -199,7 +212,7 @@ class ExportService:
     
     async def batch_export(
         self,
-        user_id: str,
+        user_id: int,
         generation_ids: List[str],
         format: ExportFormat,
         template: TemplateType,
@@ -298,7 +311,7 @@ class ExportService:
         
         return export
     
-    async def get_export(self, export_id: str, user_id: str) -> Optional[Export]:
+    async def get_export(self, export_id: str, user_id: int) -> Optional[Export]:
         """Get export by ID with fresh download URL."""
         export = await self.export_repo.get_by_id(export_id, user_id)
         
@@ -319,14 +332,16 @@ class ExportService:
     
     async def list_exports(
         self,
-        user_id: str,
+        user_id: int,
+        job_id: Optional[str] = None,
         format: Optional[ExportFormat] = None,
         limit: int = 50,
         offset: int = 0
     ) -> List[Export]:
-        """List user's exports with pagination."""
+        """List user's exports with pagination and optional job filtering."""
         exports = await self.export_repo.list_by_user(
             user_id=user_id,
+            job_id=job_id,
             format=format,
             limit=limit,
             offset=offset
@@ -344,7 +359,80 @@ class ExportService:
         
         return valid_exports
     
-    async def delete_export(self, export_id: str, user_id: str) -> bool:
+    async def list_job_exports(
+        self,
+        user_id: int,
+        job_id: str,
+        format: Optional[ExportFormat] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        List exports for a specific job, grouped by export date.
+        
+        Args:
+            user_id: User ID (for authorization)
+            job_id: Job ID to filter exports
+            format: Optional format filter
+            limit: Maximum number of exports to return
+            offset: Offset for pagination
+        
+        Returns:
+            Dictionary with job details and exports grouped by date.
+            Format: {
+                "job_id": str,
+                "job_title": str,
+                "company": str,
+                "exports_by_date": {"2024-01-15": [Export, ...], ...},
+                "total_exports": int,
+                "total_size_bytes": int
+            }
+        """
+        # Get job details
+        job = await self.job_repo.get_by_id(job_id, user_id)
+        if not job:
+            raise ValueError(f"Job {job_id} not found")
+        
+        # Get all exports for this job
+        exports = await self.export_repo.list_by_job(
+            user_id=user_id,
+            job_id=job_id,
+            format=format
+        )
+        
+        # Group by date and regenerate URLs
+        exports_by_date: Dict[str, List[Export]] = {}
+        total_size_bytes = 0
+        total_exports = 0
+        
+        for export in exports:
+            if not export.is_expired():
+                # Regenerate download URL
+                export.download_url = self.s3_adapter.generate_presigned_url(
+                    key=export.file_path,
+                    expiration=3600
+                )
+                
+                # Group by date (YYYY-MM-DD)
+                date_key = export.created_at.strftime('%Y-%m-%d')
+                if date_key not in exports_by_date:
+                    exports_by_date[date_key] = []
+                exports_by_date[date_key].append(export)
+                
+                # Aggregate stats
+                total_size_bytes += export.file_size_bytes
+                total_exports += 1
+        
+        return {
+            "job_id": job.id,
+            "job_title": job.title,
+            "company": job.company,
+            "exports_by_date": exports_by_date,
+            "total_exports": total_exports,
+            "total_size_bytes": total_size_bytes
+        }
+    
+    async def delete_export(self, export_id: str, user_id: int) -> bool:
         """Delete an export (removes from S3 and database)."""
         export = await self.export_repo.get_by_id(export_id, user_id)
         
@@ -368,8 +456,8 @@ class ExportService:
         # Extract name from generation (if available in metadata)
         name = "document"
         
-        # Use generation type
-        gen_type = generation.generation_type.value
+        # Use document type (resume or cover_letter)
+        gen_type = generation.document_type.value
         
         # Format: {type}_{timestamp}.{ext}
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')

@@ -7,6 +7,9 @@ import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
 import 'screens/auth_screens.dart';
 import 'screens/debug_screen.dart';
+import 'screens/export/export_options_screen.dart';
+import 'screens/export/exported_files_screen.dart';
+import 'screens/export/job_exports_screen.dart';
 import 'screens/job_browse_screen.dart';
 import 'screens/job_detail_screen.dart';
 import 'screens/job_list_screen.dart';
@@ -166,6 +169,21 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/exports');
+                  },
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('My Exports'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
             ] else ...[
               SizedBox(
                 width: double.infinity,
@@ -260,6 +278,41 @@ class _AppState extends ConsumerState<App> {
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
             return JobDetailScreen(jobId: jobId);
+          },
+        ),
+        // Export routes
+        GoRoute(
+          path: '/exports',
+          builder: (context, state) => const ExportedFilesScreen(),
+        ),
+        GoRoute(
+          path: '/export/options',
+          builder: (context, state) {
+            // Get parameters from extras
+            final extra = state.extra as Map<String, dynamic>?;
+            final generationId = extra?['generationId'] as String?;
+            final jobId = extra?['jobId'] as String?;
+            
+            return ExportOptionsScreen(
+              generationId: generationId,
+              jobId: jobId,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/exports/:jobId',
+          builder: (context, state) {
+            final jobId = state.pathParameters['jobId']!;
+            // Get job details from extras if provided
+            final extra = state.extra as Map<String, dynamic>?;
+            final jobTitle = extra?['jobTitle'] as String?;
+            final companyName = extra?['companyName'] as String?;
+            
+            return JobExportsScreen(
+              jobId: jobId,
+              jobTitle: jobTitle,
+              companyName: companyName,
+            );
           },
         ),
       ],

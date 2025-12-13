@@ -49,6 +49,53 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Error display
+                  if (state.error != null) ...[
+                    Card(
+                      color: Colors.red.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red.shade700),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Failed to load templates',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    state.error!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Make sure the backend server is running at http://localhost:8000',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.red.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   // Generation/Job info
                   if (widget.generationId != null) ...[
                     _buildInfoCard(
@@ -74,6 +121,16 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
                   ),
                   const SizedBox(height: 8),
                   ...templates.map((template) => _buildTemplateOption(template)),
+                  if (templates.isEmpty && state.error == null)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(
+                        child: Text(
+                          'No templates available',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
 
                   // Format selection

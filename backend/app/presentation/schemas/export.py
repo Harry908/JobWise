@@ -32,15 +32,18 @@ class ExportResponse(BaseModel):
     id: str = Field(..., description="Export ID")
     user_id: int = Field(..., description="User ID")
     generation_id: Optional[str] = Field(None, description="Generation ID (null for batch exports)")
+    job_id: Optional[str] = Field(None, description="Job ID (denormalized for efficient filtering)")
     format: ExportFormat = Field(..., description="Export format")
     template: TemplateType = Field(..., description="Template used")
     filename: str = Field(..., description="Filename")
     file_size_bytes: int = Field(..., description="File size in bytes")
     page_count: Optional[int] = Field(None, description="Page count (PDF only)")
     download_url: str = Field(..., description="Presigned download URL (1-hour expiry)")
+    local_cache_path: Optional[str] = Field(None, description="Local cache path (mobile only, null on creation)")
+    cache_expires_at: Optional[datetime] = Field(None, description="Cache expiration timestamp")
     expires_at: datetime = Field(..., description="Export expiry date (30 days)")
     created_at: datetime = Field(..., description="Creation timestamp")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata (job title, company, ats_score)")
     
     class Config:
         json_schema_extra = {
@@ -48,16 +51,22 @@ class ExportResponse(BaseModel):
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "user_id": 1,
                 "generation_id": "660e8400-e29b-41d4-a716-446655440000",
+                "job_id": "aa0e8400-e29b-41d4-a716-446655440001",
                 "format": "pdf",
                 "template": "modern",
                 "filename": "resume_20240115_143022.pdf",
                 "file_size_bytes": 245678,
                 "page_count": 2,
                 "download_url": "https://jobsync-exports.s3.amazonaws.com/...",
+                "local_cache_path": None,
+                "cache_expires_at": None,
                 "expires_at": "2024-02-14T14:30:22Z",
                 "created_at": "2024-01-15T14:30:22Z",
                 "metadata": {
                     "generation_type": "resume",
+                    "job_title": "Senior Software Engineer",
+                    "company": "TechCorp Inc.",
+                    "ats_score": 88.5,
                     "created_from": "660e8400-e29b-41d4-a716-446655440000"
                 }
             }
@@ -96,6 +105,9 @@ class TemplateInfo(BaseModel):
     id: TemplateType = Field(..., description="Template ID")
     name: str = Field(..., description="Template display name")
     description: str = Field(..., description="Template description")
+    ats_score: int = Field(..., description="ATS compatibility score (0-100)")
+    industries: List[str] = Field(..., description="Best suited industries")
+    supports_customization: Dict[str, bool] = Field(..., description="Customization capabilities")
     preview_url: Optional[str] = Field(None, description="Preview image URL")
     default_options: Dict[str, Any] = Field(..., description="Default styling options")
 
@@ -121,3 +133,47 @@ class ExportedFileListResponse(BaseModel):
                 "offset": 0
             }
         }
+
+
+class JobExportsResponse(BaseModel):
+    """Job-specific exports grouped by date."""
+    job_id: str = Field(..., description="Job ID")
+    job_title: str = Field(..., description="Job title")
+    company: str = Field(..., description="Company name")
+    exports_by_date: Dict[str, List[ExportResponse]] = Field(
+        ..., 
+        description="Exports grouped by date (YYYY-MM-DD)"
+    )
+    total_exports: int = Field(..., description="Total number of exports for this job")
+    total_size_bytes: int = Field(..., description="Total storage used by exports for this job")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "job_id": "aa0e8400-e29b-41d4-a716-446655440001",
+                "job_title": "Senior Software Engineer",
+                "company": "TechCorp Inc.",
+                "exports_by_date": {
+                    "2025-11-15": [
+                        {
+                            "id": "bb0e8400-e29b-41d4-a716-446655440006",
+                            "user_id": 1,
+                            "generation_id": "990e8400-e29b-41d4-a716-446655440004",
+                            "job_id": "aa0e8400-e29b-41d4-a716-446655440001",
+                            "format": "pdf",
+                            "template": "modern",
+                            "filename": "John_Doe_Resume_TechCorp_2025.pdf",
+                            "file_size_bytes": 87432,
+                            "page_count": 2,
+                            "download_url": "/api/v1/exports/files/bb0e8400.../download",
+                            "created_at": "2025-11-15T14:30:00Z",
+                            "expires_at": "2025-12-15T14:30:00Z",
+                            "metadata": {"ats_score": 88.5}
+                        }
+                    ]
+                },
+                "total_exports": 1,
+                "total_size_bytes": 87432
+            }
+        }
+

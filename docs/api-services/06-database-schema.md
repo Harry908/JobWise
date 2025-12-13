@@ -725,6 +725,7 @@ engine = create_async_engine(
 | `id` | VARCHAR (UUID) | PRIMARY KEY | Export ID (export_id in API) |
 | `user_id` | INTEGER | FOREIGN KEY (users.id), NOT NULL, INDEXED | Owner user ID |
 | `generation_id` | VARCHAR (UUID) | FOREIGN KEY (generations.id), NOT NULL, INDEXED | Source generation ID |
+| `job_id` | VARCHAR (UUID) | FOREIGN KEY (jobs.id), NOT NULL, INDEXED | Target job ID (denormalized for efficient queries) |
 | `document_type` | VARCHAR | NOT NULL | 'resume' or 'cover_letter' |
 | `format` | VARCHAR | NOT NULL | 'pdf', 'docx', or 'zip' |
 | `template` | VARCHAR | NOT NULL | Template identifier (modern, classic, creative, ats-optimized) |
@@ -733,20 +734,25 @@ engine = create_async_engine(
 | `file_size_bytes` | INTEGER | NOT NULL | File size in bytes |
 | `page_count` | INTEGER | NULLABLE | Page count (PDF only) |
 | `options` | TEXT | NULLABLE | Export options JSON (as TEXT) |
-| `metadata` | TEXT | NULLABLE | Export metadata JSON (ATS score, processing time, etc.) |
+| `metadata` | TEXT | NULLABLE | Export metadata JSON (ATS score, processing time, job title, company) |
 | `download_count` | INTEGER | DEFAULT 0 | Number of times downloaded |
-| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | Expiration timestamp |
+| `local_cache_path` | VARCHAR | NULLABLE | Mobile local cache file path (platform-specific) |
+| `cache_expires_at` | TIMESTAMP | NULLABLE | Local cache expiration timestamp |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | S3 object expiration timestamp |
 | `created_at` | TIMESTAMP | DEFAULT NOW, NOT NULL | Export creation timestamp |
 
 **Indexes**:
 - PRIMARY KEY on `id`
 - INDEX on `user_id`
 - INDEX on `generation_id`
+- INDEX on `job_id`
 - INDEX on `expires_at`
+- COMPOSITE INDEX on (`user_id`, `job_id`, `created_at`) for job-specific export queries
 
 **Relationships**:
 - MANY-TO-ONE with `users` (cascade delete)
 - MANY-TO-ONE with `generations` (cascade delete)
+- MANY-TO-ONE with `jobs` (cascade delete)
 
 **Example Row**:
 ```json
@@ -754,6 +760,7 @@ engine = create_async_engine(
   "id": "bb0e8400-e29b-41d4-a716-446655440006",
   "user_id": 1,
   "generation_id": "990e8400-e29b-41d4-a716-446655440004",
+  "job_id": "aa0e8400-e29b-41d4-a716-446655440001",
   "document_type": "resume",
   "format": "pdf",
   "template": "modern",
@@ -762,12 +769,20 @@ engine = create_async_engine(
   "file_size_bytes": 87432,
   "page_count": 2,
   "options": "{\"font_size\": 11, \"accent_color\": \"#2563EB\"}",
-  "metadata": "{\"ats_score\": 88.5, \"processing_time_seconds\": 1.2}",
+  "metadata": "{\"ats_score\": 88.5, \"processing_time_seconds\": 1.2, \"job_title\": \"Senior Software Engineer\", \"company\": \"TechCorp Inc.\"}",
   "download_count": 3,
+  "local_cache_path": "/data/user/0/com.jobwise.app/cache/exports/bb0e8400-e29b-41d4-a716-446655440006.pdf",
+  "cache_expires_at": "2025-11-20T10:30:00Z",
   "expires_at": "2025-12-15T10:30:00Z",
   "created_at": "2025-11-15T10:30:00Z"
 }
 ```
+
+**Notes**:
+- `job_id` is denormalized from `generations.job_id` for efficient filtering without joins
+- `local_cache_path` stores platform-specific cache locations (Android/iOS) to avoid repeated S3 downloads
+- `cache_expires_at` enables automatic cache invalidation (typically 7 days after download)
+- `metadata` includes job context for mobile UI display without additional API calls
 
 ---
 

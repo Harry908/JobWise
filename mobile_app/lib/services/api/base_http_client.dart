@@ -6,6 +6,9 @@ class BaseHttpClient {
   final Dio _dio;
   final StorageService _storage;
 
+  // Expose Dio instance for clients that need direct access
+  Dio get dio => _dio;
+
   BaseHttpClient({
     required String baseUrl,
     required StorageService storage,

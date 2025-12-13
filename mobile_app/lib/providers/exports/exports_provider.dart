@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/exported_file.dart';
 import '../../models/template.dart';
 import '../../services/api/exports_api_client.dart';
-import '../api_provider.dart';
+import '../auth_provider.dart';
 
 class ExportsState {
   final List<ExportedFile> files;
@@ -81,7 +81,7 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
     state = state.copyWith(isLoading: true, error: null, selectedJobId: jobId);
     try {
       final response = await _apiClient.getExportedFiles(jobId: jobId);
-      final files = (response['files'] as List)
+      final files = (response['exports'] as List? ?? [])
           .map((json) => ExportedFile.fromJson(json))
           .toList();
       state = state.copyWith(files: files, isLoading: false);
@@ -159,6 +159,49 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
     }
   }
 
+  /// Load exports for a specific job (optimized query, pre-grouped by date)
+  Future<Map<String, List<ExportedFile>>> loadJobExports(String jobId) async {
+    try {
+      final response = await _apiClient.getJobExports(jobId: jobId);
+      
+      // Parse exports_by_date from response
+      final exportsByDateJson = response['exports_by_date'] as Map<String, dynamic>? ?? {};
+      final exportsByDate = <String, List<ExportedFile>>{};
+      
+      exportsByDateJson.forEach((date, exportsJson) {
+        final exports = (exportsJson as List? ?? [])
+            .map((json) => ExportedFile.fromJson(json))
+            .toList();
+        exportsByDate[date] = exports;
+      });
+      
+      return exportsByDate;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Download an export and save to local cache
+  Future<void> downloadExport(String exportId, String savePath) async {
+    try {
+      await _apiClient.downloadFile(
+        exportId: exportId,
+        savePath: savePath,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete an export
+  Future<void> deleteExport(String exportId) async {
+    try {
+      await _apiClient.deleteFile(exportId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   void clearError() {
     state = state.copyWith(error: null);
   }
@@ -170,8 +213,8 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
 
 // Providers
 final exportsApiClientProvider = Provider<ExportsApiClient>((ref) {
-  final dio = ref.watch(dioProvider);
-  return ExportsApiClient(dio);
+  final httpClient = ref.watch(baseHttpClientProvider);
+  return ExportsApiClient(httpClient.dio);
 });
 
 final exportsNotifierProvider = StateNotifierProvider<ExportsNotifier, ExportsState>((ref) {

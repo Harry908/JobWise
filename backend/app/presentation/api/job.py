@@ -261,7 +261,7 @@ async def get_job(
     - **404 Not Found**: Job does not exist
     - **403 Forbidden**: User does not have access to this job
     """
-    job = await service.get_by_id(job_id)
+    job = await service.get_by_id(job_id, user_id)
     
     if not job:
         raise HTTPException(

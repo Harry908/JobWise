@@ -42,7 +42,7 @@ class RankingService:
             logger.info(f"Deleted old ranking {existing.id} for job {job_id} to create fresh ranking")
         
         # Get job
-        job = await self.job_repo.get_by_id(str(job_id))
+        job = await self.job_repo.get_by_id(str(job_id), user_id)
         if not job or job.user_id != user_id:
             raise ValueError("Job not found")
         
