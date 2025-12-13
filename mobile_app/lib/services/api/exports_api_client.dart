@@ -173,8 +173,15 @@ class ExportsApiClient {
     Function(double)? onProgress,
   }) async {
     try {
-      await _dio.download(
-        '/exports/files/$exportId/download',
+      // First, get the presigned S3 URL from our API
+      final response = await _dio.get('/exports/files/$exportId/download');
+      final downloadUrl = response.data['download_url'] as String;
+
+      // Then download the actual file from S3 using a fresh Dio instance
+      // (to avoid adding auth headers to S3 request)
+      final s3Dio = Dio();
+      await s3Dio.download(
+        downloadUrl,
         savePath,
         onReceiveProgress: (received, total) {
           if (onProgress != null && total != -1) {

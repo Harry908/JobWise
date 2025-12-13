@@ -1,5 +1,108 @@
 # Frontend Agent Log
 
+## Log Entry: 4
+
+### User Request
+fix the frontend api to use correct endpoint for exporting cover resume. also file name in the view export screeen got cut off.
+
+### Response Summary
+Fixed filename truncation issue in export screens by adding maxLines and overflow properties to Text widgets. Updated both exported_files_screen.dart and export_actions_sheet.dart to display filenames with up to 2 lines and ellipsis for long names. Verified export API endpoints were already correct (/exports/pdf and /exports/docx map to /api/v1/exports/pdf and /api/v1/exports/docx via Dio's base URL configuration).
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/export/exported_files_screen.dart`
+  - **Change:** Added `maxLines: 2` and `overflow: TextOverflow.ellipsis` to filename Text widget, and `maxLines: 1` with overflow to subtitle
+  - **Reason:** Prevent long filenames from being cut off and causing UI overflow issues
+
+- **File:** `mobile_app/lib/screens/export/export_actions_sheet.dart`
+  - **Change:** Added `maxLines: 2` and `overflow: TextOverflow.ellipsis` to filename and subtitle Text widgets
+  - **Reason:** Consistent filename display behavior across all export-related screens
+
+---
+
+## Log Entry: 5
+
+### User Request
+ok export cover leter navigate to export resume screen and it start exporting resume instead of cover letter.
+
+### Response Summary
+Implemented document type detection and conditional UI for cover letter exports. Modified job_generation_tab.dart to pass document_type through navigation, updated export_options_screen.dart to accept documentType parameter and conditionally show/hide template selection based on whether it's a cover letter. Cover letters now skip template selection and show an info card explaining they use plain text formatting.
+
+### Actions Taken
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Modified `_navigateToExport()` to extract document_type from generation and pass it in navigation extras
+  - **Reason:** Export screen needs to know if it's exporting a resume or cover letter to show appropriate UI
+
+- **File:** `mobile_app/lib/screens/export/export_options_screen.dart`
+  - **Change:** Added `documentType` parameter, `_isCoverLetter` getter, conditional template loading (skip for cover letters), and auto-select 'modern' template as placeholder for cover letters
+  - **Reason:** Cover letters don't use templates so template selection should be hidden
+
+- **File:** `mobile_app/lib/screens/export/export_options_screen.dart`
+  - **Change:** Wrapped template selection UI in `if (!_isCoverLetter)` condition and added info card for cover letters
+  - **Reason:** Show different UI for cover letters explaining they use plain text without templates
+
+- **File:** `mobile_app/lib/screens/export/export_options_screen.dart`
+  - **Change:** Updated `_canExport` to allow export without template selection for cover letters: `(_isCoverLetter || _selectedTemplateId != null)`
+  - **Reason:** Cover letters should be exportable without requiring template selection
+
+---
+
+## Log Entry: 6
+
+### User Request
+lib/widgets/job_generation_tab.dart:654:30: Error: The getter 'historyItems' isn't defined for the type 'GenerationsState'.
+
+### Response Summary
+Fixed compilation error by correcting the state property name from `state.historyItems.expand((item) => item.generations)` to `state.history` since the GenerationsState class uses a flat list called `history`, not a nested structure called `historyItems`.
+
+### Actions Taken
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Changed `state.historyItems.expand((item) => item.generations).firstWhere(...)` to `state.history.firstWhere(...)`
+  - **Reason:** GenerationsState has a `history` property that's already a flat list of generations, not `historyItems`
+
+---
+
+## Log Entry: 7
+
+### User Request
+you did not fix the export button on the cover letter card. it is still using resume generation logic
+
+### Response Summary
+Fixed export button to pass document type directly from the generation card instead of looking it up in state. Modified _buildHistoryCard to use correct generation ID field (trying both 'id' and 'generation_id'), and updated _navigateToExport to accept documentType as a parameter so cover letters properly navigate to export screen with correct document type.
+
+### Actions Taken
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Modified generationId extraction to try both `generation['id']` and `generation['generation_id']`
+  - **Reason:** Different API responses use different field names for generation ID
+
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Updated export button to call `_navigateToExport(generationId, documentType)` passing documentType from the card
+  - **Reason:** Directly pass document type instead of looking it up in state to ensure cover letters are correctly identified
+
+- **File:** `mobile_app/lib/widgets/job_generation_tab.dart`
+  - **Change:** Simplified `_navigateToExport()` to accept documentType parameter instead of querying state.history
+  - **Reason:** More reliable to pass document type directly from the source where it's already available
+
+---
+
+## Log Entry: 8
+
+### User Request
+it worked. but i still have select a template to export coverletter. you need to remove the template selection when exporting type cover letter
+
+### Response Summary
+Fixed route definition in app.dart to extract and pass documentType from navigation extras to ExportOptionsScreen. Also hid customization options section for cover letters. The issue was that while the export screen had logic to handle cover letters, the routing layer wasn't passing the documentType parameter through, so it was always null.
+
+### Actions Taken
+- **File:** `mobile_app/lib/screens/export/export_options_screen.dart`
+  - **Change:** Added `!_isCoverLetter &&` condition to customization options section
+  - **Reason:** Hide template customization options for cover letters since they don't use templates
+
+- **File:** `mobile_app/lib/app.dart`
+  - **Change:** Added `final documentType = extra?['documentType'] as String?;` and passed it to ExportOptionsScreen constructor
+  - **Reason:** Route was not extracting documentType from navigation extras, causing it to always be null and template selection to always show
+
+---
+
 ## Log Entry: 3
 
 ### User Request

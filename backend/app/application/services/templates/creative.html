@@ -217,13 +217,14 @@
             <div class="skill-category">
                 <strong style="color: {{ options.primary_color|default('#8e44ad') }};">{{ category.name }}</strong>
                 <div class="skills-container">
-                    {% if category.items is iterable and category.items is not string %}
-                        {% if category.items[0] is mapping %}
-                            {% for item in category.items %}
+                    {% set skill_items = category['items'] %}
+                    {% if skill_items is iterable and skill_items is not string %}
+                        {% if skill_items[0] is mapping %}
+                            {% for item in skill_items %}
                             <span class="skill-tag">{{ item.name }}</span>
                             {% endfor %}
                         {% else %}
-                            {% for skill in category.items %}
+                            {% for skill in skill_items %}
                             <span class="skill-tag">{{ skill }}</span>
                             {% endfor %}
                         {% endif %}

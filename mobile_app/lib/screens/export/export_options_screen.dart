@@ -6,11 +6,13 @@ import '../../providers/exports/exports_provider.dart';
 class ExportOptionsScreen extends ConsumerStatefulWidget {
   final String? generationId;
   final String? jobId;
+  final String? documentType;
 
   const ExportOptionsScreen({
     super.key,
     this.generationId,
     this.jobId,
+    this.documentType,
   });
 
   @override
@@ -24,13 +26,20 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
 
   final List<String> _formats = ['pdf', 'docx'];
 
+  bool get _isCoverLetter => widget.documentType == 'cover_letter';
+
   @override
   void initState() {
     super.initState();
-    // Load templates when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(exportsNotifierProvider.notifier).loadTemplates();
-    });
+    // Load templates when screen opens (skip for cover letters)
+    if (!_isCoverLetter) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(exportsNotifierProvider.notifier).loadTemplates();
+      });
+    } else {
+      // For cover letters, auto-select a default template since it won't be used
+      _selectedTemplateId = 'modern';
+    }
   }
 
   @override
@@ -114,24 +123,54 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Template selection
-                  const Text(
-                    'Choose Template',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  ...templates.map((template) => _buildTemplateOption(template)),
-                  if (templates.isEmpty && state.error == null)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: Text(
-                          'No templates available',
-                          style: TextStyle(color: Colors.grey),
+                  // Template selection (only for resumes)
+                  if (!_isCoverLetter) ...[
+                    const Text(
+                      'Choose Template',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...templates.map((template) => _buildTemplateOption(template)),
+                    if (templates.isEmpty && state.error == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: Text(
+                            'No templates available',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Cover letter info
+                  if (_isCoverLetter) ...[
+                    Card(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Cover letters are exported as plain text without template styling.',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Format selection
                   const Text(
@@ -142,8 +181,8 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
                   ..._formats.map((format) => _buildFormatOption(format)),
                   const SizedBox(height: 24),
 
-                  // Custom options (if template supports it)
-                  if (_selectedTemplateId != null) ...() {
+                  // Custom options (if template supports it and not a cover letter)
+                  if (!_isCoverLetter && _selectedTemplateId != null) ...() {
                     final selectedTemplate = templates
                         .where((t) => t.id == _selectedTemplateId)
                         .firstOrNull;
@@ -316,7 +355,7 @@ class _ExportOptionsScreenState extends ConsumerState<ExportOptionsScreen> {
 
   bool get _canExport {
     return widget.generationId != null &&
-           _selectedTemplateId != null &&
+           (_isCoverLetter || _selectedTemplateId != null) &&
            !ref.read(exportsNotifierProvider).isLoading;
   }
 

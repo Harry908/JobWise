@@ -207,11 +207,12 @@
                 {% for category in section.categories %}
                 <div class="skill-category">
                     <strong>{{ category.name }}:</strong>
-                    {% if category.items is iterable and category.items is not string %}
-                        {% if category.items[0] is mapping %}
-                            {% for item in category.items %}{{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                    {% set skill_items = category['items'] %}
+                    {% if skill_items is iterable and skill_items is not string %}
+                        {% if skill_items[0] is mapping %}
+                            {% for item in skill_items %}{{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}
                         {% else %}
-                            {{ category.items|join(', ') }}
+                            {{ skill_items|join(', ') }}
                         {% endif %}
                     {% endif %}
                 </div>

@@ -547,7 +547,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
     final documentType = generation['document_type'] as String?;
     final createdAt = generation['created_at'] as String?;
     final atsScore = generation['ats_score'] as num?;
-    final generationId = generation['generation_id'] as String?;
+    final generationId = generation['id'] as String? ?? generation['generation_id'] as String?;
 
     final isResume = documentType == 'resume';
     final timestamp = createdAt != null ? DateTime.tryParse(createdAt) : null;
@@ -619,7 +619,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
               const SizedBox(width: 8),
               // Export Button
               FilledButton.tonalIcon(
-                onPressed: () => _navigateToExport(generationId),
+                onPressed: () => _navigateToExport(generationId, documentType),
                 icon: const Icon(Icons.upload_file, size: 18),
                 label: const Text('Export'),
                 style: FilledButton.styleFrom(
@@ -641,13 +641,16 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
     );
   }
 
-  void _navigateToExport(String? generationId) {
+  void _navigateToExport(String? generationId, String? documentType) {
     if (generationId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to export: Generation ID not found')),
       );
       return;
     }
+
+    // Use the provided document type or default to 'resume'
+    final docType = documentType ?? 'resume';
 
     // Navigate to export options screen with generation_id and job_id
     context.push(
@@ -657,6 +660,7 @@ class _JobGenerationTabState extends ConsumerState<JobGenerationTab> {
         'jobId': widget.job.id,
         'jobTitle': widget.job.title,
         'company': widget.job.company,
+        'documentType': docType,
       },
     );
   }

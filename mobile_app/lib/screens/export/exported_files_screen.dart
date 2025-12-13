@@ -342,12 +342,18 @@ class _ExportedFileCard extends StatelessWidget {
           color: _getFormatColor(file.format),
           size: 32,
         ),
-        title: Text(file.filename),
+        title: Text(
+          file.filename,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '${file.formattedFileSize} • ${file.template} • ${DateFormat.yMMMd().format(file.createdAt)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             if (file.isExpired) ...[
               const SizedBox(height: 4),

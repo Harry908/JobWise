@@ -1,5 +1,55 @@
 # Backend Agent Log
 
+## Log Entry: 13
+
+### User Request
+now for the frontend the cover letter doesnt need template in exporting. and the logic should be easier just grab full text and turn in to pdf or docx
+
+### Response Summary
+Simplified cover letter export to use plain text rendering instead of complex Jinja2 templates. Modified export_renderer.py to bypass template system for cover letters, creating a new `_render_cover_letter_html()` method that formats the plain text paragraphs with basic HTML/CSS styling. Updated DOCX rendering to use cleaner spacing for cover letters. This matches the user's requirement for cover letters to be exported as simple formatted text without template selection complexity.
+
+### Actions Taken
+- **File:** `backend/app/application/services/export_renderer.py`
+  - **Change:** Modified `_render_html()` to detect cover letters and call new `_render_cover_letter_html()` method instead of using Jinja2 templates
+  - **Reason:** Cover letters should be simple plain text exports without complex template styling
+
+- **File:** `backend/app/application/services/export_renderer.py`
+  - **Change:** Added `_render_cover_letter_html()` method that creates simple HTML with header info and paragraphs formatted with basic CSS
+  - **Reason:** Provide lightweight HTML rendering for cover letters without template overhead
+
+- **File:** `backend/app/application/services/export_renderer.py`
+  - **Change:** Simplified `_add_docx_cover_letter()` to use cleaner spacing logic with paragraph formatting instead of adding empty paragraphs
+  - **Reason:** Improve DOCX export quality for cover letters with proper spacing
+
+---
+
+## Log Entry: 12
+
+### User Request
+good everything working great. but the pdf is missing 'skills'. check the template and compile logic to make sure to include all the field required
+
+### Response Summary
+Investigated and fixed the missing skills section in PDF exports. The root cause was a Jinja2 template bug where `category.items` was being interpreted as the Python dict `.items()` method instead of the dictionary key `items`. Fixed all 4 resume templates (modern.html, classic.html, creative.html, ats-optimized.html) by using explicit bracket notation `category['items']` to access the skills items array. Verified the fix renders skills correctly with Technical Skills and Soft Skills appearing in the output.
+
+### Actions Taken
+- **File:** `backend/app/application/services/templates/modern.html`
+  - **Change:** Changed `category.items` to `{% set skill_items = category['items'] %}` and updated all references to use `skill_items`
+  - **Reason:** Jinja2 was resolving `category.items` as the dict method `.items()` instead of the key, causing skills to not render
+
+- **File:** `backend/app/application/services/templates/classic.html`
+  - **Change:** Same fix - using `{% set skill_items = category['items'] %}` with bracket notation
+  - **Reason:** Same Jinja2 method vs key resolution issue
+
+- **File:** `backend/app/application/services/templates/creative.html`
+  - **Change:** Same fix - using `{% set skill_items = category['items'] %}` with bracket notation
+  - **Reason:** Same Jinja2 method vs key resolution issue
+
+- **File:** `backend/app/application/services/templates/ats-optimized.html`
+  - **Change:** Same fix - using `{% set skill_items = category['items'] %}` with bracket notation
+  - **Reason:** Same Jinja2 method vs key resolution issue
+
+---
+
 ## Log Entry: 11
 
 ### User Request

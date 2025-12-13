@@ -190,16 +190,16 @@ class ExportRenderer:
         # Parse structured content if string
         data = json.loads(structured_content) if isinstance(structured_content, str) else structured_content
         
-        # Check if this is a cover letter (use cover letter template regardless of selected template)
+        # Check if this is a cover letter (use simple text-based rendering)
         sections = data.get('sections', [])
         is_cover_letter = any(s.get('type') == 'cover_letter' for s in sections)
         
-        # Select template file
         if is_cover_letter:
-            template_file = "cover-letter.html"
-        else:
-            template_file = f"{template.value}.html"
+            # Simple cover letter rendering without template
+            return self._render_cover_letter_html(data, options)
         
+        # For resumes, use template
+        template_file = f"{template.value}.html"
         jinja_template = self.env.get_template(template_file)
         
         # Merge options with defaults
@@ -247,6 +247,75 @@ class ExportRenderer:
         }
         
         return defaults.get(template, {})
+    
+    def _render_cover_letter_html(
+        self,
+        data: Dict[str, Any],
+        options: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Render cover letter as simple formatted HTML."""
+        header = data.get('header', {})
+        sections = data.get('sections', [])
+        
+        # Get cover letter section
+        cover_letter_section = next(
+            (s for s in sections if s.get('type') == 'cover_letter'),
+            None
+        )
+        
+        if not cover_letter_section:
+            return "<html><body><p>No cover letter content found.</p></body></html>"
+        
+        paragraphs = cover_letter_section.get('paragraphs', [])
+        
+        # Simple HTML structure
+        html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {{
+            size: letter;
+            margin: 1in;
+        }}
+        body {{
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #000000;
+        }}
+        .header {{
+            margin-bottom: 2em;
+        }}
+        .header p {{
+            margin: 0.2em 0;
+        }}
+        .content p {{
+            margin-bottom: 1em;
+            text-align: justify;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <p><strong>{header.get('name', '')}</strong></p>
+        <p>{header.get('email', '')}</p>
+        {f'<p>{header.get("phone", "")}</p>' if header.get('phone') else ''}
+        {f'<p>{header.get("location", "")}</p>' if header.get('location') else ''}
+    </div>
+    
+    <div class="content">
+'''
+        
+        # Add paragraphs
+        for paragraph in paragraphs:
+            html += f'        <p>{paragraph}</p>\n'
+        
+        html += '''    </div>
+</body>
+</html>'''
+        
+        return html
     
     def _get_docx_style_config(
         self,
@@ -479,11 +548,13 @@ class ExportRenderer:
                 run.italic = True
             
     def _add_docx_cover_letter(self, doc: Document, section: Dict[str, Any], style: Dict[str, Any]):
-        """Add cover letter content."""
+        """Add cover letter content with simple formatting."""
         # Cover letter paragraphs
         paragraphs = section.get('paragraphs', [])
-        for paragraph in paragraphs:
+        for i, paragraph in enumerate(paragraphs):
             p = doc.add_paragraph(paragraph)
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            doc.add_paragraph()  # Spacing between paragraphs
-            doc.add_paragraph()  # Spacing
+            
+            # Add spacing between paragraphs
+            if i < len(paragraphs) - 1:
+                p.paragraph_format.space_after = Pt(12)

@@ -292,10 +292,12 @@ class _AppState extends ConsumerState<App> {
             final extra = state.extra as Map<String, dynamic>?;
             final generationId = extra?['generationId'] as String?;
             final jobId = extra?['jobId'] as String?;
+            final documentType = extra?['documentType'] as String?;
             
             return ExportOptionsScreen(
               generationId: generationId,
               jobId: jobId,
+              documentType: documentType,
             );
           },
         ),

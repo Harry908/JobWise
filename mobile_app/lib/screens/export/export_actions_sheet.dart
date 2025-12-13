@@ -29,8 +29,16 @@ class ExportActionsSheet extends StatelessWidget {
               color: _getFormatColor(file.format),
               size: 32,
             ),
-            title: Text(file.filename),
-            subtitle: Text('${file.formattedFileSize} • ${file.template}'),
+            title: Text(
+              file.filename,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '${file.formattedFileSize} • ${file.template}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           const Divider(),
 
