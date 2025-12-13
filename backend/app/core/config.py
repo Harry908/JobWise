@@ -27,7 +27,18 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
     # CORS Configuration
-    allowed_origins: List[str] = Field(default=["*"], alias="ALLOWED_ORIGINS")
+    # Note: When allow_credentials=True, cannot use "*" - must list explicit origins
+    allowed_origins: List[str] = Field(
+        default=[
+            "http://localhost:8080",
+            "http://localhost:54662",
+            "http://localhost:3000",
+            "http://127.0.0.1:8080",
+            "http://127.0.0.1:54662",
+            "http://127.0.0.1:3000",
+        ],
+        alias="ALLOWED_ORIGINS"
+    )
     
     # Application Configuration
     app_name: str = Field(default="JobWise Backend API", alias="APP_NAME")

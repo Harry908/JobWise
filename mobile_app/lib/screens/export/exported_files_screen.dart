@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import '../../providers/exports/exports_provider.dart';
 import '../../providers/job_provider.dart';
 import '../../models/job.dart';
 import '../../services/export_cache_service.dart';
+import '../../services/platform_file_service.dart';
 import '../../widgets/error_display.dart';
 import 'export_actions_sheet.dart';
 import 'export_options_screen.dart';
@@ -312,6 +314,12 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
 
   Future<void> _downloadFile(ExportedFile file) async {
     try {
+      // On web, trigger direct browser download
+      if (kIsWeb) {
+        await _downloadForWeb(file);
+        return;
+      }
+      
       // If cache is valid, open directly
       final isCacheValid = await file.isCacheValid();
       if (isCacheValid) {
@@ -379,6 +387,49 @@ class _ExportedFilesScreenState extends ConsumerState<ExportedFilesScreen> {
         const SnackBar(content: Text('Download completed')),
       );
       return;
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download failed: $e')),
+      );
+    }
+  }
+
+  /// Download file for web browser - triggers browser download
+  Future<void> _downloadForWeb(ExportedFile file) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Starting download...')),
+      );
+
+      // Download file bytes from API
+      final bytes = await ref.read(exportsNotifierProvider.notifier).downloadExportBytes(file.exportId);
+      
+      // Trigger browser download
+      PlatformFileService.downloadOnWeb(
+        bytes: bytes,
+        filename: file.filename,
+        mimeType: PlatformFileService.getMimeType(file.filename),
+      );
+
+      // Save cache metadata (so web knows file was "downloaded")
+      final cacheService = ExportCacheService();
+      await cacheService.saveCacheInfo(
+        file.exportId,
+        CachedExportInfo(
+          localPath: 'web_download',
+          downloadedAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(days: 7)),
+        ),
+      );
+
+      // Reload to update UI
+      await ref.read(exportsNotifierProvider.notifier).loadExportedFiles(jobId: widget.jobId);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Download started in browser')),
+      );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

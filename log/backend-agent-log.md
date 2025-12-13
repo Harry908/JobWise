@@ -1,5 +1,24 @@
 # Backend Agent Log
 
+## Log Entry: 14
+
+### User Request
+i cant login can you check CORS in the backend
+
+### Response Summary
+Fixed CORS configuration bug that was preventing web login. The issue was that when allow_credentials=True is set in CORS middleware, browsers block allow_origins=["*"] for security reasons. This is a known CORS security restriction. Updated backend/app/core/config.py to specify explicit localhost origins (localhost:8080, localhost:54662, localhost:3000, and 127.0.0.1 variants) instead of wildcard. Also added allow_origin_regex pattern in main.py to match localhost on any port for development flexibility. The fix requires backend server restart to take effect.
+
+### Actions Taken
+- **File:** `backend/app/core/config.py`
+  - **Change:** Changed allowed_origins from default=["*"] to explicit list of localhost origins with various ports (8080, 54662, 3000) for both localhost and 127.0.0.1, added comment explaining that wildcard cannot be used with allow_credentials=True
+  - **Reason:** Browsers reject CORS requests when allow_credentials=True is combined with allow_origins=["*"]; must specify explicit origins
+
+- **File:** `backend/app/main.py`
+  - **Change:** Added allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?" to CORSMiddleware configuration, added comment explaining the credentials restriction
+  - **Reason:** Provide flexible development support for localhost on any port while maintaining security with credentials
+
+---
+
 ## Log Entry: 13
 
 ### User Request

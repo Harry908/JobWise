@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../models/exported_file.dart';
 import '../../models/template.dart' as template_models;
@@ -189,6 +190,26 @@ class ExportsApiClient {
           }
         },
       );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Download file and return bytes (for web browser downloads)
+  Future<Uint8List> downloadFileBytes({required String exportId}) async {
+    try {
+      // First, get the presigned S3 URL from our API
+      final response = await _dio.get('/exports/files/$exportId/download');
+      final downloadUrl = response.data['download_url'] as String;
+
+      // Download file bytes from S3
+      final s3Dio = Dio();
+      final fileResponse = await s3Dio.get<List<int>>(
+        downloadUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(fileResponse.data!);
     } on DioException catch (e) {
       throw _handleError(e);
     }

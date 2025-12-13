@@ -1,26 +1,34 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+// Conditional import for dart:io
+import 'export_cache_service_io.dart' if (dart.library.html) 'export_cache_service_web.dart' as platform;
 
 /// Service to persist export cache metadata locally
+/// On mobile: Uses file system
+/// On web: Uses localStorage via flutter_secure_storage
 class ExportCacheService {
-  static const String _cacheFileName = 'export_cache_metadata.json';
+  static const String _cacheKey = 'export_cache_metadata';
   
-  /// Get the cache metadata file path
-  Future<File> _getCacheFile() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return File('${directory.path}/$_cacheFileName');
-  }
+  // Web storage
+  final FlutterSecureStorage _webStorage = const FlutterSecureStorage();
   
   /// Load all cached export metadata
   Future<Map<String, CachedExportInfo>> loadCacheMetadata() async {
     try {
-      final file = await _getCacheFile();
-      if (!await file.exists()) {
+      String? contents;
+      
+      if (kIsWeb) {
+        contents = await _webStorage.read(key: _cacheKey);
+      } else {
+        contents = await platform.readCacheFile();
+      }
+      
+      if (contents == null || contents.isEmpty) {
         return {};
       }
       
-      final contents = await file.readAsString();
       final json = jsonDecode(contents) as Map<String, dynamic>;
       
       final result = <String, CachedExportInfo>{};
@@ -55,6 +63,7 @@ class ExportCacheService {
   }
   
   /// Check if a cached file is valid (exists and not expired)
+  /// On web: Only checks expiration (no file system access)
   Future<bool> isCacheValid(String exportId) async {
     final info = await getCacheInfo(exportId);
     if (info == null) return false;
@@ -65,9 +74,14 @@ class ExportCacheService {
       return false;
     }
     
-    // Check file exists
-    final file = File(info.localPath);
-    if (!await file.exists()) {
+    // On web, we can't check file existence - just trust the metadata
+    if (kIsWeb) {
+      return true;
+    }
+    
+    // On mobile, check file exists
+    final exists = await platform.fileExists(info.localPath);
+    if (!exists) {
       await removeCacheInfo(exportId);
       return false;
     }
@@ -76,12 +90,17 @@ class ExportCacheService {
   }
   
   Future<void> _saveMetadata(Map<String, CachedExportInfo> metadata) async {
-    final file = await _getCacheFile();
     final json = <String, dynamic>{};
     metadata.forEach((exportId, info) {
       json[exportId] = info.toJson();
     });
-    await file.writeAsString(jsonEncode(json));
+    final contents = jsonEncode(json);
+    
+    if (kIsWeb) {
+      await _webStorage.write(key: _cacheKey, value: contents);
+    } else {
+      await platform.writeCacheFile(contents);
+    }
   }
   
   /// Clean up expired cache entries and orphaned files
@@ -93,13 +112,10 @@ class ExportCacheService {
     for (final entry in metadata.entries) {
       if (now.isAfter(entry.value.expiresAt)) {
         expiredIds.add(entry.key);
-        // Try to delete the file
-        try {
-          final file = File(entry.value.localPath);
-          if (await file.exists()) {
-            await file.delete();
-          }
-        } catch (_) {}
+        // Try to delete the file (mobile only)
+        if (!kIsWeb) {
+          await platform.deleteFile(entry.value.localPath);
+        }
       }
     }
     

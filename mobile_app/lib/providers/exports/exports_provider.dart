@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/exported_file.dart';
 import '../../models/template.dart';
@@ -274,6 +275,15 @@ class ExportsNotifier extends StateNotifier<ExportsState> {
       }).toList();
 
       state = state.copyWith(files: updatedFiles);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Download export and return bytes (for web browser downloads)
+  Future<Uint8List> downloadExportBytes(String exportId) async {
+    try {
+      return await _apiClient.downloadFileBytes(exportId: exportId);
     } catch (e) {
       rethrow;
     }

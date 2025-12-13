@@ -1,5 +1,56 @@
 # Frontend Agent Log
 
+## Log Entry: 11
+
+### User Request
+Configure Flutter app for web deployment with platform-specific API URLs, web-compatible file downloads, and persistent export caching. The app needs to work on both mobile (Android emulator using 10.0.2.2:8000) and web (localhost:8000), handle file downloads via browser download API on web, and maintain export cache across platforms.
+
+### Response Summary
+Successfully configured the Flutter app for cross-platform deployment (mobile + web) by implementing platform detection and conditional code execution. Created app_config.dart with kIsWeb detection to return localhost for web and 10.0.2.2 for Android emulator. Built PlatformFileService using universal_html to trigger browser downloads via Blob/AnchorElement. Refactored ExportCacheService with conditional imports to use flutter_secure_storage on web and file system (dart:io) on mobile. Updated both export screens (job_exports_screen.dart and exported_files_screen.dart) to detect web platform and use byte-based downloads. Added downloadFileBytes to exports_api_client.dart and downloadExportBytes to exports_provider.dart. Web build compiled successfully.
+
+### Actions Taken
+- **File:** `mobile_app/lib/config/app_config.dart`
+  - **Change:** Added kIsWeb detection from foundation.dart, created isWeb and isMobile getters, made apiBaseUrl return localhost:8000 for web and 10.0.2.2:8000 for mobile
+  - **Reason:** Different API URLs needed for web browser vs Android emulator
+
+- **File:** `mobile_app/lib/services/platform_file_service.dart`
+  - **Change:** Created new service with downloadOnWeb() method using universal_html Blob/AnchorElement to trigger browser downloads, added getMimeType() helper for file type detection
+  - **Reason:** Web browsers don't have file system access; must use browser download API
+
+- **File:** `mobile_app/lib/services/export_cache_service.dart`
+  - **Change:** Refactored with conditional imports: 'export_cache_service_io.dart' if (dart.library.html) 'export_cache_service_web.dart', abstracted file operations to platform-specific implementations
+  - **Reason:** dart:io File class doesn't exist on web; needed platform-specific file operations
+
+- **File:** `mobile_app/lib/services/export_cache_service_io.dart`
+  - **Change:** Created new file with mobile-specific file operations: readCacheFile(), writeCacheFile(), fileExists(), deleteFile() using dart:io
+  - **Reason:** Mobile implementation of cache file operations using file system
+
+- **File:** `mobile_app/lib/services/export_cache_service_web.dart`
+  - **Change:** Created new file with web stubs (no-op functions) for file operations since web uses flutter_secure_storage instead
+  - **Reason:** Web doesn't have file system access; falls back to secure storage
+
+- **File:** `mobile_app/lib/services/api/exports_api_client.dart`
+  - **Change:** Added dart:typed_data import, created downloadFileBytes() method that returns Uint8List instead of saving to file
+  - **Reason:** Web needs raw bytes to pass to browser download API instead of file path
+
+- **File:** `mobile_app/lib/providers/exports/exports_provider.dart`
+  - **Change:** Added dart:typed_data import, created downloadExportBytes(String exportId) method returning Future<Uint8List>
+  - **Reason:** Provider layer needs to expose byte download for web platform
+
+- **File:** `mobile_app/lib/screens/export/job_exports_screen.dart`
+  - **Change:** Added kIsWeb and platform_file_service imports, modified _downloadExportOnly() to check kIsWeb and call _downloadForWeb() for browser, created _downloadForWeb() method that downloads bytes and triggers browser download
+  - **Reason:** Different download flow for web: get bytes from API, trigger browser download, save cache metadata
+
+- **File:** `mobile_app/lib/screens/export/exported_files_screen.dart`
+  - **Change:** Added kIsWeb and platform_file_service imports, modified _downloadFile() to check kIsWeb and call _downloadForWeb(), added _downloadForWeb() method matching job_exports_screen implementation
+  - **Reason:** Both export screens need web download support for consistent behavior
+
+- **File:** `mobile_app/pubspec.yaml`
+  - **Change:** Added universal_html: ^2.2.4 under dependencies with "# Web Support" comment
+  - **Reason:** Need cross-platform HTML API access for browser downloads on web
+
+---
+
 ## Log Entry: 10
 
 ### User Request
