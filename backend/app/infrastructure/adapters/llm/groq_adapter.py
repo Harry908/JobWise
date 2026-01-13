@@ -4,8 +4,12 @@ import json
 import time
 from typing import Dict, Optional
 from groq import AsyncGroq
+from opentelemetry import trace
 
 from .llm_interface import LLMInterface
+
+# Get tracer for this module
+tracer = trace.get_tracer(__name__)
 
 
 class GroqAdapter(LLMInterface):
@@ -26,32 +30,49 @@ class GroqAdapter(LLMInterface):
         **kwargs
     ) -> Dict:
         """Generate completion from Groq."""
-        start_time = time.time()
-        
         if model is None:
             model = self.quality_model
-        
-        try:
-            response = await self.client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=temperature,
-                **kwargs
-            )
             
-            processing_time = time.time() - start_time
+        with tracer.start_as_current_span("groq.generate_completion") as span:
+            # Add span attributes for observability
+            span.set_attribute("llm.model", model)
+            span.set_attribute("llm.provider", "groq")
+            span.set_attribute("llm.max_tokens", max_tokens)
+            span.set_attribute("llm.temperature", temperature)
+            span.set_attribute("llm.prompt_length", len(prompt))
             
-            return {
-                "content": response.choices[0].message.content,
-                "tokens": response.usage.total_tokens,
-                "model": model,
-                "processing_time": processing_time,
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens
-            }
-        except Exception as e:
-            raise Exception(f"Groq API error: {str(e)}")
+            start_time = time.time()
+            
+            try:
+                response = await self.client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    **kwargs
+                )
+                
+                processing_time = time.time() - start_time
+                
+                # Add response metrics to span
+                span.set_attribute("llm.response_tokens", response.usage.total_tokens)
+                span.set_attribute("llm.prompt_tokens", response.usage.prompt_tokens)
+                span.set_attribute("llm.completion_tokens", response.usage.completion_tokens)
+                span.set_attribute("llm.processing_time_ms", processing_time * 1000)
+                
+                return {
+                    "content": response.choices[0].message.content,
+                    "tokens": response.usage.total_tokens,
+                    "model": model,
+                    "processing_time": processing_time,
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens
+                }
+            except Exception as e:
+                # Record exception in span
+                span.record_exception(e)
+                span.set_attribute("error", True)
+                raise Exception(f"Groq API error: {str(e)}")
     
     async def extract_writing_style(self, sample_text: str) -> Dict:
         """Extract writing style from sample text."""
