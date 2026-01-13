@@ -1,0 +1,202 @@
+[
+  {
+    "query_id": "q1",
+    "job_title": "Senior Full Stack Developer",
+    "company": "TechCorp Solutions",
+    "job_description": "We are seeking a Senior Full Stack Developer with 5+ years of experience in Python, FastAPI, React, and PostgreSQL. The ideal candidate will have strong experience building scalable REST APIs, implementing CI/CD pipelines, and working with cloud platforms like AWS. You'll lead technical design decisions, mentor junior developers, and work closely with product teams to deliver high-quality software solutions.",
+    "job_requirements": [
+      "5+ years Python development",
+      "FastAPI or similar web frameworks",
+      "React and modern JavaScript",
+      "PostgreSQL or similar databases",
+      "AWS experience",
+      "CI/CD pipeline implementation",
+      "Team leadership and mentoring"
+    ],
+    "user_profile": {
+      "full_name": "Alex Johnson",
+      "professional_summary": "Full Stack Developer with 6 years of experience building scalable web applications. Specializes in Python backends with FastAPI and modern frontend frameworks. Strong focus on clean code, testing, and CI/CD automation.",
+      "skills": {
+        "technical": ["Python", "FastAPI", "React", "PostgreSQL", "Docker", "AWS", "Git", "REST APIs"],
+        "soft": ["Team Leadership", "Code Review", "Agile Development", "Problem Solving"]
+      },
+      "experiences": [
+        {
+          "title": "Senior Software Engineer",
+          "company": "Innovation Labs",
+          "duration": "2021-Present",
+          "description": "Led development of microservices architecture using FastAPI and PostgreSQL. Implemented CI/CD pipelines reducing deployment time by 60%. Mentored 3 junior developers."
+        },
+        {
+          "title": "Full Stack Developer",
+          "company": "StartupXYZ",
+          "duration": "2019-2021",
+          "description": "Built RESTful APIs serving 50K+ daily users. Developed React frontend components and integrated with backend services."
+        }
+      ]
+    },
+    "generation_type": "cover_letter",
+    "company_name": "TechCorp Solutions",
+    "hiring_manager": "Sarah Chen"
+  },
+  {
+    "query_id": "q2",
+    "job_title": "Machine Learning Engineer",
+    "company": "AI Dynamics Inc",
+    "job_description": "AI Dynamics is looking for a Machine Learning Engineer to join our growing team. You'll work on cutting-edge NLP projects, develop and deploy ML models, and collaborate with data scientists to productionize AI solutions. Experience with PyTorch, transformers, and model deployment is essential. Knowledge of LLM fine-tuning and prompt engineering is a plus.",
+    "job_requirements": [
+      "3+ years ML/AI experience",
+      "Strong Python and PyTorch",
+      "NLP and transformer models",
+      "Model deployment experience",
+      "LLM integration knowledge",
+      "Data pipeline development",
+      "Research and experimentation"
+    ],
+    "user_profile": {
+      "full_name": "Maria Rodriguez",
+      "professional_summary": "Machine Learning Engineer with 4 years specializing in NLP and deep learning. Experienced in building and deploying transformer models for production systems. Passionate about advancing AI capabilities and practical applications.",
+      "skills": {
+        "technical": ["Python", "PyTorch", "TensorFlow", "Transformers", "NLP", "LangChain", "Docker", "Kubernetes"],
+        "soft": ["Research", "Collaboration", "Technical Writing", "Innovation"]
+      },
+      "experiences": [
+        {
+          "title": "ML Engineer",
+          "company": "DataTech Solutions",
+          "duration": "2022-Present",
+          "description": "Developed NLP models for document classification achieving 94% accuracy. Deployed transformer models using Docker and Kubernetes. Integrated GPT-4 and Claude APIs for production chatbot serving 10K users."
+        },
+        {
+          "title": "Data Scientist",
+          "company": "Analytics Pro",
+          "duration": "2020-2022",
+          "description": "Built predictive models for customer churn. Worked with large datasets and implemented feature engineering pipelines. Collaborated with engineering teams on model deployment."
+        }
+      ]
+    },
+    "generation_type": "cover_letter",
+    "company_name": "AI Dynamics Inc",
+    "hiring_manager": "Dr. James Wilson"
+  },
+  {
+    "query_id": "q3",
+    "job_title": "DevOps Engineer",
+    "company": "CloudScale Systems",
+    "job_description": "CloudScale Systems needs a DevOps Engineer to manage our cloud infrastructure and automate deployment processes. You'll work with Kubernetes, Terraform, and AWS to build reliable, scalable systems. Experience with monitoring tools, Infrastructure as Code, and security best practices is required. Help us achieve 99.9% uptime and zero-downtime deployments.",
+    "job_requirements": [
+      "4+ years DevOps experience",
+      "Kubernetes orchestration",
+      "Terraform and IaC",
+      "AWS cloud services",
+      "CI/CD automation",
+      "Monitoring and alerting",
+      "Security hardening"
+    ],
+    "user_profile": {
+      "full_name": "David Kim",
+      "professional_summary": "DevOps Engineer with 5 years building and maintaining cloud infrastructure. Expert in Kubernetes, AWS, and Infrastructure as Code. Strong focus on automation, reliability, and security. Reduced deployment failures by 80% through improved CI/CD practices.",
+      "skills": {
+        "technical": ["Kubernetes", "Docker", "Terraform", "AWS", "Jenkins", "Prometheus", "Grafana", "Python", "Bash"],
+        "soft": ["Problem Solving", "Automation", "Documentation", "Incident Response"]
+      },
+      "experiences": [
+        {
+          "title": "Senior DevOps Engineer",
+          "company": "FinTech Global",
+          "duration": "2021-Present",
+          "description": "Managed Kubernetes clusters serving 200+ microservices. Implemented Terraform for infrastructure automation across 5 AWS regions. Achieved 99.95% uptime through proactive monitoring and alerting."
+        },
+        {
+          "title": "DevOps Engineer",
+          "company": "TechStart",
+          "duration": "2019-2021",
+          "description": "Built CI/CD pipelines using Jenkins and GitLab. Automated deployments reducing release time from 4 hours to 15 minutes. Implemented security scanning in pipeline."
+        }
+      ]
+    },
+    "generation_type": "cover_letter",
+    "company_name": "CloudScale Systems",
+    "hiring_manager": "Michael Brown"
+  },
+  {
+    "query_id": "q4",
+    "job_title": "Frontend Developer",
+    "company": "UX Masters",
+    "job_description": "UX Masters is hiring a Frontend Developer to create beautiful, responsive web applications. You'll work with React, TypeScript, and modern CSS frameworks to build pixel-perfect interfaces. Strong understanding of web performance, accessibility standards, and responsive design is essential. Join a creative team pushing the boundaries of web UX.",
+    "job_requirements": [
+      "3+ years frontend development",
+      "React and TypeScript",
+      "Modern CSS (Tailwind/Styled Components)",
+      "Web performance optimization",
+      "Accessibility (WCAG 2.1)",
+      "Responsive design",
+      "State management (Redux/Zustand)"
+    ],
+    "user_profile": {
+      "full_name": "Emily Chen",
+      "professional_summary": "Frontend Developer with 4 years creating exceptional user experiences. Specializes in React, TypeScript, and performance optimization. Built applications serving millions of users with 95+ Lighthouse scores. Passionate about accessibility and inclusive design.",
+      "skills": {
+        "technical": ["React", "TypeScript", "JavaScript", "Tailwind CSS", "Next.js", "Redux", "Webpack", "Git"],
+        "soft": ["UI/UX Design", "Attention to Detail", "Collaboration", "User Empathy"]
+      },
+      "experiences": [
+        {
+          "title": "Senior Frontend Developer",
+          "company": "WebCraft Studios",
+          "duration": "2022-Present",
+          "description": "Lead frontend developer for e-commerce platform with 2M monthly users. Improved page load time by 40% through code splitting and lazy loading. Implemented WCAG 2.1 AA compliance across all pages."
+        },
+        {
+          "title": "Frontend Developer",
+          "company": "Digital Agency",
+          "duration": "2020-2022",
+          "description": "Built responsive web applications using React and TypeScript. Collaborated with designers to create pixel-perfect implementations. Optimized bundle size reducing initial load by 35%."
+        }
+      ]
+    },
+    "generation_type": "cover_letter",
+    "company_name": "UX Masters",
+    "hiring_manager": "Lisa Anderson"
+  },
+  {
+    "query_id": "q5",
+    "job_title": "Backend API Developer",
+    "company": "DataFlow Technologies",
+    "job_description": "DataFlow Technologies seeks a Backend API Developer to design and implement high-performance REST APIs. You'll work with Node.js or Python, PostgreSQL, and Redis to build services handling millions of requests daily. Experience with API design, database optimization, and caching strategies is crucial. Help us scale our platform to the next level.",
+    "job_requirements": [
+      "4+ years backend development",
+      "Node.js or Python",
+      "REST API design",
+      "PostgreSQL optimization",
+      "Redis caching",
+      "API documentation (OpenAPI)",
+      "Performance tuning"
+    ],
+    "user_profile": {
+      "full_name": "Ryan Martinez",
+      "professional_summary": "Backend Developer with 5 years specializing in high-performance API development. Expert in Python, FastAPI, and database optimization. Built APIs serving 10M+ requests daily with sub-100ms response times. Strong focus on scalability and clean architecture.",
+      "skills": {
+        "technical": ["Python", "FastAPI", "Node.js", "PostgreSQL", "Redis", "Docker", "API Design", "SQLAlchemy"],
+        "soft": ["System Design", "Performance Optimization", "Code Quality", "Documentation"]
+      },
+      "experiences": [
+        {
+          "title": "Senior Backend Engineer",
+          "company": "API Solutions Inc",
+          "duration": "2021-Present",
+          "description": "Designed and implemented REST APIs serving 15M daily requests. Optimized database queries reducing average response time from 250ms to 80ms. Implemented Redis caching achieving 90% cache hit rate."
+        },
+        {
+          "title": "Backend Developer",
+          "company": "Tech Ventures",
+          "duration": "2019-2021",
+          "description": "Built microservices using FastAPI and PostgreSQL. Created comprehensive API documentation using OpenAPI. Implemented authentication and authorization systems."
+        }
+      ]
+    },
+    "generation_type": "cover_letter",
+    "company_name": "DataFlow Technologies",
+    "hiring_manager": "Jennifer Lee"
+  }
+]

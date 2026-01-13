@@ -1,5 +1,24 @@
 # Backend Agent Log
 
+## Log Entry: 15
+
+### User Request
+check my flutter app for website and backend connection. i have issue that flutter web does not connect to my backend server.
+
+### Response Summary
+Identified and fixed Flutter web connection issue. The mobile_app/.env was configured with API_BASE_URL=http://10.0.2.2:8000/api/v1, which is the Android emulator address that web browsers cannot access. Updated .env to use http://localhost:8000/api/v1 for web and added WEB_API_BASE_URL configuration. Verified backend CORS is already properly configured with allow_origin_regex for localhost on any port. Created comprehensive troubleshooting guide.
+
+### Actions Taken
+- **File:** `mobile_app/.env`
+  - **Change:** Changed API_BASE_URL from http://10.0.2.2:8000/api/v1 to http://localhost:8000/api/v1, added WEB_API_BASE_URL=http://localhost:8000/api/v1, added comments explaining platform-specific URLs
+  - **Reason:** Web browsers cannot reach Android emulator address 10.0.2.2; must use localhost for web platform
+
+- **File:** `FLUTTER_WEB_CONNECTION_FIX.md`
+  - **Change:** Created comprehensive troubleshooting guide documenting the issue, solution, testing steps, platform-specific configurations, and common issues
+  - **Reason:** Provide reference documentation for Flutter web connection setup and debugging
+
+---
+
 ## Log Entry: 14
 
 ### User Request

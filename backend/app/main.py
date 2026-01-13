@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
+from app.core.tracing import setup_tracing
 from app.infrastructure.database.connection import create_engine
 from app.infrastructure.database.models import Base
 from app.presentation.api.auth import router as auth_router
@@ -82,6 +83,9 @@ def create_application() -> FastAPI:
     app.include_router(samples_router, prefix="/api/v1")
     app.include_router(generation_router)  # AI Generation API
     app.include_router(export_router)  # Export API (PDF/DOCX/ZIP)
+
+    # Setup OpenTelemetry tracing
+    setup_tracing(app, service_name="jobwise-backend", service_version="1.0.0")
 
     @app.get("/health")
     async def health_check():
