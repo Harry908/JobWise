@@ -60,7 +60,7 @@
 ### Completion Summary
 - ✅ **Sprints 1-5**: Core workflow (auth, profiles, jobs, AI generation, samples)
 - ✅ **Sprint 6**: Document export system with 4 templates and S3 storage
-- ⚠️ **Web Platform**: Incomplete (network configuration issues)
+- ✅ **Web Platform**: Flutter web configured and tested with backend connection
 
 ### Performance Metrics
 - Resume Generation: <3s
@@ -73,7 +73,6 @@
 - Job browsing uses mock JSON data (manual paste still works)
 - UI/UX has room for improvement (functionality prioritized)
 - SQLite database (PostgreSQL required for production)
-- Web platform incomplete (network configuration issues)
 
 ---
 
@@ -93,10 +92,21 @@ uvicorn app.main:app --reload
 cd mobile_app
 flutter pub get
 flutter run
-# Android emulator: 10.0.2.2:8000
-# iOS simulator: localhost:8000
+
+# Run on mobile (Android/iOS)
+flutter run
+
+# Run on web
+flutter run -d chrome
+# Or build and serve:
+flutter build web
+python -m http.server 8080 --directory build/web
 ```
 
+**Platform Configuration** (`.env`):
+- Web/iOS: `API_BASE_URL=http://localhost:8000/api/v1`
+- Android: `API_BASE_URL=http://10.0.2.2:8000/api/v1`
+- See [FLUTTER_WEB_CONNECTION_FIX.md](FLUTTER_WEB_CONNECTION_FIX.md) for details
 **Testing**:
 ```powershell
 # Backend tests
