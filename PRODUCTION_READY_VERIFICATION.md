@@ -45,8 +45,8 @@ self.s3_client = boto3.client(
 
 #### Environment Variables Used (.env):
 ```env
-AWS_ACCESS_KEY_ID=***REDACTED***
-AWS_SECRET_ACCESS_KEY=***REDACTED***
+AWS_ACCESS_KEY_ID=<your-aws-access-key-id>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret-access-key>
 S3_BUCKET_NAME=jobsync-exports
 S3_REGION=us-west-2
 ```
@@ -657,8 +657,8 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 
 # AWS S3 (NOT HARDCODED)
-AWS_ACCESS_KEY_ID=***REDACTED***
-AWS_SECRET_ACCESS_KEY=***REDACTED***
+AWS_ACCESS_KEY_ID=<your-aws-access-key-id>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret-access-key>
 S3_BUCKET_NAME=jobsync-exports
 S3_REGION=us-west-2
 
